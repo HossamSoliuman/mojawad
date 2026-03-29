@@ -1,50 +1,59 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ env('APP_NAME') }}</title>
-
-    {{-- tailwind --}}
-    {{-- @vite('resources/css/app.css') --}}
-
-    {{-- bootstrap --}}
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
-
-    {{-- jqery --}}
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
-        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
-
-
-    {{-- filepond css  --}}
-    <link href="https://unpkg.com/filepond@^4/dist/filepond.css" rel="stylesheet" />
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mojawad &mdash; @yield('title', 'Quran Recitations')</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    @livewireStyles
 </head>
 
-<body>
-    @yield('app-content')
-    @yield('scripts')
-    <script src="https://unpkg.com/filepond@^4/dist/filepond.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous">
-    </script>
+<body class="bg-gray-50 text-gray-900 min-h-screen">
 
-    <script>
-        const inputElements = document.querySelectorAll('.filepond');
-        inputElements.forEach(inputElement => {
-            const pond = FilePond.create(inputElement);
-        });
-        FilePond.setOptions({
-            server: {
-                url: '/temp/store',
-                headers: {
-                    'X-CSRF-TOKEN': "{{ csrf_token() }}"
-                }
-            }
-        });
-    </script>
+    <nav class="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
+            <a href="{{ route('home') }}" class="text-xl font-bold text-emerald-700 tracking-tight">مُجَوَّد</a>
+            <div class="flex items-center gap-5 text-sm">
+                <a href="{{ route('home') }}" class="text-gray-600 hover:text-emerald-700">Home</a>
+                <a href="{{ route('search') }}" class="text-gray-600 hover:text-emerald-700">Search</a>
+                @auth
+                    <a href="{{ route('library') }}" class="text-gray-600 hover:text-emerald-700">Library</a>
+                    @if (auth()->user()->canModerate())
+                        <a href="{{ route('creator.queue') }}" class="text-gray-600 hover:text-emerald-700">Queue</a>
+                    @endif
+                    @if (auth()->user()->isAdmin())
+                        <a href="{{ route('admin.applications') }}" class="text-gray-600 hover:text-emerald-700">Admin</a>
+                    @endif
+                    
+                    <a href="{{ route('videos.create') }}"
+                        class="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700">Upload</a>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit" class="text-gray-400 hover:text-gray-700">Logout</button>
+                    </form>
+                @else
+                    <a href="{{ route('login') }}" class="text-gray-600 hover:text-emerald-700">Login</a>
+                    <a href="{{ route('register') }}"
+                        class="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700">Register</a>
+                @endauth
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        @foreach (['success' => 'emerald', 'info' => 'blue', 'error' => 'red'] as $type => $color)
+            @if (session($type))
+                <div
+                    class="mb-6 bg-{{ $color }}-50 border border-{{ $color }}-200 text-{{ $color }}-800 px-4 py-3 rounded-lg text-sm">
+                    {{ session($type) }}
+                </div>
+            @endif
+        @endforeach
+        @yield('content')
+    </main>
+
+    @livewireScripts
 </body>
 
 </html>
