@@ -1,49 +1,18 @@
 <?php
-
 namespace App\Models;
-
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-
-class User extends Authenticatable
-{
-    /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
-
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
-    protected $fillable = [
-        'name',
-        'email',
-        'password',
-    ];
-
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
-
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+use Spatie\Permission\Traits\HasRoles;
+class User extends Authenticatable {
+    use HasFactory, Notifiable, HasRoles;
+    protected $fillable=['name','email','password','avatar'];
+    protected $hidden=['password','remember_token'];
+    protected function casts(): array { return ['email_verified_at'=>'datetime','password'=>'hashed']; }
+    public function qaris()        { return $this->hasMany(Qari::class,'created_by'); }
+    public function likes()        { return $this->hasMany(Like::class); }
+    public function savedTilawat() { return $this->hasMany(SavedTilawa::class); }
+    public function getAvatarUrlAttribute(): string {
+        return $this->avatar ? asset('storage/'.$this->avatar) : 'https://ui-avatars.com/api/?name='.urlencode($this->name).'&background=c9a153&color=07070f&size=128';
     }
 }
