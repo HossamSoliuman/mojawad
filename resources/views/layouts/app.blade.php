@@ -218,11 +218,7 @@
 
                             this.audio.addEventListener('loadedmetadata', () => {
                                 if (d.time) this.audio.currentTime = d.time;
-                            });
-
-                            if (d.playing) {
-                                this.audio.play().catch(() => {});
-                            }
+                            }, { once: true });
                         }
                     }
                 },
@@ -235,6 +231,8 @@
                         document.getElementById('pDownload').style.display = 'inline-block';
                     }
                     document.getElementById('playerBar').classList.remove('hidden');
+
+                    this.audio.pause();
 
                     if (this.audio.src !== d.url) {
                         this.audio.src = d.url;
