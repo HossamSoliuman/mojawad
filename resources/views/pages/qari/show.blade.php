@@ -51,7 +51,7 @@
   <div style="display:flex;flex-direction:column;gap:.45rem" id="tList">
     @foreach($tilawat as $t)
     <div class="track-row"
-      onclick="playTilawa({{ $t->id }},'{{ $t->audio_url }}',{{ json_encode($t->title) }},{{ json_encode($t->qari->name) }},'{{ $t->cover_url }}',{{ $t->duration }})">
+      onclick="playTilawa({{ $t->id }},'{{ $t->audio_url }}',{{ json_encode($t->title) }},{{ json_encode($t->qari->name) }},'{{ $t->cover_url }}',{{ $t->duration }},'{{ route('tilawa.download', $t) }}')">
       <span class="track-num">{{ $loop->iteration }}</span>
       <img src="{{ $t->cover_url }}" class="track-cover" alt="">
       <div class="track-info">

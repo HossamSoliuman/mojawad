@@ -75,7 +75,7 @@
         <td>
           <div style="display:flex;gap:.18rem">
             <button class="btn-icon" title="Preview"
-              onclick="playTilawa({{ $t->id }},'{{ $t->audio_url }}',{{ json_encode($t->title) }},{{ json_encode($t->qari->name) }},'{{ $t->cover_url }}',{{ $t->duration }})">
+              onclick="playTilawa({{ $t->id }},'{{ $t->audio_url }}',{{ json_encode($t->title) }},{{ json_encode($t->qari->name) }},'{{ $t->cover_url }}',{{ $t->duration }},'{{ route('tilawa.download', $t) }}')">
               <i class="fas fa-play"></i>
             </button>
             <a href="{{ route('admin.tilawat.edit',$t) }}" class="btn-icon" title="Edit"><i class="fas fa-pen-to-square"></i></a>

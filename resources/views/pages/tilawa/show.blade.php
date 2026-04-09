@@ -38,7 +38,7 @@
 
       <div style="display:flex;gap:.55rem;flex-wrap:wrap;align-items:center">
         <button class="btn btn-primary"
-          onclick="playTilawa({{ $tilawa->id }},'{{ $tilawa->audio_url }}',{{ json_encode($tilawa->title) }},{{ json_encode($tilawa->qari->name) }},'{{ $tilawa->cover_url }}',{{ $tilawa->duration }})">
+          onclick="playTilawa({{ $tilawa->id }},'{{ $tilawa->audio_url }}',{{ json_encode($tilawa->title) }},{{ json_encode($tilawa->qari->name) }},'{{ $tilawa->cover_url }}',{{ $tilawa->duration }},'{{ route('tilawa.download', $tilawa) }}')">
           <i class="fas fa-play"></i> Play
         </button>
 
@@ -82,7 +82,7 @@
       <div class="t-card-img">
         <img src="{{ $r->cover_url }}" alt="{{ $r->title }}" loading="lazy">
         <button class="t-play-btn"
-          onclick="playTilawa({{ $r->id }},'{{ $r->audio_url }}',{{ json_encode($r->title) }},{{ json_encode($r->qari->name) }},'{{ $r->cover_url }}',{{ $r->duration }})">
+          onclick="playTilawa({{ $r->id }},'{{ $r->audio_url }}',{{ json_encode($r->title) }},{{ json_encode($r->qari->name) }},'{{ $r->cover_url }}',{{ $r->duration }},'{{ route('tilawa.download', $r) }}')">
           <i class="fas fa-play"></i>
         </button>
       </div>

@@ -138,6 +138,7 @@
             <span class="p-time" x-text="fmt(dur)">0:00</span>
         </div>
         <div class="p-vol">
+            <a href="#" class="p-btn" id="pDownload" title="Download" style="display:none; color:var(--text2); text-decoration:none;"><i class="fas fa-download"></i></a>
             <button class="p-btn" @click="muted=!muted;audio.muted=muted">
                 <i class="fas"
                     :class="muted ? 'fa-volume-xmark' : (vol > 0.5 ? 'fa-volume-high' : 'fa-volume-low')"></i>
@@ -149,14 +150,15 @@
 
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <script>
-        function playTilawa(id, url, title, qari, cover, duration) {
+        function playTilawa(id, url, title, qari, cover, duration, downloadUrl) {
             window._playerLoad({
                 id,
                 url,
                 title,
                 qari,
                 cover,
-                duration
+                duration,
+                downloadUrl
             });
         }
 
@@ -189,7 +191,8 @@
                             title: document.getElementById('pTitle').textContent,
                             qari: document.getElementById('pQari').textContent,
                             cover: document.getElementById('pCover').src,
-                            duration: this.dur
+                            duration: this.dur,
+                            downloadUrl: document.getElementById('pDownload').href || ''
                         }));
                     });
 
@@ -204,6 +207,10 @@
                             document.getElementById('pCover').src = d.cover || '';
                             document.getElementById('pTitle').textContent = d.title || '';
                             document.getElementById('pQari').textContent = d.qari || '';
+                            if (d.downloadUrl) {
+                                document.getElementById('pDownload').href = d.downloadUrl;
+                                document.getElementById('pDownload').style.display = 'inline-block';
+                            }
                             document.getElementById('playerBar').classList.remove('hidden');
 
                             this.audio.src = d.src;
@@ -223,6 +230,10 @@
                     document.getElementById('pCover').src = d.cover;
                     document.getElementById('pTitle').textContent = d.title;
                     document.getElementById('pQari').textContent = d.qari;
+                    if (d.downloadUrl) {
+                        document.getElementById('pDownload').href = d.downloadUrl;
+                        document.getElementById('pDownload').style.display = 'inline-block';
+                    }
                     document.getElementById('playerBar').classList.remove('hidden');
 
                     if (this.audio.src !== d.url) {

@@ -35,7 +35,7 @@
     <div class="t-card">
       <div class="t-card-img">
         <img src="{{ $t->cover_url }}" alt="{{ $t->title }}" loading="lazy">
-        <button class="t-play-btn" onclick="playTilawa({{ $t->id }},'{{ $t->audio_url }}',{{ json_encode($t->title) }},{{ json_encode($t->qari->name) }},'{{ $t->cover_url }}',{{ $t->duration }})">
+        <button class="t-play-btn" onclick="playTilawa({{ $t->id }},'{{ $t->audio_url }}',{{ json_encode($t->title) }},{{ json_encode($t->qari->name) }},'{{ $t->cover_url }}',{{ $t->duration }},'{{ route('tilawa.download', $t) }}')">
           <i class="fas fa-play"></i>
         </button>
       </div>
@@ -80,7 +80,7 @@
     <div class="t-card">
       <div class="t-card-img">
         <img src="{{ $t->cover_url }}" alt="{{ $t->title }}" loading="lazy">
-        <button class="t-play-btn" onclick="playTilawa({{ $t->id }},'{{ $t->audio_url }}',{{ json_encode($t->title) }},{{ json_encode($t->qari->name) }},'{{ $t->cover_url }}',{{ $t->duration }})">
+        <button class="t-play-btn" onclick="playTilawa({{ $t->id }},'{{ $t->audio_url }}',{{ json_encode($t->title) }},{{ json_encode($t->qari->name) }},'{{ $t->cover_url }}',{{ $t->duration }},'{{ route('tilawa.download', $t) }}')">
           <i class="fas fa-play"></i>
         </button>
       </div>
@@ -106,7 +106,7 @@
     <div class="t-card">
       <div class="t-card-img">
         <img src="{{ $t->cover_url }}" alt="{{ $t->title }}" loading="lazy">
-        <button class="t-play-btn" onclick="playTilawa({{ $t->id }},'{{ $t->audio_url }}',{{ json_encode($t->title) }},{{ json_encode($t->qari->name) }},'{{ $t->cover_url }}',{{ $t->duration }})">
+        <button class="t-play-btn" onclick="playTilawa({{ $t->id }},'{{ $t->audio_url }}',{{ json_encode($t->title) }},{{ json_encode($t->qari->name) }},'{{ $t->cover_url }}',{{ $t->duration }},'{{ route('tilawa.download', $t) }}')">
           <i class="fas fa-play"></i>
         </button>
       </div>
