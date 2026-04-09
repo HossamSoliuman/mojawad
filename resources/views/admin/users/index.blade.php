@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 @section('title','Users')
 @section('page-title','Users')
-@section('breadcrumb')<a href="{{ route('admin.dashboard') }}">Dashboard</a> › Users@endsection
+@section('breadcrumb')<a href="{{ route('admin.dashboard') }}">Dashboard</a> › Users @endsection
 @section('content')
 
 <form method="GET" style="margin-bottom:1.4rem">
