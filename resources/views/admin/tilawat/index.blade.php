@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 @section('title','Tilawat')
 @section('page-title','Tilawat')
-@section('breadcrumb')<a href="{{ route('admin.dashboard') }}">Dashboard</a> › Tilawat@endsection
+@section('breadcrumb')<a href="{{ route('admin.dashboard') }}">Dashboard</a> › Tilawat @endsection
 @section('topbar-actions')
 <a href="{{ route('admin.tilawat.create') }}" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Add Tilawa</a>
 @endsection

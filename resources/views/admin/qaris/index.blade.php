@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 @section('title','Qaris')
 @section('page-title','Qaris')
-@section('breadcrumb')<a href="{{ route('admin.dashboard') }}">Dashboard</a> › Qaris@endsection
+@section('breadcrumb')<a href="{{ route('admin.dashboard') }}">Dashboard</a> › Qaris @endsection
 @section('topbar-actions')
 <a href="{{ route('admin.qaris.create') }}" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Add Qari</a>
 @endsection

@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 @section('title','Edit Tilawa')
 @section('page-title','Edit Tilawa')
-@section('breadcrumb')<a href="{{ route('admin.dashboard') }}">Dashboard</a> › <a href="{{ route('admin.tilawat.index') }}">Tilawat</a> › Edit@endsection
+@section('breadcrumb')<a href="{{ route('admin.dashboard') }}">Dashboard</a> › <a href="{{ route('admin.tilawat.index') }}">Tilawat</a> › Edit @endsection
 @section('content')
 
 <div style="max-width:700px">
