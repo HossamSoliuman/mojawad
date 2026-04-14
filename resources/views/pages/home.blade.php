@@ -4,22 +4,20 @@
 
 <section class="hero">
   <div class="hero-bg">
-    @if($featured_tilawat->isNotEmpty())
-    <img src="{{ $featured_tilawat->first()->cover_url }}" alt="">
-    @endif
+    <img src="{{ asset('images/minshawy_hero.png') }}" alt="Sheikh El-Minshawy">
   </div>
   <div class="wrap z1" style="width:100%">
-    <div style="max-width:580px">
-      <div class="badge badge-gold" style="margin-bottom:1.05rem"><i class="fas fa-star"></i> Premium Tajweed Collection</div>
-      <h1 style="font-size:clamp(2rem,5vw,3.7rem);margin-bottom:.85rem;line-height:1.08">
+    <div style="max-width:650px; text-shadow: 0 2px 20px rgba(0,0,0,0.8)">
+      <div class="badge badge-gold" style="margin-bottom:1.25rem">Premium Tajweed Collection</div>
+      <h1 style="font-size:clamp(2.5rem,6vw,4.5rem);margin-bottom:1rem;line-height:1;font-weight:900">
         The World's Finest<br><span class="gold">Qur'an Tilawat</span>
       </h1>
-      <p style="font-size:1.08rem;color:var(--text2);margin-bottom:1.75rem;max-width:440px;line-height:1.7">
-        Curated high-quality recitations by world-renowned qaris with impeccable tajweed.
+      <p style="font-size:1.2rem;color:var(--text2);margin-bottom:2.5rem;max-width:500px;line-height:1.8">
+        Immerse yourself in the divine beauty of the Holy Qur'an with our curated collection of legendary recitations.
       </p>
-      <div style="display:flex;gap:.65rem;flex-wrap:wrap">
-        <a href="{{ route('qaris.index') }}" class="btn btn-primary"><i class="fas fa-play"></i> Explore Qaris</a>
-        @guest<a href="{{ route('register') }}" class="btn btn-ghost"><i class="fas fa-user-plus"></i> Join Free</a>@endguest
+      <div style="display:flex;gap:.85rem;flex-wrap:wrap">
+        <a href="{{ route('qaris.index') }}" class="btn btn-primary">Explore Qaris</a>
+        @guest<a href="{{ route('register') }}" class="btn btn-ghost">Create Account</a>@endguest
       </div>
     </div>
   </div>
