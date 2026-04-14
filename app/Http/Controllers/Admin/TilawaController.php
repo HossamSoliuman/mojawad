@@ -33,7 +33,7 @@ class TilawaController extends Controller
         }
         Tilawa::create(['qari_id' => $request->qari_id, 'title' => $request->title, 'slug' => $slug, 'description' => $request->description ?? null, 'recorded_at' => $request->recorded_at ?? null, 'recorded_place' => $request->recorded_place ?? null, 'audio_path' => $request->file('audio')->store('tilawat', 'public'), 'duration' => $dur, 'cover_image' => $request->hasFile('cover_image') ? $request->file('cover_image')->store('tilawa-covers', 'public') : null, 'status' => $request->status, 'is_featured' => $request->boolean('is_featured'), 'uploaded_by' => auth()->id()]);
         Cache::forget('homepage_data');
-        return redirect()->route('admin.tilawat.index')->with('success', 'Tilawa created successfully.');
+        return redirect()->route('admin.tilawat.create')->with('success', 'Tilawa created successfully.');
     }
     public function edit(Tilawa $tilawa)
     {
