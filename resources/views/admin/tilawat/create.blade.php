@@ -23,9 +23,8 @@
       <div class="form-group">
         <label class="form-label"><i class="fas fa-microphone"></i> Qari <span style="color:var(--red)">*</span></label>
         <select name="qari_id" class="form-control" required>
-          <option value="">Select Qari…</option>
           @foreach($qaris as $q)
-          <option value="{{ $q->id }}" {{ old('qari_id')==$q->id ? 'selected':'' }}>{{ $q->name }}</option>
+          <option value="{{ $q->id }}"  {{ old('qari_id')==$q->id ? 'selected':'' }}>{{ $q->name }}</option>
           @endforeach
         </select>
         @error('qari_id')<span class="form-error">{{ $message }}</span>@enderror
@@ -33,8 +32,8 @@
       <div class="form-group">
         <label class="form-label"><i class="fas fa-circle-check"></i> Status</label>
         <select name="status" class="form-control">
-          <option value="pending"  {{ old('status','pending')==='pending'  ? 'selected':'' }}>Pending</option>
-          <option value="active"   {{ old('status')==='active'   ? 'selected':'' }}>Active</option>
+          <option value="pending"  {{ old('status')==='pending'  ? 'selected':'' }}>Pending</option>
+          <option value="active"   {{ old('status','active')==='active'   ? 'selected':'' }}>Active</option>
           <option value="inactive" {{ old('status')==='inactive' ? 'selected':'' }}>Inactive</option>
         </select>
       </div>

@@ -6,6 +6,7 @@
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <title>@yield('title','Admin') — Tilawa</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 @vite(['resources/css/app.css','resources/js/app.js'])
 </head>
 <body x-data="{ sideOpen: false }">
