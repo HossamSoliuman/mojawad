@@ -1,7 +1,7 @@
 @extends('layouts.app')
-@section('title','Profile')
+@section('title', __('Profile'))
 @section('content')
-<div class="page-hd"><div class="wrap"><h1><i class="fas fa-user gold"></i> Profile</h1><p>Your account</p></div></div>
+<div class="page-hd"><div class="wrap"><h1><i class="fas fa-user gold"></i> {{ __('Profile') }}</h1><p>{{ __('Your account') }}</p></div></div>
 <div class="wrap" style="padding-bottom:3rem;max-width:620px">
   <div class="card" style="padding:1.85rem;display:flex;align-items:center;gap:1.4rem;margin-bottom:1.4rem">
     <img src="{{ auth()->user()->avatar_url }}" class="avatar" width="76" height="76" alt="">
@@ -14,25 +14,25 @@
     </div>
   </div>
   <div class="card" style="padding:1.65rem">
-    <h3 style="font-size:.95rem;margin-bottom:1.15rem"><i class="fas fa-chart-simple gold"></i> Activity</h3>
+    <h3 style="font-size:.95rem;margin-bottom:1.15rem"><i class="fas fa-chart-simple gold"></i> {{ __('Activity') }}</h3>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;text-align:center">
       <div>
         <div style="font-family:'Cinzel',serif;font-size:1.7rem;font-weight:700;color:var(--gold)">
           {{ auth()->user()->likes()->count() }}
         </div>
-        <div style="font-size:.78rem;color:var(--text2)">Liked</div>
+        <div style="font-size:.78rem;color:var(--text2)">{{ __('Liked') }}</div>
       </div>
       <div>
         <div style="font-family:'Cinzel',serif;font-size:1.7rem;font-weight:700;color:var(--gold)">
           {{ auth()->user()->savedTilawat()->count() }}
         </div>
-        <div style="font-size:.78rem;color:var(--text2)">Saved</div>
+        <div style="font-size:.78rem;color:var(--text2)">{{ __('Saved') }}</div>
       </div>
       <div>
         <div style="font-family:'Cinzel',serif;font-size:1.7rem;font-weight:700;color:var(--gold)">
           {{ \App\Models\DownloadLog::where('user_id',auth()->id())->count() }}
         </div>
-        <div style="font-size:.78rem;color:var(--text2)">Downloads</div>
+        <div style="font-size:.78rem;color:var(--text2)">{{ __('Downloads') }}</div>
       </div>
     </div>
   </div>

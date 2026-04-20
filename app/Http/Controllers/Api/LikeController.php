@@ -3,7 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\{Like, Tilawa};
+use App\Models\Like;
+use App\Models\Tilawa;
 use Illuminate\Http\Request;
 
 class LikeController extends Controller

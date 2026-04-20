@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="{{ app()->getLocale() == 'ar' ? 'rtl' : 'ltr' }}">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Tilawa') — Qur'an Recitations</title>
+    <title>@yield('title', 'Tilawa') — {{ __('Qur\'an Recitations') }}</title>
     <meta name="description" content="@yield('meta_desc', 'Premium Tajweed recitations.')">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -21,12 +21,12 @@
         </a>
         <div class="nav-links">
             <a href="{{ route('home') }}" class="nav-link {{ request()->routeIs('home') ? 'active' : '' }}"><i
-                    class="fas fa-house"></i> Home</a>
+                    class="fas fa-house"></i> {{ __('Home') }}</a>
             <a href="{{ route('qaris.index') }}" class="nav-link {{ request()->routeIs('qaris.*') ? 'active' : '' }}"><i
-                    class="fas fa-microphone"></i> Qaris</a>
+                    class="fas fa-microphone"></i> {{ __('Qaris') }}</a>
             @auth
                 <a href="{{ route('library') }}" class="nav-link {{ request()->routeIs('library') ? 'active' : '' }}"><i
-                        class="fas fa-bookmark"></i> Library</a>
+                        class="fas fa-bookmark"></i> {{ __('Library') }}</a>
             @endauth
         </div>
         <div class="navbar-right">
@@ -34,7 +34,7 @@
             {{-- SEARCH --}}
             <div class="search-wrap" x-data="searchBar()">
                 <i class="fas fa-magnifying-glass search-icon"></i>
-                <input class="search-input" type="text" placeholder="Search…" x-model="q"
+                <input class="search-input" type="text" placeholder="{{ __('Search…') }}" x-model="q"
                     @input.debounce.300ms="search()" @keydown.escape="close()" @click.away="close()">
                 <template x-if="q">
                     <button class="search-clear" @click="q='';close()"><i class="fas fa-xmark"></i></button>
@@ -42,7 +42,7 @@
                 <div class="search-dropdown" x-show="open" x-transition>
                     <template x-if="results.qaris && results.qaris.length">
                         <div>
-                            <div class="search-sec-hd"><i class="fas fa-microphone"></i> Qaris</div>
+                            <div class="search-sec-hd"><i class="fas fa-microphone"></i> {{ __('Qaris') }}</div>
                             <template x-for="r in results.qaris" :key="r.id">
                                 <a :href="r.url" class="search-item" @click="close()">
                                     <i class="fas fa-microphone-lines"
@@ -55,7 +55,7 @@
                     <template x-if="results.tilawat && results.tilawat.length">
                         <div>
                             <div class="search-sec-hd" style="border-top:1px solid var(--border)"><i
-                                    class="fas fa-music"></i> Tilawat</div>
+                                    class="fas fa-music"></i> {{ __('Tilawat') }}</div>
                             <template x-for="r in results.tilawat" :key="r.id">
                                 <a :href="r.url" class="search-item" @click="close()">
                                     <i class="fas fa-music" style="color:var(--gold);width:15px;flex-shrink:0"></i>
@@ -67,6 +67,18 @@
                             </template>
                         </div>
                     </template>
+                </div>
+            </div>
+
+            {{-- LANGUAGE --}}
+            <div x-data="{ open: false }" style="position:relative">
+                <button class="user-pill" @click="open=!open" @click.away="open=false">
+                    <i class="fas fa-globe" style="font-size:.9rem;color:var(--gold)"></i>
+                    <span class="user-pill-name">{{ app()->getLocale() == 'ar' ? 'العربية' : 'English' }}</span>
+                </button>
+                <div class="dropdown" x-show="open" x-transition>
+                    <a href="{{ route('lang', 'en') }}">English</a>
+                    <a href="{{ route('lang', 'ar') }}">العربية</a>
                 </div>
             </div>
 
@@ -82,19 +94,19 @@
                     <div class="dropdown" x-show="open" x-transition>
                         @if (auth()->user()->hasAnyRole(['admin', 'creator']))
                             <a href="{{ route('admin.dashboard') }}"><i class="fas fa-gauge"
-                                    style="color:var(--gold);width:15px"></i> Dashboard</a>
+                                    style="color:var(--gold);width:15px"></i> {{ __('Dashboard') }}</a>
                         @endif
-                        <a href="{{ route('profile') }}"><i class="fas fa-user" style="width:15px"></i> Profile</a>
+                        <a href="{{ route('profile') }}"><i class="fas fa-user" style="width:15px"></i> {{ __('Profile') }}</a>
                         <form method="POST" action="{{ route('logout') }}">@csrf
                             <button type="submit"><i class="fas fa-arrow-right-from-bracket"
-                                    style="color:var(--red);width:15px"></i> Logout</button>
+                                    style="color:var(--red);width:15px"></i> {{ __('Logout') }}</button>
                         </form>
                     </div>
                 </div>
             @else
-                <a href="{{ route('login') }}" class="btn btn-ghost btn-sm"><i class="fas fa-arrow-right-to-bracket"></i>
-                    Login</a>
-                <a href="{{ route('register') }}" class="btn btn-primary btn-sm"><i class="fas fa-user-plus"></i> Join</a>
+                <a href="{{ route('login') }}" class="btn btn-ghost btn-sm"> <i class="fas fa-arrow-right-to-bracket"></i>
+                    {{ __('Login') }}</a>
+                <a href="{{ route('register') }}" class="btn btn-primary btn-sm"> <i class="fas fa-user-plus"></i> {{ __('Join') }}</a>
             @endauth
         </div>
     </nav>

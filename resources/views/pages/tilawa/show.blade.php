@@ -14,7 +14,7 @@
 
     <div style="flex:1;min-width:200px">
       @if($tilawa->is_featured)
-      <div class="badge badge-gold" style="margin-bottom:.65rem"><i class="fas fa-star"></i> Featured</div>
+      <div class="badge badge-gold" style="margin-bottom:.65rem"><i class="fas fa-star"></i> {{ __('Featured') }}</div>
       @endif
       <h1 style="font-size:clamp(1.3rem,3vw,2rem);margin-bottom:.4rem">{{ $tilawa->title }}</h1>
       <a href="{{ route('qaris.show',$tilawa->qari) }}" class="gold"
@@ -39,27 +39,27 @@
       <div style="display:flex;gap:.55rem;flex-wrap:wrap;align-items:center">
         <button class="btn btn-primary"
           onclick="playTilawa({{ $tilawa->id }},'{{ $tilawa->audio_url }}',{{ json_encode($tilawa->title) }},{{ json_encode($tilawa->qari->name) }},'{{ $tilawa->cover_url }}',{{ $tilawa->duration }},'{{ route('tilawa.download', $tilawa) }}')">
-          <i class="fas fa-play"></i> Play
+          <i class="fas fa-play"></i> {{ __('Play') }}
         </button>
 
         @auth
         <button class="btn btn-sm {{ $liked ? 'btn-primary' : 'btn-ghost' }}" id="likeBtn"
           onclick="toggleLike({{ $tilawa->id }})">
           <i class="fas fa-heart"></i>
-          <span id="likeBtnText">{{ $liked ? 'Liked' : 'Like' }}</span>
+          <span id="likeBtnText">{{ $liked ? __('Liked') : __('Like') }}</span>
         </button>
         <button class="btn btn-sm {{ $saved ? 'btn-primary' : 'btn-ghost' }}" id="saveBtn"
           onclick="toggleSave({{ $tilawa->id }})">
           <i class="fas fa-bookmark"></i>
-          <span id="saveBtnText">{{ $saved ? 'Saved' : 'Save' }}</span>
+          <span id="saveBtnText">{{ $saved ? __('Saved') : __('Save') }}</span>
         </button>
         @else
-        <a href="{{ route('login') }}" class="btn btn-ghost btn-sm"><i class="fas fa-heart"></i> Like</a>
-        <a href="{{ route('login') }}" class="btn btn-ghost btn-sm"><i class="fas fa-bookmark"></i> Save</a>
+        <a href="{{ route('login') }}" class="btn btn-ghost btn-sm"><i class="fas fa-heart"></i> {{ __('Like') }}</a>
+        <a href="{{ route('login') }}" class="btn btn-ghost btn-sm"><i class="fas fa-bookmark"></i> {{ __('Save') }}</a>
         @endauth
 
         <a href="{{ route('tilawa.download',$tilawa) }}" class="btn btn-ghost btn-sm">
-          <i class="fas fa-download"></i> Download
+          <i class="fas fa-download"></i> {{ __('Download') }}
         </a>
       </div>
     </div>
@@ -68,14 +68,14 @@
   @if($tilawa->description)
   <div class="card" style="padding:1.5rem;margin-bottom:2.1rem">
     <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.09em;color:var(--text2);margin-bottom:.65rem;font-family:'Cinzel',serif">
-      About
+      {{ __('About') }}
     </div>
     <p style="line-height:1.8;color:var(--text2)">{{ $tilawa->description }}</p>
   </div>
   @endif
 
   @if($related->isNotEmpty())
-  <div class="sec-title"><i class="fas fa-layer-group gold"></i> More from {{ $tilawa->qari->name }}</div>
+  <div class="sec-title"><i class="fas fa-layer-group gold"></i> {{ __('More from') }} {{ $tilawa->qari->name }}</div>
   <div class="grid-tilawat">
     @foreach($related as $r)
     <div class="t-card">
@@ -112,10 +112,10 @@ async function toggleLike(id) {
   btn.disabled = false;
   if (d.liked) {
     btn.className = btn.className.replace('btn-ghost','btn-primary');
-    document.getElementById('likeBtnText').textContent = 'Liked';
+    document.getElementById('likeBtnText').textContent = "{{ __('Liked') }}";
   } else {
     btn.className = btn.className.replace('btn-primary','btn-ghost');
-    document.getElementById('likeBtnText').textContent = 'Like';
+    document.getElementById('likeBtnText').textContent = "{{ __('Like') }}";
   }
   document.getElementById('likeCountBadge').innerHTML = '<i class="fas fa-heart"></i> ' + d.count.toLocaleString();
 }
@@ -128,10 +128,10 @@ async function toggleSave(id) {
   btn.disabled = false;
   if (d.saved) {
     btn.className = btn.className.replace('btn-ghost','btn-primary');
-    document.getElementById('saveBtnText').textContent = 'Saved';
+    document.getElementById('saveBtnText').textContent = "{{ __('Saved') }}";
   } else {
     btn.className = btn.className.replace('btn-primary','btn-ghost');
-    document.getElementById('saveBtnText').textContent = 'Save';
+    document.getElementById('saveBtnText').textContent = "{{ __('Save') }}";
   }
 }
 </script>

@@ -8,16 +8,16 @@
   </div>
   <div class="wrap z1" style="width:100%">
     <div style="max-width:650px; text-shadow: 0 2px 20px rgba(0,0,0,0.8)">
-      <div class="badge badge-gold" style="margin-bottom:1.25rem">Premium Tajweed Collection</div>
+      <div class="badge badge-gold" style="margin-bottom:1.25rem">{{ __('Premium Tajweed Collection') }}</div>
       <h1 style="font-size:clamp(2.5rem,6vw,4.5rem);margin-bottom:1rem;line-height:1;font-weight:900">
-        The World's Finest<br><span class="gold">Qur'an Tilawat</span>
+        {{ __('The World\'s Finest') }}<br><span class="gold">{{ __('Qur\'an Tilawat') }}</span>
       </h1>
       <p style="font-size:1.2rem;color:var(--text2);margin-bottom:2.5rem;max-width:500px;line-height:1.8">
-        Immerse yourself in the divine beauty of the Holy Qur'an with our curated collection of legendary recitations.
+        {{ __('Immerse yourself in the divine beauty of the Holy Qur\'an with our curated collection of legendary recitations.') }}
       </p>
       <div style="display:flex;gap:.85rem;flex-wrap:wrap">
-        <a href="{{ route('qaris.index') }}" class="btn btn-primary">Explore Qaris</a>
-        @guest<a href="{{ route('register') }}" class="btn btn-ghost">Create Account</a>@endguest
+        <a href="{{ route('qaris.index') }}" class="btn btn-primary">{{ __('Explore Qaris') }}</a>
+        @guest<a href="{{ route('register') }}" class="btn btn-ghost">{{ __('Create Account') }}</a>@endguest
       </div>
     </div>
   </div>
@@ -27,7 +27,7 @@
 
 @if($featured_tilawat->isNotEmpty())
 <section class="section">
-  <div class="sec-title"><i class="fas fa-star gold"></i> Featured Tilawat</div>
+  <div class="sec-title"><i class="fas fa-star gold"></i> {{ __('Featured Tilawat') }}</div>
   <div class="grid-tilawat">
     @foreach($featured_tilawat as $t)
     <div class="t-card">
@@ -53,7 +53,7 @@
 
 @if($top_qaris->isNotEmpty())
 <section class="section" style="padding-top:0">
-  <div class="sec-title"><i class="fas fa-microphone gold"></i> Qaris</div>
+  <div class="sec-title"><i class="fas fa-microphone gold"></i> {{ __('Qaris') }}</div>
   <div class="grid-qaris">
     @foreach($top_qaris as $q)
     <a href="{{ route('qaris.show',$q) }}" class="q-card">
@@ -61,7 +61,7 @@
       <div class="q-overlay">
         @if($q->is_featured)<span style="color:var(--gold);font-size:.68rem;display:block;margin-bottom:.18rem"><i class="fas fa-star"></i></span>@endif
         <div class="q-name">{{ $q->name }}</div>
-        <div class="q-count">{{ $q->tilawat_count }} tilawat</div>
+        <div class="q-count">{{ $q->tilawat_count }} {{ __('tilawat') }}</div>
       </div>
       <div class="q-play-btn"><i class="fas fa-play"></i></div>
     </a>
@@ -72,7 +72,7 @@
 
 @if($popular_tilawat->isNotEmpty())
 <section class="section" style="padding-top:0">
-  <div class="sec-title"><i class="fas fa-fire gold"></i> Most Loved</div>
+  <div class="sec-title"><i class="fas fa-fire gold"></i> {{ __('Most Loved') }}</div>
   <div class="t-list-grid">
     @foreach($popular_tilawat as $t)
     <div class="t-list-item" onclick="playTilawa({{ $t->id }},'{{ $t->audio_url }}',{{ json_encode($t->title) }},{{ json_encode($t->qari->name) }},'{{ $t->cover_url }}',{{ $t->duration }},'{{ route('tilawa.download', $t) }}')">
@@ -94,7 +94,7 @@
 
 @if($recent_tilawat->isNotEmpty())
 <section class="section" style="padding-top:0;padding-bottom:3rem">
-  <div class="sec-title"><i class="fas fa-clock-rotate-left gold"></i> Recently Added</div>
+  <div class="sec-title"><i class="fas fa-clock-rotate-left gold"></i> {{ __('Recently Added') }}</div>
   <div class="t-list-grid">
     @foreach($recent_tilawat as $t)
     <div class="t-list-item" onclick="playTilawa({{ $t->id }},'{{ $t->audio_url }}',{{ json_encode($t->title) }},{{ json_encode($t->qari->name) }},'{{ $t->cover_url }}',{{ $t->duration }},'{{ route('tilawa.download', $t) }}')">

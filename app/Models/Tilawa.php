@@ -11,10 +11,12 @@ class Tilawa extends Model
     protected $table = 'tilawat';
     protected $fillable = ['qari_id', 'title', 'slug', 'description', 'recorded_at', 'recorded_place', 'audio_path', 'duration', 'cover_image', 'uploaded_by', 'is_featured', 'downloads_count', 'likes_count', 'status'];
     protected $casts = ['is_featured' => 'boolean', 'recorded_at' => 'date'];
+
     public function qari()
     {
         return $this->belongsTo(Qari::class);
     }
+
     public function uploader()
     {
         return $this->belongsTo(User::class, 'uploaded_by');
@@ -42,8 +44,5 @@ class Tilawa extends Model
         $s = $this->duration % 60;
         return sprintf('%d:%02d', $m, $s);
     }
-    public function getRouteKeyName(): string
-    {
-        return 'slug';
-    }
+
 }

@@ -1,16 +1,16 @@
 @extends('layouts.app')
-@section('title','Library')
+@section('title', __('Library'))
 @section('content')
 <div class="page-hd">
-  <div class="wrap"><h1><i class="fas fa-bookmark gold"></i> Library</h1><p>Your saved and liked tilawat</p></div>
+  <div class="wrap"><h1><i class="fas fa-bookmark gold"></i> {{ __('Library') }}</h1><p>{{ __('Your saved and liked tilawat') }}</p></div>
 </div>
 <div class="wrap" style="padding-bottom:3rem" x-data="{tab:'saved'}">
   <div style="display:flex;gap:.4rem;margin-bottom:1.65rem;border-bottom:1px solid var(--border);padding-bottom:.65rem">
     <button @click="tab='saved'" :class="tab==='saved'?'btn-primary':'btn-ghost'" class="btn btn-sm">
-      <i class="fas fa-bookmark"></i> Saved
+      <i class="fas fa-bookmark"></i> {{ __('Saved') }}
     </button>
     <button @click="tab='liked'" :class="tab==='liked'?'btn-primary':'btn-ghost'" class="btn btn-sm">
-      <i class="fas fa-heart"></i> Liked
+      <i class="fas fa-heart"></i> {{ __('Liked') }}
     </button>
   </div>
 
@@ -19,7 +19,7 @@
     @if($saved->isEmpty())
     <div style="text-align:center;padding:4rem 1rem;color:var(--text2)">
       <i class="fas fa-bookmark-slash" style="font-size:2.5rem;display:block;margin-bottom:.65rem"></i>
-      No saved tilawat yet.
+      {{ __('No saved tilawat yet.') }}
     </div>
     @else
     <div class="grid-tilawat">
@@ -48,7 +48,7 @@
     @if($liked->isEmpty())
     <div style="text-align:center;padding:4rem 1rem;color:var(--text2)">
       <i class="fas fa-heart-crack" style="font-size:2.5rem;display:block;margin-bottom:.65rem"></i>
-      No liked tilawat yet.
+      {{ __('No liked tilawat yet.') }}
     </div>
     @else
     <div class="grid-tilawat">

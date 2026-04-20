@@ -61,4 +61,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin|creator'
     });
 });
 
+Route::get('/lang/{locale}', function ($locale) {
+    if (in_array($locale, ['en', 'ar'])) {
+        session()->put('locale', $locale);
+    }
+    return redirect()->back();
+})->name('lang');
+
 require __DIR__.'/auth.php';

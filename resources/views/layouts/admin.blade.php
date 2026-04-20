@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="{{ app()->getLocale() == 'ar' ? 'rtl' : 'ltr' }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token() }}">
-<title>@yield('title','Admin') — Tilawa</title>
+<title>@yield('title','Admin') — {{ __('Tilawa') }}</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 @vite(['resources/css/app.css','resources/js/app.js'])
@@ -19,32 +19,32 @@
       <a href="{{ route('home') }}"><i class="fas fa-book-open-reader"></i> Tilawa</a>
     </div>
     <nav class="sidebar-nav">
-      <div class="nav-sec-lbl">Overview</div>
+      <div class="nav-sec-lbl">{{ __('Overview') }}</div>
       <a href="{{ route('admin.dashboard') }}" class="s-link {{ request()->routeIs('admin.dashboard') ? 'active':'' }}">
-        <i class="fas fa-gauge-high"></i> Dashboard
+        <i class="fas fa-gauge-high"></i> {{ __('Dashboard') }}
       </a>
-      <div class="nav-sec-lbl" style="margin-top:.35rem">Content</div>
+      <div class="nav-sec-lbl" style="margin-top:.35rem">{{ __('Content') }}</div>
       <a href="{{ route('admin.qaris.index') }}" class="s-link {{ request()->routeIs('admin.qaris.*') ? 'active':'' }}">
-        <i class="fas fa-microphone-lines"></i> Qaris
+        <i class="fas fa-microphone-lines"></i> {{ __('Qaris') }}
       </a>
       <a href="{{ route('admin.qaris.create') }}" class="s-link" style="padding-left:2.1rem;font-size:.78rem">
-        <i class="fas fa-plus"></i> Add Qari
+        <i class="fas fa-plus"></i> {{ __('Add Qari') }}
       </a>
       <a href="{{ route('admin.tilawat.index') }}" class="s-link {{ request()->routeIs('admin.tilawat.*') ? 'active':'' }}">
-        <i class="fas fa-music"></i> Tilawat
+        <i class="fas fa-music"></i> {{ __('Tilawat') }}
       </a>
       <a href="{{ route('admin.tilawat.create') }}" class="s-link" style="padding-left:2.1rem;font-size:.78rem">
-        <i class="fas fa-plus"></i> Add Tilawa
+        <i class="fas fa-plus"></i> {{ __('Add Tilawa') }}
       </a>
       @role('admin')
-      <div class="nav-sec-lbl" style="margin-top:.35rem">Community</div>
+      <div class="nav-sec-lbl" style="margin-top:.35rem">{{ __('Community') }}</div>
       <a href="{{ route('admin.users.index') }}" class="s-link {{ request()->routeIs('admin.users.*') ? 'active':'' }}">
-        <i class="fas fa-users"></i> Users
+        <i class="fas fa-users"></i> {{ __('Users') }}
       </a>
       @endrole
-      <div class="nav-sec-lbl" style="margin-top:.35rem">Site</div>
+      <div class="nav-sec-lbl" style="margin-top:.35rem">{{ __('Site') }}</div>
       <a href="{{ route('home') }}" class="s-link" target="_blank">
-        <i class="fas fa-arrow-up-right-from-square"></i> View Site
+        <i class="fas fa-arrow-up-right-from-square"></i> {{ __('View Site') }}
       </a>
     </nav>
     <div class="sidebar-footer">
@@ -54,7 +54,7 @@
         <div class="sf-role">{{ auth()->user()->roles->first()?->name ?? 'user' }}</div>
       </div>
       <form method="POST" action="{{ route('logout') }}">@csrf
-        <button type="submit" class="btn-icon" style="color:var(--red)" title="Logout">
+        <button type="submit" class="btn-icon" style="color:var(--red)" title="{{ __('Logout') }}">
           <i class="fas fa-arrow-right-from-bracket"></i>
         </button>
       </form>
@@ -69,13 +69,24 @@
           <i class="fas fa-bars"></i>
         </button>
         <div>
-          <h1>@yield('page-title','Dashboard')</h1>
+          <h1>@yield('page-title', __('Dashboard'))</h1>
           @hasSection('breadcrumb')
           <div style="font-size:.76rem;color:var(--text2);margin-top:.16rem">@yield('breadcrumb')</div>
           @endif
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:.6rem">
+        {{-- LANGUAGE --}}
+        <div x-data="{ open: false }" style="position:relative">
+            <button class="user-pill" @click="open=!open" @click.away="open=false">
+                <i class="fas fa-globe" style="font-size:.9rem;color:var(--gold)"></i>
+                <span class="user-pill-name" style="color:var(--text1)">{{ app()->getLocale() == 'ar' ? 'العربية' : 'English' }}</span>
+            </button>
+            <div class="dropdown" x-show="open" x-transition style="top:100%; right:0; left:auto">
+                <a href="{{ route('lang', 'en') }}">English</a>
+                <a href="{{ route('lang', 'ar') }}">العربية</a>
+            </div>
+        </div>
         @yield('topbar-actions')
       </div>
     </div>
