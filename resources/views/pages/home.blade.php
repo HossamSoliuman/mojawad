@@ -73,23 +73,19 @@
 @if($popular_tilawat->isNotEmpty())
 <section class="section" style="padding-top:0">
   <div class="sec-title"><i class="fas fa-fire gold"></i> Most Loved</div>
-  <div class="grid-tilawat">
+  <div class="t-list-grid">
     @foreach($popular_tilawat as $t)
-    <div class="t-card">
-      <div class="t-card-img">
-        <img src="{{ $t->cover_url }}" alt="{{ $t->title }}" loading="lazy">
-        <button class="t-play-btn" onclick="playTilawa({{ $t->id }},'{{ $t->audio_url }}',{{ json_encode($t->title) }},{{ json_encode($t->qari->name) }},'{{ $t->cover_url }}',{{ $t->duration }},'{{ route('tilawa.download', $t) }}')">
-          <i class="fas fa-play"></i>
-        </button>
+    <div class="t-list-item" onclick="playTilawa({{ $t->id }},'{{ $t->audio_url }}',{{ json_encode($t->title) }},{{ json_encode($t->qari->name) }},'{{ $t->cover_url }}',{{ $t->duration }},'{{ route('tilawa.download', $t) }}')">
+      <img src="{{ $t->cover_url }}" class="t-list-cover" alt="{{ $t->title }}" loading="lazy">
+      <div class="t-list-info">
+        <div class="t-list-title"><a href="{{ route('tilawa.show',$t) }}" onclick="event.stopPropagation()" style="color:inherit">{{ $t->title }}</a></div>
+        <div class="t-list-qari"><a href="{{ route('qaris.show',$t->qari) }}" onclick="event.stopPropagation()" style="color:inherit">{{ $t->qari->name }}</a></div>
       </div>
-      <div class="t-card-body">
-        <a href="{{ route('tilawa.show',$t) }}"><div class="t-card-title">{{ $t->title }}</div></a>
-        <a href="{{ route('qaris.show',$t->qari) }}" class="t-card-qari">{{ $t->qari->name }}</a>
-        <div class="t-card-meta">
-          <span><i class="fas fa-clock"></i> {{ $t->formatted_duration }}</span>
-          <span style="color:var(--gold)"><i class="fas fa-heart"></i> {{ number_format($t->likes_count) }}</span>
-        </div>
+      <div class="t-list-meta">
+        <span><i class="fas fa-clock"></i> {{ $t->formatted_duration }}</span>
+        <span style="color:var(--gold)"><i class="fas fa-heart"></i> {{ number_format($t->likes_count) }}</span>
       </div>
+      <div class="t-list-play"><i class="fas fa-play"></i></div>
     </div>
     @endforeach
   </div>
@@ -99,23 +95,19 @@
 @if($recent_tilawat->isNotEmpty())
 <section class="section" style="padding-top:0;padding-bottom:3rem">
   <div class="sec-title"><i class="fas fa-clock-rotate-left gold"></i> Recently Added</div>
-  <div class="grid-tilawat">
+  <div class="t-list-grid">
     @foreach($recent_tilawat as $t)
-    <div class="t-card">
-      <div class="t-card-img">
-        <img src="{{ $t->cover_url }}" alt="{{ $t->title }}" loading="lazy">
-        <button class="t-play-btn" onclick="playTilawa({{ $t->id }},'{{ $t->audio_url }}',{{ json_encode($t->title) }},{{ json_encode($t->qari->name) }},'{{ $t->cover_url }}',{{ $t->duration }},'{{ route('tilawa.download', $t) }}')">
-          <i class="fas fa-play"></i>
-        </button>
+    <div class="t-list-item" onclick="playTilawa({{ $t->id }},'{{ $t->audio_url }}',{{ json_encode($t->title) }},{{ json_encode($t->qari->name) }},'{{ $t->cover_url }}',{{ $t->duration }},'{{ route('tilawa.download', $t) }}')">
+      <img src="{{ $t->cover_url }}" class="t-list-cover" alt="{{ $t->title }}" loading="lazy">
+      <div class="t-list-info">
+        <div class="t-list-title"><a href="{{ route('tilawa.show',$t) }}" onclick="event.stopPropagation()" style="color:inherit">{{ $t->title }}</a></div>
+        <div class="t-list-qari"><a href="{{ route('qaris.show',$t->qari) }}" onclick="event.stopPropagation()" style="color:inherit">{{ $t->qari->name }}</a></div>
       </div>
-      <div class="t-card-body">
-        <a href="{{ route('tilawa.show',$t) }}"><div class="t-card-title">{{ $t->title }}</div></a>
-        <a href="{{ route('qaris.show',$t->qari) }}" class="t-card-qari">{{ $t->qari->name }}</a>
-        <div class="t-card-meta">
-          <span><i class="fas fa-clock"></i> {{ $t->formatted_duration }}</span>
-          <span><i class="fas fa-download"></i> {{ number_format($t->downloads_count) }}</span>
-        </div>
+      <div class="t-list-meta">
+        <span><i class="fas fa-clock"></i> {{ $t->formatted_duration }}</span>
+        <span><i class="fas fa-download"></i> {{ number_format($t->downloads_count) }}</span>
       </div>
+      <div class="t-list-play"><i class="fas fa-play"></i></div>
     </div>
     @endforeach
   </div>
