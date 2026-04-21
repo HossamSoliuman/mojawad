@@ -1,1 +1,31 @@
 @import './theme.css';
+
+/* RTL Adjustments */
+html[dir="rtl"] .nav-links {
+    margin-left: 0;
+    margin-right: .4rem;
+}
+
+html[dir="rtl"] .navbar-right {
+    margin-left: 0;
+    margin-right: auto;
+}
+
+html[dir="rtl"] .sec-title::after {
+    background: linear-gradient(to left, var(--border2), transparent);
+}
+
+/* Center Hero text in RTL */
+html[dir="rtl"] .hero .wrap > div {
+    margin: 0 auto;
+    text-align: center;
+}
+
+html[dir="rtl"] .hero p {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+html[dir="rtl"] .hero div[style*="display:flex"] {
+    justify-content: center;
+}
