@@ -15,10 +15,15 @@
     <div class="bg-dots"></div>
 
     {{-- NAVBAR --}}
-    <nav class="navbar z1">
+    <nav class="navbar z1" x-data="{ mobileMenu: false }">
+        <button class="mobile-toggle" @click="mobileMenu = !mobileMenu">
+            <i class="fas fa-bars"></i>
+        </button>
+
         <a href="{{ route('home') }}" class="navbar-brand">
             <i class="fas fa-book-open-reader"></i> Tilawa
         </a>
+
         <div class="nav-links">
             <a href="{{ route('home') }}" class="nav-link {{ request()->routeIs('home') ? 'active' : '' }}"><i
                     class="fas fa-house"></i> {{ __('Home') }}</a>
@@ -39,14 +44,13 @@
                 <template x-if="q">
                     <button class="search-clear" @click="q='';close()"><i class="fas fa-xmark"></i></button>
                 </template>
-                <div class="search-dropdown" x-show="open" x-transition>
+                <div class="search-dropdown" x-show="open" x-transition style="display:none">
                     <template x-if="results.qaris && results.qaris.length">
                         <div>
                             <div class="search-sec-hd"><i class="fas fa-microphone"></i> {{ __('Qaris') }}</div>
                             <template x-for="r in results.qaris" :key="r.id">
                                 <a :href="r.url" class="search-item" @click="close()">
-                                    <i class="fas fa-microphone-lines"
-                                        style="color:var(--gold);width:15px;flex-shrink:0"></i>
+                                    <i class="fas fa-microphone-lines" style="color:var(--gold);width:15px;flex-shrink:0"></i>
                                     <span x-text="r.name"></span>
                                 </a>
                             </template>
@@ -71,12 +75,12 @@
             </div>
 
             {{-- LANGUAGE --}}
-            <div x-data="{ open: false }" style="position:relative">
+            <div x-data="{ open: false }" class="lang-desktop" style="position:relative">
                 <button class="user-pill" @click="open=!open" @click.away="open=false">
                     <i class="fas fa-globe" style="font-size:.9rem;color:var(--gold)"></i>
                     <span class="user-pill-name">{{ app()->getLocale() == 'ar' ? 'العربية' : 'English' }}</span>
                 </button>
-                <div class="dropdown" x-show="open" x-transition>
+                <div class="dropdown" x-show="open" x-transition style="display:none">
                     <a href="{{ route('lang', 'en') }}">English</a>
                     <a href="{{ route('lang', 'ar') }}">العربية</a>
                 </div>
@@ -84,14 +88,14 @@
 
             {{-- USER --}}
             @auth
-                <div x-data="{ open: false }" style="position:relative">
+                <div x-data="{ open: false }" class="user-desktop" style="position:relative">
                     <button class="user-pill" @click="open=!open" @click.away="open=false">
                         <img src="{{ auth()->user()->avatar_url }}" class="avatar" width="23" height="23"
                             alt="">
                         <span class="user-pill-name">{{ Str::limit(auth()->user()->name, 13) }}</span>
                         <i class="fas fa-chevron-down" style="font-size:.58rem;color:var(--text3)"></i>
                     </button>
-                    <div class="dropdown" x-show="open" x-transition>
+                    <div class="dropdown" x-show="open" x-transition style="display:none">
                         @if (auth()->user()->hasAnyRole(['admin', 'creator']))
                             <a href="{{ route('admin.dashboard') }}"><i class="fas fa-gauge"
                                     style="color:var(--gold);width:15px"></i> {{ __('Dashboard') }}</a>
@@ -104,10 +108,54 @@
                     </div>
                 </div>
             @else
-                <a href="{{ route('login') }}" class="btn btn-ghost btn-sm"> <i class="fas fa-arrow-right-to-bracket"></i>
-                    {{ __('Login') }}</a>
-                <a href="{{ route('register') }}" class="btn btn-primary btn-sm"> <i class="fas fa-user-plus"></i> {{ __('Join') }}</a>
+                <div class="user-desktop" style="display:flex;gap:.5rem">
+                    <a href="{{ route('login') }}" class="btn btn-ghost btn-sm"> <i class="fas fa-arrow-right-to-bracket"></i>
+                        {{ __('Login') }}</a>
+                    <a href="{{ route('register') }}" class="btn btn-primary btn-sm"> <i class="fas fa-user-plus"></i> {{ __('Join') }}</a>
+                </div>
             @endauth
+        </div>
+
+        {{-- MOBILE DRAWER --}}
+        <div class="mobile-menu-overlay" x-show="mobileMenu" @click="mobileMenu = false" x-transition.opacity style="display:none"></div>
+        <div class="mobile-menu-drawer" :class="mobileMenu ? 'open' : ''">
+            <div class="mm-header">
+                <a href="{{ route('home') }}" class="navbar-brand">
+                    <i class="fas fa-book-open-reader"></i> Tilawa
+                </a>
+                <button class="mobile-toggle" @click="mobileMenu = false"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div class="mm-links">
+                <a href="{{ route('home') }}" class="mm-link {{ request()->routeIs('home') ? 'active' : '' }}"><i class="fas fa-house"></i> {{ __('Home') }}</a>
+                <a href="{{ route('qaris.index') }}" class="mm-link {{ request()->routeIs('qaris.*') ? 'active' : '' }}"><i class="fas fa-microphone"></i> {{ __('Qaris') }}</a>
+                @auth
+                    <a href="{{ route('library') }}" class="mm-link {{ request()->routeIs('library') ? 'active' : '' }}"><i class="fas fa-bookmark"></i> {{ __('Library') }}</a>
+                @endauth
+                
+                <div class="divider"></div>
+                
+                <div class="mm-sec">{{ __('Language') }}</div>
+                <a href="{{ route('lang', 'en') }}" class="mm-link"><i class="fas fa-globe"></i> English</a>
+                <a href="{{ route('lang', 'ar') }}" class="mm-link"><i class="fas fa-globe"></i> العربية</a>
+                
+                <div class="divider"></div>
+                
+                @auth
+                    <div class="mm-sec">{{ __('Account') }}</div>
+                    @if (auth()->user()->hasAnyRole(['admin', 'creator']))
+                        <a href="{{ route('admin.dashboard') }}" class="mm-link"><i class="fas fa-gauge"></i> {{ __('Dashboard') }}</a>
+                    @endif
+                    <a href="{{ route('profile') }}" class="mm-link"><i class="fas fa-user"></i> {{ __('Profile') }}</a>
+                    <form method="POST" action="{{ route('logout') }}" style="margin:0">@csrf
+                        <button type="submit" class="mm-link" style="width:100%;text-align:left;background:transparent;border:none;cursor:pointer;"><i class="fas fa-arrow-right-from-bracket" style="color:var(--red)"></i> {{ __('Logout') }}</button>
+                    </form>
+                @else
+                    <div style="display:flex;flex-direction:column;gap:.8rem;padding:1rem;">
+                        <a href="{{ route('login') }}" class="btn btn-ghost" style="justify-content:center"><i class="fas fa-arrow-right-to-bracket"></i> {{ __('Login') }}</a>
+                        <a href="{{ route('register') }}" class="btn btn-primary" style="justify-content:center"><i class="fas fa-user-plus"></i> {{ __('Join') }}</a>
+                    </div>
+                @endauth
+            </div>
         </div>
     </nav>
 
