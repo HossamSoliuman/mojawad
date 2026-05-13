@@ -5,14 +5,15 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Like;
 use App\Models\Tilawa;
-use Illuminate\Http\Request;
 
 class LikeController extends Controller
 {
-    public function toggle(Request $request, Tilawa $tilawa)
+    public function toggle(Tilawa $tilawa)
     {
-        if (!auth()->check()) return response()->json(['error' => 'Unauthenticated'], 401);
-        $existing = Like::where('user_id', auth()->id())->where('tilawa_id', $tilawa->id)->first();
+        $existing = Like::where('user_id', auth()->id())
+            ->where('tilawa_id', $tilawa->id)
+            ->first();
+
         if ($existing) {
             $existing->delete();
             $tilawa->decrement('likes_count');
@@ -22,6 +23,10 @@ class LikeController extends Controller
             $tilawa->increment('likes_count');
             $liked = true;
         }
-        return response()->json(['liked' => $liked, 'count' => $tilawa->fresh()->likes_count]);
+
+        return response()->json([
+            'liked' => $liked,
+            'count' => $tilawa->fresh()->likes_count,
+        ]);
     }
 }
