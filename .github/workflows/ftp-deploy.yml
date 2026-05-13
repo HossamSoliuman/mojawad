@@ -20,7 +20,7 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           protocol: ftp
           port: 21
-          server-dir: /mojawad.is-best.net/htdocs
+          server-dir: /mojawad.is-best.net/htdocs/
           exclude: |
             **/.git*
             **/.git*/**
