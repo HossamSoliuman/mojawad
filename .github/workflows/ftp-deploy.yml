@@ -12,17 +12,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-     
-     
-      
-      - name: Run migrations
-        run: php artisan migrate --force
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, bcmath, pdo, pdo_mysql
+
+      - name: Install Composer dependencies
+        run: composer install --no-dev --optimize-autoloader --no-interaction
+
+      - name: Setup environment file
+        run: |
+          cp .env.example .env
+          php artisan key:generate
 
       - name: Fix laravel-exceptions-renderer
-        run: |
-          php artisan vendor:publish --tag=laravel-exceptions-renderer --force
+        run: php artisan vendor:publish --tag=laravel-exceptions-renderer --force
 
-      
       - name: Deploy to FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
