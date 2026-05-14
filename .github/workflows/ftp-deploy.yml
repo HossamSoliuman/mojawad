@@ -29,6 +29,13 @@ jobs:
       - name: Run migrations
         run: php artisan migrate --force
 
+      - name: Fix laravel-exceptions-renderer
+        run: |
+          php artisan vendor:publish --tag=laravel-exceptions-renderer --force
+          php artisan config:clear
+          php artisan view:clear
+          php artisan cache:clear
+
       - name: Optimize Laravel
         run: |
           php artisan config:cache
