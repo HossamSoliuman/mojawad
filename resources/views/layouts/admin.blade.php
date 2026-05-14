@@ -16,7 +16,7 @@
   {{-- SIDEBAR --}}
   <aside class="admin-sidebar" :class="{ open: sideOpen }" id="sidebar">
     <div class="sidebar-logo">
-      <a href=""><i class="fas fa-book-open-reader"></i> Tilawa</a>
+      <a href="{{ route('home') }}"><i class="fas fa-book-open-reader"></i> Tilawa</a>
     </div>
     <nav class="sidebar-nav">
       <div class="nav-sec-lbl">{{ __('Overview') }}</div>
@@ -43,7 +43,7 @@
       </a>
       @endrole
       <div class="nav-sec-lbl" style="margin-top:.35rem">{{ __('Site') }}</div>
-      <a href="" class="s-link" target="_blank">
+      <a href="{{ route('home') }}" class="s-link" target="_blank">
         <i class="fas fa-arrow-up-right-from-square"></i> {{ __('View Site') }}
       </a>
     </nav>
@@ -83,8 +83,8 @@
                 <span class="user-pill-name" style="color:var(--text1)">{{ app()->getLocale() == 'ar' ? 'العربية' : 'English' }}</span>
             </button>
             <div class="dropdown" x-show="open" x-transition style="top:100%; right:0; left:auto">
-                {{-- <a href="{{ route('lang', 'en') }}">English</a>
-                <a href="{{ route('lang', 'ar') }}">العربية</a> --}}
+                <a href="{{ route('lang', 'en') }}">English</a>
+                <a href="{{ route('lang', 'ar') }}">العربية</a>
             </div>
         </div>
         @yield('topbar-actions')
