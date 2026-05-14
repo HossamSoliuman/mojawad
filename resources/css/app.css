@@ -1,5 +1,11 @@
 @import './theme.css';
 
+/* Prevent horizontal scroll globally */
+html, body {
+    overflow-x: hidden;
+    width: 100%;
+}
+
 /* RTL Adjustments */
 html[dir="rtl"] .nav-links {
     margin-left: 0;
@@ -28,4 +34,228 @@ html[dir="rtl"] .hero p {
 
 html[dir="rtl"] .hero div[style*="display:flex"] {
     justify-content: center;
+}
+
+/* Mobile Navbar Overrides */
+.mobile-toggle {
+    display: none;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-size: 1.15rem;
+    cursor: pointer;
+    padding: 0 .4rem;
+}
+
+.mobile-menu-overlay {
+    display: none;
+}
+
+.mobile-menu-drawer {
+    display: none;
+}
+
+@media(max-width: 768px) {
+    .nav-links, .lang-desktop, .user-desktop {
+        display: none !important;
+    }
+    
+    .mobile-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .navbar {
+        padding: 0 .8rem;
+        gap: .5rem;
+    }
+    
+    html[dir="rtl"] .navbar {
+        flex-direction: row;
+    }
+    
+    .search-input {
+        width: 140px;
+        padding-left: 1.8rem;
+    }
+    html[dir="rtl"] .search-input {
+        padding-left: .4rem;
+        padding-right: 1.8rem;
+    }
+    .search-input:focus {
+        width: 180px;
+    }
+    
+    .search-dropdown {
+        position: fixed;
+        top: 62px;
+        left: 0;
+        right: 0;
+        min-width: 0;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+        background: var(--surface);
+    }
+    
+    /* Mobile Drawer */
+    .mobile-menu-overlay {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.6);
+        z-index: 250;
+    }
+    .mobile-menu-drawer {
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: 280px;
+        background: var(--surface);
+        z-index: 260;
+        transform: translateX(-100%);
+        transition: transform .3s ease;
+        border-right: 1px solid var(--border);
+    }
+    
+    html[dir="rtl"] .mobile-menu-drawer {
+        left: auto;
+        right: 0;
+        transform: translateX(100%);
+        border-right: none;
+        border-left: 1px solid var(--border);
+    }
+    
+    .mobile-menu-drawer.open {
+        transform: translateX(0) !important;
+    }
+    
+    .mm-header {
+        height: 62px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 1.2rem;
+        border-bottom: 1px solid var(--border);
+    }
+    
+    .mm-links {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1rem 0;
+    }
+    
+    .mm-link {
+        display: flex;
+        align-items: center;
+        gap: .8rem;
+        padding: .75rem 1.2rem;
+        color: var(--text2);
+        font-family: 'Cinzel', serif;
+        font-size: .88rem;
+        text-transform: uppercase;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all .2s;
+    }
+    
+    .mm-link:hover, .mm-link.active {
+        background: var(--gold-faint);
+        color: var(--gold);
+    }
+    
+    .mm-link i {
+        width: 20px;
+        text-align: center;
+    }
+    
+    .mm-sec {
+        padding: .5rem 1.2rem;
+        font-size: .65rem;
+        color: var(--text3);
+        text-transform: uppercase;
+        letter-spacing: .1em;
+        font-family: 'Cinzel', serif;
+    }
+
+    /* Spotify Clone Mobile Player */
+    .player-bar {
+        bottom: 12px;
+        left: 12px;
+        right: 12px;
+        border-radius: 8px;
+        height: 60px;
+        padding: 0 .7rem;
+        gap: .8rem;
+        background: var(--surface); /* Slightly elevated look */
+        border: 1px solid var(--border2);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+    }
+
+    .p-cover {
+        width: 44px;
+        height: 44px;
+        border-radius: 4px;
+    }
+
+    .p-title {
+        font-size: .88rem;
+    }
+
+    .p-btn[title="–10s"],
+    .p-btn[title="+10s"] {
+        display: none !important;
+    }
+
+    .p-btn.play {
+        background: transparent !important;
+        color: var(--text) !important;
+        font-size: 1.2rem !important;
+        width: 36px;
+        height: 36px;
+    }
+    
+    .p-btn.play:hover {
+        transform: scale(1.1) !important;
+    }
+
+    .p-controls {
+        flex: 0 0 auto !important;
+        justify-content: flex-end !important;
+    }
+
+    /* Tiny bottom progress line */
+    .p-progress {
+        position: absolute;
+        bottom: 0;
+        left: 8px;
+        right: 8px;
+        border-radius: 0 0 8px 8px;
+        overflow: hidden;
+        margin: 0;
+        padding: 0;
+        flex: none !important;
+        gap: 0 !important;
+        width: calc(100% - 16px) !important;
+    }
+
+    .p-time {
+        display: none !important;
+    }
+    
+    .p-bar {
+        height: 2px !important;
+        background: rgba(255,255,255,0.15) !important;
+        border-radius: 0 !important;
+    }
+    
+    .p-fill {
+        background: var(--text) !important;
+        border-radius: 0 !important;
+    }
 }
