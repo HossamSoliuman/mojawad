@@ -54,12 +54,6 @@ jobs:
             **/storage/logs/**
             **/.env
 
-      - name: Restart queue worker via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          password: ${{ secrets.SSH_PASSWORD }}
-          script: |
-            cd /mojawad.is-best.net/htdocs
-            php artisan queue:restart
+      - name: Restart queue worker
+        run: |
+          curl -f "https://mojawad.is-best.net/queue-restart?token=${{ secrets.QUEUE_RESTART_TOKEN }}"

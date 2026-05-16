@@ -70,4 +70,12 @@ Route::get('/lang/{locale}', function ($locale) {
     return redirect()->back();
 })->name('lang');
 
+Route::get('/queue-restart', function () {
+    if (request('token') !== config('app.queue_restart_token')) {
+        abort(403);
+    }
+    Artisan::call('queue:restart');
+    return response('OK', 200);
+});
+
 require __DIR__.'/auth.php';

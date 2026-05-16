@@ -54,6 +54,8 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    'queue_restart_token'=>env('QUEUE_RESTART_TOKEN'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone
