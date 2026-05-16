@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreTilawaRequest;
 use App\Http\Requests\UpdateTilawaRequest;
-use App\Jobs\UploadToArchiveJob;
 use App\Models\{Qari, Tilawa};
 use Illuminate\Http\{JsonResponse, Request};
 use Illuminate\Support\Facades\{Auth, Cache, Storage};
@@ -17,7 +16,7 @@ class TilawaController extends Controller
     {
         $tilawat = Tilawa::with('qari')
             ->when($request->search, fn($q) => $q->where('title', 'like', '%' . $request->search . '%'))
-            ->when($request->status,  fn($q) => $q->where('status', $request->status))
+            ->when($request->status, fn($q) => $q->where('status', $request->status))
             ->latest()
             ->paginate(15)
             ->withQueryString();
@@ -33,16 +32,13 @@ class TilawaController extends Controller
 
     public function store(StoreTilawaRequest $request)
     {
-
         $slug = Str::slug($request->title);
         if (Tilawa::where('slug', $slug)->exists()) {
             $slug .= '-' . Str::random(4);
         }
 
         $archiveFilename = Str::slug($request->title) . '-' . time() . '.mp3';
-        $tempPath        = 'tilawa-temp/' . $archiveFilename;
-
-        $request->file('audio')->storeAs('tilawa-temp', $archiveFilename, 'local');
+        $audioPath = $request->file('audio')->storeAs('tilawat', $archiveFilename, 'public');
 
         $tilawa = Tilawa::create([
             'qari_id'        => $request->qari_id,
@@ -51,7 +47,7 @@ class TilawaController extends Controller
             'description'    => $request->description,
             'recorded_at'    => $request->recorded_at,
             'recorded_place' => $request->recorded_place,
-            'audio_path'     => null,
+            'audio_path'     => $audioPath,
             'archive_url'    => null,
             'duration'       => 0,
             'cover_image'    => $request->hasFile('cover_image')
@@ -60,18 +56,13 @@ class TilawaController extends Controller
             'status'         => $request->status,
             'is_featured'    => $request->boolean('is_featured'),
             'uploaded_by'    => Auth::id(),
-            'upload_status'  => 'pending',
-        ]);
-
-        UploadToArchiveJob::dispatch($tilawa, $tempPath, $archiveFilename, [
-            'title'   => $request->title,
-            'creator' => Qari::find($request->qari_id)->name ?? '',
-            'subject' => 'Quran;Tilawat;Islamic Audio',
+            'upload_status'  => 'done',
         ]);
 
         Cache::forget('homepage_data');
 
-        return redirect()->route('admin.tilawat.uploading', $tilawa);
+        return redirect()->route('admin.tilawat.index')
+            ->with('success', 'Tilawa uploaded successfully.');
     }
 
     public function uploading(Tilawa $tilawa)
@@ -96,7 +87,6 @@ class TilawaController extends Controller
 
     public function update(UpdateTilawaRequest $request, Tilawa $tilawa)
     {
-
         $updates = [
             'qari_id'        => $request->qari_id,
             'title'          => $request->title,
@@ -108,25 +98,12 @@ class TilawaController extends Controller
         ];
 
         if ($request->hasFile('audio')) {
+            if ($tilawa->audio_path) Storage::disk('public')->delete($tilawa->audio_path);
+
             $archiveFilename = Str::slug($request->title) . '-' . time() . '.mp3';
-            $tempPath        = 'tilawa-temp/' . $archiveFilename;
-
-            $request->file('audio')->storeAs('tilawa-temp', $archiveFilename, 'local');
-
-            $updates['upload_status'] = 'pending';
+            $updates['audio_path']    = $request->file('audio')->storeAs('tilawat', $archiveFilename, 'public');
+            $updates['upload_status'] = 'done';
             $updates['upload_error']  = null;
-
-            $tilawa->update($updates);
-
-            UploadToArchiveJob::dispatch($tilawa, $tempPath, $archiveFilename, [
-                'title'   => $request->title,
-                'creator' => Qari::find($request->qari_id)->name ?? '',
-                'subject' => 'Quran;Tilawat;Islamic Audio',
-            ]);
-
-            Cache::forget('homepage_data');
-
-            return redirect()->route('admin.tilawat.uploading', $tilawa);
         }
 
         if ($request->hasFile('cover_image')) {
@@ -143,7 +120,7 @@ class TilawaController extends Controller
 
     public function destroy(Tilawa $tilawa)
     {
-        Storage::disk('public')->delete($tilawa->audio_path);
+        if ($tilawa->audio_path) Storage::disk('public')->delete($tilawa->audio_path);
         if ($tilawa->cover_image) Storage::disk('public')->delete($tilawa->cover_image);
         $tilawa->delete();
         Cache::forget('homepage_data');
