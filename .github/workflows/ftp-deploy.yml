@@ -53,7 +53,3 @@ jobs:
             **/vendor/**
             **/storage/logs/**
             **/.env
-
-      - name: Restart queue worker
-        run: |
-          curl -f "https://mojawad.is-best.net/queue-restart?token=${{ secrets.QUEUE_RESTART_TOKEN }}"
