@@ -75,8 +75,15 @@ Route::get('/queue-restart', function () {
     if (request('token') !== config('app.queue_restart_token')) {
         abort(403);
     }
-    Artisan::call('queue:work');
+
+    // Process one job per request instead of a persistent worker
+    Artisan::call('queue:work', [
+        '--once' => true,
+        '--timeout' => 25,  // under PHP's 60s limit
+        '--tries' => 3,
+    ]);
+
     return response('OK', 200);
-});
+})->withoutMiddleware(['web']);
 
 require __DIR__.'/auth.php';
