@@ -71,17 +71,8 @@ Route::get('/lang/{locale}', function ($locale) {
     return redirect()->back();
 })->name('lang');
 
-Route::get('/queue-restart', function () {
-    if (request('token') !== config('app.queue_restart_token')) {
-        abort(403);
-    }
-
-    // Process one job per request instead of a persistent worker
-    Artisan::call('queue:work', [
-        '--once' => true,
-        '--timeout' => 25,  // under PHP's 60s limit
-        '--tries' => 3,
-    ]);
+Route::get('/storage-link', function () {
+    Artisan::call('storage:link');
 
     return response('OK', 200);
 })->withoutMiddleware(['web']);
