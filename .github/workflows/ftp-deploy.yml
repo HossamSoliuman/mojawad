@@ -17,6 +17,12 @@ jobs:
         with:
           php-version: '8.3'
 
+      - name: Run migrations
+        run: php artisan migrate --force
+
+      - name: Create storage link
+        run: php artisan storage:link
+
       - name: Deploy to FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
@@ -32,18 +38,3 @@ jobs:
             **/node_modules/**
             **/storage/logs/**
             **/.env
-            **/vendor/**
-
-      - name: Run post-deploy commands via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          password: ${{ secrets.SSH_PASSWORD }}
-          script: |
-            cd /mojawad.is-best.net/htdocs
-            php artisan migrate --force
-            php artisan storage:link
-            php artisan config:clear
-            php artisan cache:clear
-            php artisan queue:restart
