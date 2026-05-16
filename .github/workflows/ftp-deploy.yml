@@ -17,9 +17,6 @@ jobs:
         with:
           php-version: '8.3'
 
-      - name: Install Composer dependencies
-        run: composer install --no-dev --optimize-autoloader
-
       - name: Deploy to FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
@@ -35,6 +32,7 @@ jobs:
             **/node_modules/**
             **/storage/logs/**
             **/.env
+            **/vendor/**
 
       - name: Run post-deploy commands via SSH
         uses: appleboy/ssh-action@v1.0.3
