@@ -17,10 +17,12 @@ class QariController extends Controller
         $qaris = Qari::withCount('tilawat')->when($request->search, fn($q) => $q->where('name', 'like', '%' . $request->search . '%'))->when($request->status, fn($q) => $q->where('status', $request->status))->latest()->paginate(15)->withQueryString();
         return view('admin.qaris.index', compact('qaris'));
     }
+    
     public function create()
     {
         return view('admin.qaris.create');
     }
+
     public function store(StoreQariRequest $request)
     {
         $slug = Str::slug($request->name);
@@ -39,10 +41,12 @@ class QariController extends Controller
         Cache::forget('homepage_data');
         return redirect()->route('admin.qaris.index')->with('success', 'Qari created successfully.');
     }
+
     public function edit(Qari $qari)
     {
         return view('admin.qaris.edit', compact('qari'));
     }
+
     public function update(UpdateQariRequest $request, Qari $qari)
     {
         $updates = ['name' => $request->name, 'biography' => $request->biography ?? null, 'status' => $request->status, 'is_featured' => $request->boolean('is_featured')];
@@ -54,6 +58,7 @@ class QariController extends Controller
         Cache::forget('homepage_data');
         return redirect()->route('admin.qaris.index')->with('success', 'Qari updated successfully.');
     }
+
     public function destroy(Qari $qari)
     {
         if ($qari->image) Storage::disk('public')->delete($qari->image);

@@ -8,7 +8,7 @@ use App\Http\Requests\UpdateTilawaRequest;
 use App\Jobs\UploadToArchiveJob;
 use App\Models\{Qari, Tilawa};
 use Illuminate\Http\{JsonResponse, Request};
-use Illuminate\Support\Facades\{Cache, Storage};
+use Illuminate\Support\Facades\{Auth, Cache, Storage};
 use Illuminate\Support\Str;
 
 class TilawaController extends Controller
@@ -59,7 +59,7 @@ class TilawaController extends Controller
                 : null,
             'status'         => $request->status,
             'is_featured'    => $request->boolean('is_featured'),
-            'uploaded_by'    => auth()->id(),
+            'uploaded_by'    => Auth::id(),
             'upload_status'  => 'pending',
         ]);
 
