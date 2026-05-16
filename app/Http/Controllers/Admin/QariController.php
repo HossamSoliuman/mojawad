@@ -7,7 +7,7 @@ use App\Http\Requests\StoreQariRequest;
 use App\Http\Requests\UpdateQariRequest;
 use App\Models\Qari;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\{Cache, Storage};
+use Illuminate\Support\Facades\{Auth, Cache, Storage};
 use Illuminate\Support\Str;
 
 class QariController extends Controller
@@ -25,7 +25,17 @@ class QariController extends Controller
     {
         $slug = Str::slug($request->name);
         if (Qari::where('slug', $slug)->exists()) $slug .= '-' . Str::random(4);
-        Qari::create(['name' => $request->name, 'slug' => $slug, 'biography' => $request->biography ?? null, 'status' => $request->status, 'is_featured' => $request->boolean('is_featured'), 'image' => $request->hasFile('image') ? $request->file('image')->store('qari-images', 'public') : null, 'created_by' => auth()->id()]);
+        Qari::create(
+            [
+                'name' => $request->name,
+                'slug' => $slug,
+                'biography' => $request->biography ?? null,
+                'status' => $request->status,
+                'is_featured' => $request->boolean('is_featured'),
+                'image' => $request->hasFile('image') ? $request->file('image')->store('qari-images', 'public') : null,
+                'created_by' => Auth::id()
+            ]
+        );
         Cache::forget('homepage_data');
         return redirect()->route('admin.qaris.index')->with('success', 'Qari created successfully.');
     }
