@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\QariController;
 use App\Http\Controllers\TilawaController;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 
 // ── Public ──────────────────────────────────────────────────────────────
@@ -74,7 +75,7 @@ Route::get('/queue-restart', function () {
     if (request('token') !== config('app.queue_restart_token')) {
         abort(403);
     }
-    Artisan::call('queue:restart');
+    Artisan::call('queue:work');
     return response('OK', 200);
 });
 
