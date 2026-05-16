@@ -20,6 +20,17 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install NPM dependencies
+        run: npm ci
+
+      - name: Build assets
+        run: npm run build
+
       - name: Run migrations
         run: php artisan migrate --force
 
@@ -39,5 +50,6 @@ jobs:
             **/.git*
             **/.git*/**
             **/node_modules/**
+            **/vendor/**
             **/storage/logs/**
             **/.env
