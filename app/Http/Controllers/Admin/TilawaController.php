@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\UploadToArchiveJob;
 use App\Models\{Qari, Tilawa};
-use App\Services\AudioDurationService;
-use Illuminate\Http\Request;
+use Illuminate\Http\{JsonResponse, Request};
 use Illuminate\Support\Facades\{Cache, Storage};
 use Illuminate\Support\Str;
 
@@ -47,31 +47,53 @@ class TilawaController extends Controller
             $slug .= '-' . Str::random(4);
         }
 
-        $audioPath = $request->file('audio')->store('tilawat', 'public');
+        $archiveFilename = Str::slug($request->title) . '-' . time() . '.mp3';
+        $tempPath        = 'tilawa-temp/' . $archiveFilename;
 
-        $duration = AudioDurationService::getSeconds($audioPath);
+        $request->file('audio')->storeAs('tilawa-temp', $archiveFilename, 'local');
 
-        Tilawa::create([
+        $tilawa = Tilawa::create([
             'qari_id'        => $request->qari_id,
             'title'          => $request->title,
             'slug'           => $slug,
             'description'    => $request->description,
             'recorded_at'    => $request->recorded_at,
             'recorded_place' => $request->recorded_place,
-            'audio_path'     => $audioPath,
-            'duration'       => $duration,
+            'audio_path'     => null,
+            'archive_url'    => null,
+            'duration'       => 0,
             'cover_image'    => $request->hasFile('cover_image')
                 ? $request->file('cover_image')->store('tilawa-covers', 'public')
                 : null,
             'status'         => $request->status,
             'is_featured'    => $request->boolean('is_featured'),
             'uploaded_by'    => auth()->id(),
+            'upload_status'  => 'pending',
+        ]);
+
+        UploadToArchiveJob::dispatch($tilawa, $tempPath, $archiveFilename, [
+            'title'   => $request->title,
+            'creator' => Qari::find($request->qari_id)->name ?? '',
+            'subject' => 'Quran;Tilawat;Islamic Audio',
         ]);
 
         Cache::forget('homepage_data');
 
-        return redirect()->route('admin.tilawat.create')
-            ->with('success', 'Tilawa created successfully.');
+        return redirect()->route('admin.tilawat.uploading', $tilawa);
+    }
+
+    public function uploading(Tilawa $tilawa)
+    {
+        return view('admin.tilawat.uploading', compact('tilawa'));
+    }
+
+    public function uploadStatus(Tilawa $tilawa): JsonResponse
+    {
+        return response()->json([
+            'status'      => $tilawa->upload_status,
+            'error'       => $tilawa->upload_error,
+            'archive_url' => $tilawa->archive_url,
+        ]);
     }
 
     public function edit(Tilawa $tilawa)
@@ -104,11 +126,25 @@ class TilawaController extends Controller
         ];
 
         if ($request->hasFile('audio')) {
-            Storage::disk('public')->delete($tilawa->audio_path);
+            $archiveFilename = Str::slug($request->title) . '-' . time() . '.mp3';
+            $tempPath        = 'tilawa-temp/' . $archiveFilename;
 
-            $audioPath          = $request->file('audio')->store('tilawat', 'public');
-            $updates['audio_path'] = $audioPath;
-            $updates['duration']   = AudioDurationService::getSeconds($audioPath);
+            $request->file('audio')->storeAs('tilawa-temp', $archiveFilename, 'local');
+
+            $updates['upload_status'] = 'pending';
+            $updates['upload_error']  = null;
+
+            $tilawa->update($updates);
+
+            UploadToArchiveJob::dispatch($tilawa, $tempPath, $archiveFilename, [
+                'title'   => $request->title,
+                'creator' => Qari::find($request->qari_id)->name ?? '',
+                'subject' => 'Quran;Tilawat;Islamic Audio',
+            ]);
+
+            Cache::forget('homepage_data');
+
+            return redirect()->route('admin.tilawat.uploading', $tilawa);
         }
 
         if ($request->hasFile('cover_image')) {

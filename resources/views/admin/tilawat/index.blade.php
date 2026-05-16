@@ -7,6 +7,10 @@
 @endsection
 @section('content')
 
+@if(request('uploaded'))
+<div class="alert alert-success" style="margin-bottom:1.4rem"><i class="fas fa-check-circle"></i> Tilawa created and uploaded to Archive.org successfully.</div>
+@endif
+
 <form method="GET" style="display:flex;align-items:center;gap:.65rem;margin-bottom:1.4rem;flex-wrap:wrap">
   <div style="position:relative">
     <i class="fas fa-magnifying-glass" style="position:absolute;left:.82rem;top:50%;transform:translateY(-50%);color:var(--text3);font-size:.78rem;pointer-events:none"></i>
@@ -73,11 +77,17 @@
           </div>
         </td>
         <td>
-          <div style="display:flex;gap:.18rem">
-            <button class="btn-icon" title="Preview"
-              onclick="playTilawa({{ $t->id }},'{{ $t->audio_url }}',{{ json_encode($t->title) }},{{ json_encode($t->qari->name) }},'{{ $t->cover_url }}',{{ $t->duration }},'{{ route('tilawa.download', $t) }}')">
-              <i class="fas fa-play"></i>
-            </button>
+          <div style="display:flex;gap:.18rem;align-items:center">
+            @if(in_array($t->upload_status, ['pending','uploading']))
+              <a href="{{ route('admin.tilawat.uploading', $t) }}" class="btn-icon" title="Upload in progress" style="color:#3b82f6">
+                <i class="fas fa-cloud-arrow-up"></i>
+              </a>
+            @else
+              <button class="btn-icon" title="Preview"
+                onclick="playTilawa({{ $t->id }},'{{ $t->audio_url }}',{{ json_encode($t->title) }},{{ json_encode($t->qari->name) }},'{{ $t->cover_url }}',{{ $t->duration }},'{{ route('tilawa.download', $t) }}')">
+                <i class="fas fa-play"></i>
+              </button>
+            @endif
             <a href="{{ route('admin.tilawat.edit',$t) }}" class="btn-icon" title="Edit"><i class="fas fa-pen-to-square"></i></a>
             <form method="POST" action="{{ route('admin.tilawat.destroy',$t) }}" onsubmit="return confirm('Delete {{ addslashes($t->title) }}?')">
               @csrf @method('DELETE')

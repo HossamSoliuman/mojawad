@@ -47,12 +47,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin|creator'
     Route::delete('/qaris/{qari}',     [\App\Http\Controllers\Admin\QariController::class, 'destroy'])->name('qaris.destroy');
 
     // Tilawat CRUD
-    Route::get('/tilawat',               [\App\Http\Controllers\Admin\TilawaController::class, 'index'])->name('tilawat.index');
-    Route::get('/tilawat/create',        [\App\Http\Controllers\Admin\TilawaController::class, 'create'])->name('tilawat.create');
-    Route::post('/tilawat',              [\App\Http\Controllers\Admin\TilawaController::class, 'store'])->name('tilawat.store');
-    Route::get('/tilawat/{tilawa}/edit', [\App\Http\Controllers\Admin\TilawaController::class, 'edit'])->name('tilawat.edit');
-    Route::put('/tilawat/{tilawa}',      [\App\Http\Controllers\Admin\TilawaController::class, 'update'])->name('tilawat.update');
-    Route::delete('/tilawat/{tilawa}',   [\App\Http\Controllers\Admin\TilawaController::class, 'destroy'])->name('tilawat.destroy');
+    Route::get('/tilawat',                        [\App\Http\Controllers\Admin\TilawaController::class, 'index'])->name('tilawat.index');
+    Route::get('/tilawat/create',                 [\App\Http\Controllers\Admin\TilawaController::class, 'create'])->name('tilawat.create');
+    Route::post('/tilawat',                       [\App\Http\Controllers\Admin\TilawaController::class, 'store'])->name('tilawat.store');
+    Route::get('/tilawat/{tilawa}/uploading',     [\App\Http\Controllers\Admin\TilawaController::class, 'uploading'])->name('tilawat.uploading');
+    Route::get('/tilawat/{tilawa}/upload-status', [\App\Http\Controllers\Admin\TilawaController::class, 'uploadStatus'])->name('tilawat.upload-status');
+    Route::get('/tilawat/{tilawa}/edit',          [\App\Http\Controllers\Admin\TilawaController::class, 'edit'])->name('tilawat.edit');
+    Route::put('/tilawat/{tilawa}',               [\App\Http\Controllers\Admin\TilawaController::class, 'update'])->name('tilawat.update');
+    Route::delete('/tilawat/{tilawa}',            [\App\Http\Controllers\Admin\TilawaController::class, 'destroy'])->name('tilawat.destroy');
 
     // Users (admin only)
     Route::middleware('role:admin')->group(function () {

@@ -9,7 +9,7 @@ class Tilawa extends Model
 {
     use HasFactory;
     protected $table = 'tilawat';
-    protected $fillable = ['qari_id', 'title', 'slug', 'description', 'recorded_at', 'recorded_place', 'audio_path', 'duration', 'cover_image', 'uploaded_by', 'is_featured', 'downloads_count', 'likes_count', 'status'];
+    protected $fillable = ['qari_id', 'title', 'slug', 'description', 'recorded_at', 'recorded_place', 'audio_path', 'duration', 'cover_image', 'uploaded_by', 'is_featured', 'downloads_count', 'likes_count', 'status', 'archive_url', 'archive_item_id', 'archive_filename', 'migrated_to_archive', 'upload_status', 'upload_error'];
     protected $casts = ['is_featured' => 'boolean', 'recorded_at' => 'date'];
 
     public function qari()
@@ -36,6 +36,14 @@ class Tilawa extends Model
     }
     public function getAudioUrlAttribute(): string
     {
+        return $this->audio_src;
+    }
+
+    public function getAudioSrcAttribute(): string
+    {
+        if ($this->archive_url) {
+            return $this->archive_url;
+        }
         return asset('storage/' . $this->audio_path);
     }
     public function getFormattedDurationAttribute(): string

@@ -80,9 +80,38 @@
     </div>
 
     <div style="display:flex;gap:.65rem;margin-top:1.4rem">
-      <button type="submit" class="btn btn-primary"><i class="fas fa-floppy-disk"></i> Update Tilawa</button>
+      <button type="submit" class="btn btn-primary" id="submit-btn"><i class="fas fa-floppy-disk"></i> Update Tilawa</button>
       <a href="{{ route('admin.tilawat.index') }}" class="btn btn-ghost"><i class="fas fa-xmark"></i> Cancel</a>
     </div>
   </form>
 </div>
+
+<div id="upload-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:1.25rem">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:2.5rem 3rem;text-align:center;max-width:400px;width:90%">
+    <div style="font-size:1rem;font-weight:600;color:var(--text1);margin-bottom:.35rem" id="overlay-title">Saving file…</div>
+    <div style="font-size:.85rem;color:var(--text2);margin-bottom:1.5rem">Please wait while your file is being saved. You will be redirected automatically.</div>
+    <div style="background:var(--bg);border-radius:99px;height:10px;overflow:hidden;border:1px solid var(--border)">
+      <div style="height:100%;width:100%;border-radius:99px;background:linear-gradient(90deg,var(--gold),#f97316);animation:indeterminate 1.5s ease-in-out infinite"></div>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes indeterminate {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+</style>
+
+<script>
+document.querySelector('form').addEventListener('submit', function () {
+  var audioInput = document.querySelector('input[name="audio"]');
+  if (audioInput && audioInput.files && audioInput.files.length > 0) {
+    var overlay = document.getElementById('upload-overlay');
+    overlay.style.display = 'flex';
+    document.getElementById('submit-btn').disabled = true;
+  }
+});
+</script>
 @endsection
+
