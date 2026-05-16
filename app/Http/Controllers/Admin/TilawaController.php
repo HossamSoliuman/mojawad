@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreTilawaRequest;
+use App\Http\Requests\UpdateTilawaRequest;
 use App\Jobs\UploadToArchiveJob;
 use App\Models\{Qari, Tilawa};
 use Illuminate\Http\{JsonResponse, Request};
@@ -29,18 +31,8 @@ class TilawaController extends Controller
         return view('admin.tilawat.create', compact('qaris'));
     }
 
-    public function store(Request $request)
+    public function store(StoreTilawaRequest $request)
     {
-        $request->validate([
-            'qari_id'        => 'required|exists:qaris,id',
-            'title'          => 'required|string|max:255',
-            'description'    => 'nullable|string',
-            'recorded_at'    => 'nullable|date',
-            'recorded_place' => 'nullable|string|max:255',
-            'status'         => 'required|in:active,inactive,pending',
-            'audio'          => 'required|file|mimes:mp3,mpeg,ogg,wav|max:204800',
-            'cover_image'    => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
-        ]);
 
         $slug = Str::slug($request->title);
         if (Tilawa::where('slug', $slug)->exists()) {
@@ -102,18 +94,8 @@ class TilawaController extends Controller
         return view('admin.tilawat.edit', compact('tilawa', 'qaris'));
     }
 
-    public function update(Request $request, Tilawa $tilawa)
+    public function update(UpdateTilawaRequest $request, Tilawa $tilawa)
     {
-        $request->validate([
-            'qari_id'        => 'required|exists:qaris,id',
-            'title'          => 'required|string|max:255',
-            'description'    => 'nullable|string',
-            'recorded_at'    => 'nullable|date',
-            'recorded_place' => 'nullable|string|max:255',
-            'status'         => 'required|in:active,inactive,pending',
-            'audio'          => 'nullable|file|mimes:mp3,mpeg,ogg,wav|max:204800',
-            'cover_image'    => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
-        ]);
 
         $updates = [
             'qari_id'        => $request->qari_id,

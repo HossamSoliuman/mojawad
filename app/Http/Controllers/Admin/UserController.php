@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\UpdateUserRoleRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
@@ -15,9 +16,8 @@ class UserController extends Controller
         $roles = Role::all();
         return view('admin.users.index', compact('users', 'roles'));
     }
-    public function updateRole(Request $request, User $user)
+    public function updateRole(UpdateUserRoleRequest $request, User $user)
     {
-        $request->validate(['role' => 'required|exists:roles,name']);
         $user->syncRoles([$request->role]);
         return back()->with('success', 'Role updated for ' . $user->name . '.');
     }
