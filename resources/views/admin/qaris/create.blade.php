@@ -15,10 +15,17 @@
     @endif
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
-      <div class="form-group" style="grid-column:1/-1">
-        <label class="form-label"><i class="fas fa-user"></i> Qari Name <span style="color:var(--red)">*</span></label>
-        <input type="text" name="name" class="form-control" value="{{ old('name') }}" required placeholder="Sheikh / Qari Name" autofocus>
-        @error('name')<span class="form-error">{{ $message }}</span>@enderror
+      <div class="form-group" style="grid-column:1/-1; display:grid; grid-template-columns:1fr 1fr; gap:1rem">
+        <div>
+          <label class="form-label"><i class="fas fa-user"></i> Qari Name (Arabic) <span style="color:var(--red)">*</span></label>
+          <input type="text" name="name_ar" class="form-control" value="{{ old('name_ar') }}" required placeholder="الاسم بالعربية" autofocus>
+          @error('name_ar')<span class="form-error">{{ $message }}</span>@enderror
+        </div>
+        <div>
+          <label class="form-label"><i class="fas fa-user"></i> Qari Name (English)</label>
+          <input type="text" name="name_en" class="form-control" value="{{ old('name_en') }}" placeholder="Name in English">
+          @error('name_en')<span class="form-error">{{ $message }}</span>@enderror
+        </div>
       </div>
       <div class="form-group">
         <label class="form-label"><i class="fas fa-circle-check"></i> Status</label>
@@ -44,10 +51,17 @@
       @error('image_tmp')<span class="form-error">{{ $message }}</span>@enderror
     </div>
 
-    <div class="form-group">
-      <label class="form-label"><i class="fas fa-align-left"></i> Biography</label>
-      <textarea name="biography" class="form-control" rows="8" placeholder="Write a biography…">{{ old('biography') }}</textarea>
-      @error('biography')<span class="form-error">{{ $message }}</span>@enderror
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+      <div class="form-group">
+        <label class="form-label"><i class="fas fa-align-left"></i> Biography (Arabic)</label>
+        <textarea name="biography_ar" class="form-control" rows="8" placeholder="السيرة الذاتية...">{{ old('biography_ar') }}</textarea>
+        @error('biography_ar')<span class="form-error">{{ $message }}</span>@enderror
+      </div>
+      <div class="form-group">
+        <label class="form-label"><i class="fas fa-align-left"></i> Biography (English)</label>
+        <textarea name="biography_en" class="form-control" rows="8" placeholder="Biography...">{{ old('biography_en') }}</textarea>
+        @error('biography_en')<span class="form-error">{{ $message }}</span>@enderror
+      </div>
     </div>
 
     <div style="display:flex;gap:.65rem;margin-top:1.4rem">

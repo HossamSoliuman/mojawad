@@ -36,7 +36,7 @@ class TilawaController extends Controller
 
     public function store(StoreTilawaRequest $request)
     {
-        $slug = Str::slug($request->title);
+        $slug = Str::slug($request->title_ar);
         if (Tilawa::where('slug', $slug)->exists()) {
             $slug .= '-' . Str::random(4);
         }
@@ -45,9 +45,11 @@ class TilawaController extends Controller
 
         $tilawa = Tilawa::create([
             'qari_id'        => $request->qari_id,
-            'title'          => $request->title,
+            'title_ar'       => $request->title_ar,
+            'title_en'       => $request->title_en,
             'slug'           => $slug,
-            'description'    => $request->description,
+            'description_ar' => $request->description_ar,
+            'description_en' => $request->description_en,
             'recorded_at'    => $request->recorded_at,
             'recorded_place' => $request->recorded_place,
             'audio_path'     => $audioPath,
@@ -92,8 +94,10 @@ class TilawaController extends Controller
     {
         $updates = [
             'qari_id'        => $request->qari_id,
-            'title'          => $request->title,
-            'description'    => $request->description,
+            'title_ar'       => $request->title_ar,
+            'title_en'       => $request->title_en,
+            'description_ar' => $request->description_ar,
+            'description_en' => $request->description_en,
             'recorded_at'    => $request->recorded_at,
             'recorded_place' => $request->recorded_place,
             'status'         => $request->status,

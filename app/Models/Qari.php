@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 class Qari extends Model
 {
     use HasFactory;
-    protected $fillable = ['name', 'slug', 'image', 'biography', 'created_by', 'is_featured', 'status'];
+    protected $fillable = ['name_ar', 'name_en', 'slug', 'image', 'biography_ar', 'biography_en', 'created_by', 'is_featured', 'status'];
     protected $casts = ['is_featured' => 'boolean'];
     public function creator()
     {
@@ -21,7 +21,17 @@ class Qari extends Model
     }
     public function getImageUrlAttribute(): string
     {
-        return $this->image ? asset('storage/' . $this->image) : 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=1e1e35&color=c9a153&size=400';
+        return $this->image ? asset('storage/' . $this->image) : 'https://ui-avatars.com/api/?name=' . urlencode($this->name_ar) . '&background=1e1e35&color=c9a153&size=400';
+    }
+
+    public function getNameAttribute(): string
+    {
+        return (app()->getLocale() === 'en' && $this->name_en) ? $this->name_en : $this->name_ar;
+    }
+
+    public function getBiographyAttribute(): ?string
+    {
+        return (app()->getLocale() === 'en' && $this->biography_en) ? $this->biography_en : $this->biography_ar;
     }
     public function getRouteKeyName(): string
     {

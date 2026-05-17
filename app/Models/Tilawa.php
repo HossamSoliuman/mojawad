@@ -9,7 +9,7 @@ class Tilawa extends Model
 {
     use HasFactory;
     protected $table = 'tilawat';
-    protected $fillable = ['qari_id', 'title', 'slug', 'description', 'recorded_at', 'recorded_place', 'audio_path', 'duration', 'cover_image', 'uploaded_by', 'is_featured', 'downloads_count', 'likes_count', 'status', 'archive_url', 'archive_item_id', 'archive_filename', 'migrated_to_archive', 'upload_status', 'upload_error'];
+    protected $fillable = ['qari_id', 'title_ar', 'title_en', 'slug', 'description_ar', 'description_en', 'recorded_at', 'recorded_place', 'audio_path', 'duration', 'cover_image', 'uploaded_by', 'is_featured', 'downloads_count', 'likes_count', 'status', 'archive_url', 'archive_item_id', 'archive_filename', 'migrated_to_archive', 'upload_status', 'upload_error'];
     protected $casts = ['is_featured' => 'boolean', 'recorded_at' => 'date'];
 
     public function qari()
@@ -51,6 +51,16 @@ class Tilawa extends Model
         $m = floor($this->duration / 60);
         $s = $this->duration % 60;
         return sprintf('%d:%02d', $m, $s);
+    }
+
+    public function getTitleAttribute(): string
+    {
+        return (app()->getLocale() === 'en' && $this->title_en) ? $this->title_en : $this->title_ar;
+    }
+
+    public function getDescriptionAttribute(): ?string
+    {
+        return (app()->getLocale() === 'en' && $this->description_en) ? $this->description_en : $this->description_ar;
     }
 
 }

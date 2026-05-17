@@ -15,10 +15,17 @@
     @endif
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
-      <div class="form-group" style="grid-column:1/-1">
-        <label class="form-label"><i class="fas fa-heading"></i> Title <span style="color:var(--red)">*</span></label>
-        <input type="text" name="title" class="form-control" value="{{ old('title') }}" required placeholder="Surah Al-Fatiha" autofocus>
-        @error('title')<span class="form-error">{{ $message }}</span>@enderror
+      <div class="form-group" style="grid-column:1/-1; display:grid; grid-template-columns:1fr 1fr; gap:1rem">
+        <div>
+          <label class="form-label"><i class="fas fa-heading"></i> Title (Arabic) <span style="color:var(--red)">*</span></label>
+          <input type="text" name="title_ar" class="form-control" value="{{ old('title_ar') }}" required placeholder="سورة الفاتحة" autofocus>
+          @error('title_ar')<span class="form-error">{{ $message }}</span>@enderror
+        </div>
+        <div>
+          <label class="form-label"><i class="fas fa-heading"></i> Title (English)</label>
+          <input type="text" name="title_en" class="form-control" value="{{ old('title_en') }}" placeholder="Surah Al-Fatiha">
+          @error('title_en')<span class="form-error">{{ $message }}</span>@enderror
+        </div>
       </div>
       <div class="form-group">
         <label class="form-label"><i class="fas fa-microphone"></i> Qari <span style="color:var(--red)">*</span></label>
@@ -48,9 +55,17 @@
       </div>
     </div>
 
-    <div class="form-group">
-      <label class="form-label"><i class="fas fa-align-left"></i> Description</label>
-      <textarea name="description" class="form-control" rows="4" placeholder="Optional description…">{{ old('description') }}</textarea>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+      <div class="form-group">
+        <label class="form-label"><i class="fas fa-align-left"></i> Description (Arabic)</label>
+        <textarea name="description_ar" class="form-control" rows="4" placeholder="وصف اختياري...">{{ old('description_ar') }}</textarea>
+        @error('description_ar')<span class="form-error">{{ $message }}</span>@enderror
+      </div>
+      <div class="form-group">
+        <label class="form-label"><i class="fas fa-align-left"></i> Description (English)</label>
+        <textarea name="description_en" class="form-control" rows="4" placeholder="Optional description…">{{ old('description_en') }}</textarea>
+        @error('description_en')<span class="form-error">{{ $message }}</span>@enderror
+      </div>
     </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">

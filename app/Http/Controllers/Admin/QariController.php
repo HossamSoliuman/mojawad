@@ -29,13 +29,15 @@ class QariController extends Controller
 
     public function store(StoreQariRequest $request)
     {
-        $slug = Str::slug($request->name);
+        $slug = Str::slug($request->name_ar);
         if (Qari::where('slug', $slug)->exists()) $slug .= '-' . Str::random(4);
         Qari::create(
             [
-                'name'        => $request->name,
+                'name_ar'     => $request->name_ar,
+                'name_en'     => $request->name_en,
                 'slug'        => $slug,
-                'biography'   => $request->biography ?? null,
+                'biography_ar'=> $request->biography_ar ?? null,
+                'biography_en'=> $request->biography_en ?? null,
                 'status'      => $request->status,
                 'is_featured' => $request->boolean('is_featured'),
                 'image'       => $request->filled('image_tmp')
@@ -55,7 +57,7 @@ class QariController extends Controller
 
     public function update(UpdateQariRequest $request, Qari $qari)
     {
-        $updates = ['name' => $request->name, 'biography' => $request->biography ?? null, 'status' => $request->status, 'is_featured' => $request->boolean('is_featured')];
+        $updates = ['name_ar' => $request->name_ar, 'name_en' => $request->name_en, 'biography_ar' => $request->biography_ar ?? null, 'biography_en' => $request->biography_en ?? null, 'status' => $request->status, 'is_featured' => $request->boolean('is_featured')];
         if ($request->filled('image_tmp')) {
             if ($qari->image) Storage::disk('public')->delete($qari->image);
             $updates['image'] = $this->uploadService->moveFromTmp($request->image_tmp, 'qari-images');

@@ -15,8 +15,10 @@ class UpdateTilawaRequest extends FormRequest
     {
         return [
             'qari_id'         => 'required|exists:qaris,id',
-            'title'           => 'required|string|max:255',
-            'description'     => 'nullable|string',
+            'title_ar'        => 'required|string|max:255',
+            'title_en'        => 'nullable|string|max:255',
+            'description_ar'  => 'nullable|string',
+            'description_en'  => 'nullable|string',
             'recorded_at'     => 'nullable|date',
             'recorded_place'  => 'nullable|string|max:255',
             'status'          => 'required|in:active,inactive,pending',
