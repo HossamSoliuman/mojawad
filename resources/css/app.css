@@ -259,3 +259,48 @@ html[dir="rtl"] .hero div[style*="display:flex"] {
         border-radius: 0 !important;
     }
 }
+
+/* Admin RTL Adjustments */
+html[dir="rtl"] .admin-sidebar {
+    border-right: none;
+    border-left: 1px solid var(--border);
+}
+
+html[dir="rtl"] .s-link {
+    padding: .56rem 1.3rem .56rem .95rem;
+    border-left: none;
+    border-right: 2px solid transparent;
+}
+
+html[dir="rtl"] .s-link:hover, 
+html[dir="rtl"] .s-link.active {
+    border-left-color: transparent;
+    border-right-color: var(--gold);
+}
+
+html[dir="rtl"] .dropdown {
+    right: auto;
+    left: 0;
+    text-align: right;
+}
+
+html[dir="rtl"] .dropdown a, 
+html[dir="rtl"] .dropdown button {
+    text-align: right;
+}
+
+html[dir="rtl"] .tbl th {
+    text-align: right;
+}
+
+@media(max-width: 1024px) {
+    html[dir="rtl"] .admin-sidebar {
+        left: auto;
+        right: 0;
+        transform: translateX(100%);
+    }
+    html[dir="rtl"] .admin-sidebar.open {
+        transform: translateX(0) !important;
+    }
+}
+

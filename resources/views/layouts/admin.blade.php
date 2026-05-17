@@ -82,7 +82,7 @@
                 <i class="fas fa-globe" style="font-size:.9rem;color:var(--gold)"></i>
                 <span class="user-pill-name" style="color:var(--text1)">{{ app()->getLocale() == 'ar' ? 'العربية' : 'English' }}</span>
             </button>
-            <div class="dropdown" x-show="open" x-transition style="top:100%; right:0; left:auto">
+            <div class="dropdown" x-show="open" x-transition>
                 <a href="{{ route('lang', 'en') }}">English</a>
                 <a href="{{ route('lang', 'ar') }}">العربية</a>
             </div>

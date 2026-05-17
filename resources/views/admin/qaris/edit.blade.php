@@ -17,62 +17,62 @@
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
       <div class="form-group" style="grid-column:1/-1; display:grid; grid-template-columns:1fr 1fr; gap:1rem">
         <div>
-          <label class="form-label"><i class="fas fa-user"></i> Qari Name (Arabic) <span style="color:var(--red)">*</span></label>
-          <input type="text" name="name_ar" class="form-control" value="{{ old('name_ar', $qari->name_ar) }}" required placeholder="الاسم بالعربية">
+          <label class="form-label"><i class="fas fa-user"></i> {{ __('Qari Name (Arabic)') }} <span style="color:var(--red)">*</span></label>
+          <input type="text" name="name_ar" class="form-control" value="{{ old('name_ar', $qari->name_ar) }}" required placeholder="{{ __('الاسم بالعربية') }}" dir="rtl">
           @error('name_ar')<span class="form-error">{{ $message }}</span>@enderror
         </div>
         <div>
-          <label class="form-label"><i class="fas fa-user"></i> Qari Name (English)</label>
-          <input type="text" name="name_en" class="form-control" value="{{ old('name_en', $qari->name_en) }}" placeholder="Name in English">
+          <label class="form-label"><i class="fas fa-user"></i> {{ __('Qari Name (English)') }}</label>
+          <input type="text" name="name_en" class="form-control" value="{{ old('name_en', $qari->name_en) }}" placeholder="{{ __('Name in English') }}" dir="ltr">
           @error('name_en')<span class="form-error">{{ $message }}</span>@enderror
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label"><i class="fas fa-circle-check"></i> Status</label>
+        <label class="form-label"><i class="fas fa-circle-check"></i> {{ __('Status') }}</label>
         <select name="status" class="form-control">
-          <option value="pending"  {{ old('status',$qari->status)==='pending'  ? 'selected':'' }}>Pending</option>
-          <option value="active"   {{ old('status',$qari->status)==='active'   ? 'selected':'' }}>Active</option>
-          <option value="inactive" {{ old('status',$qari->status)==='inactive' ? 'selected':'' }}>Inactive</option>
+          <option value="pending"  {{ old('status',$qari->status)==='pending'  ? 'selected':'' }}>{{ __('Pending') }}</option>
+          <option value="active"   {{ old('status',$qari->status)==='active'   ? 'selected':'' }}>{{ __('Active') }}</option>
+          <option value="inactive" {{ old('status',$qari->status)==='inactive' ? 'selected':'' }}>{{ __('Inactive') }}</option>
         </select>
       </div>
       <div class="form-group" style="display:flex;align-items:flex-end;padding-bottom:.2rem">
         <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.9rem;color:var(--text2)">
           <input type="checkbox" name="is_featured" value="1" {{ old('is_featured',$qari->is_featured) ? 'checked':'' }} style="accent-color:var(--gold);width:15px;height:15px">
-          <i class="fas fa-star" style="color:var(--gold)"></i> Featured Qari
+          <i class="fas fa-star" style="color:var(--gold)"></i> {{ __('Featured Qari') }}
         </label>
       </div>
     </div>
 
     <div class="form-group">
-      <label class="form-label"><i class="fas fa-image"></i> Qari Image</label>
+      <label class="form-label"><i class="fas fa-image"></i> {{ __('Qari Image') }}</label>
       @if($qari->image)
       <div style="margin-bottom:.65rem;display:flex;align-items:center;gap:.75rem">
         <img src="{{ $qari->image_url }}" style="width:60px;height:60px;border-radius:50%;object-fit:cover;border:2px solid var(--border2)" alt="{{ $qari->name }}">
-        <span style="font-size:.8rem;color:var(--text2)">Upload a new image to replace</span>
+        <span style="font-size:.8rem;color:var(--text2)">{{ __('Upload a new image to replace') }}</span>
       </div>
       @endif
       <input type="hidden" name="image_tmp" id="image_tmp_input">
       <input type="file" id="image-pond" data-filepond data-pond-type="image" data-pond-token="image_tmp" accept="image/jpeg,image/png,image/webp">
-      <span class="form-hint">Leave empty to keep current image</span>
+      <span class="form-hint">{{ __('Leave empty to keep current image') }}</span>
       @error('image_tmp')<span class="form-error">{{ $message }}</span>@enderror
     </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
       <div class="form-group">
-        <label class="form-label"><i class="fas fa-align-left"></i> Biography (Arabic)</label>
-        <textarea name="biography_ar" class="form-control" rows="8">{{ old('biography_ar', $qari->biography_ar) }}</textarea>
+        <label class="form-label"><i class="fas fa-align-left"></i> {{ __('Biography (Arabic)') }}</label>
+        <textarea name="biography_ar" class="form-control" rows="8" dir="rtl">{{ old('biography_ar', $qari->biography_ar) }}</textarea>
         @error('biography_ar')<span class="form-error">{{ $message }}</span>@enderror
       </div>
       <div class="form-group">
-        <label class="form-label"><i class="fas fa-align-left"></i> Biography (English)</label>
-        <textarea name="biography_en" class="form-control" rows="8">{{ old('biography_en', $qari->biography_en) }}</textarea>
+        <label class="form-label"><i class="fas fa-align-left"></i> {{ __('Biography (English)') }}</label>
+        <textarea name="biography_en" class="form-control" rows="8" dir="ltr">{{ old('biography_en', $qari->biography_en) }}</textarea>
         @error('biography_en')<span class="form-error">{{ $message }}</span>@enderror
       </div>
     </div>
 
     <div style="display:flex;gap:.65rem;margin-top:1.4rem">
-      <button type="submit" class="btn btn-primary"><i class="fas fa-floppy-disk"></i> Update Qari</button>
-      <a href="{{ route('admin.qaris.index') }}" class="btn btn-ghost"><i class="fas fa-xmark"></i> Cancel</a>
+      <button type="submit" class="btn btn-primary"><i class="fas fa-floppy-disk"></i> {{ __('Update Qari') }}</button>
+      <a href="{{ route('admin.qaris.index') }}" class="btn btn-ghost"><i class="fas fa-xmark"></i> {{ __('Cancel') }}</a>
     </div>
   </form>
 </div>
