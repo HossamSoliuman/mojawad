@@ -156,7 +156,7 @@ html[dir="rtl"] .hero div[style*="display:flex"] {
         gap: .8rem;
         padding: .75rem 1.2rem;
         color: var(--text2);
-        font-family: 'Cinzel', serif;
+        font-family: var(--font-display);
         font-size: .88rem;
         text-transform: uppercase;
         font-weight: 600;
@@ -180,7 +180,7 @@ html[dir="rtl"] .hero div[style*="display:flex"] {
         color: var(--text3);
         text-transform: uppercase;
         letter-spacing: .1em;
-        font-family: 'Cinzel', serif;
+        font-family: var(--font-display);
     }
 
     /* Spotify Clone Mobile Player */

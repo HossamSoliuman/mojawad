@@ -1,30 +1,33 @@
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Scheherazade+New:wght@400;500;600;700&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap');
 
 :root {
-  --bg: #111827;
-  --bg2: #1e293b;
-  --surface: #1e293b;
-  --surface2: #273548;
-  --surface3: #334155;
-  --hover: #374151;
-  --gold: #c9a153;
-  --gold-light: #e4c27a;
-  --gold-dark: #9a7530;
-  --gold-faint: rgba(201, 161, 83, 0.08);
-  --gold-glow: rgba(201, 161, 83, 0.18);
-  --border: rgba(148, 163, 184, 0.12);
-  --border2: rgba(148, 163, 184, 0.20);
-  --border3: rgba(148, 163, 184, 0.35);
-  --text: #f1f5f9;
-  --text2: #94a3b8;
-  --text3: #64748b;
+  --bg: #191414;
+  --bg2: #181818;
+  --surface: #232323;
+  --surface2: #2a2a2a;
+  --surface3: #333333;
+  --hover: #3a3a3a;
+  --gold: #1DB954;
+  --gold-light: #1ed760;
+  --gold-dark: #1aa34a;
+  --gold-faint: rgba(29, 185, 84, 0.08);
+  --gold-glow: rgba(29, 185, 84, 0.18);
+  --border: rgba(255, 255, 255, 0.12);
+  --border2: rgba(255, 255, 255, 0.20);
+  --border3: rgba(255, 255, 255, 0.35);
+  --text: #FFFFFF;
+  --text2: #B3B3B3;
+  --text3: #888888;
   --red: #e05454;
-  --green: #34d399;
+  --green: #1DB954;
   --amber: #fbbf24;
-  --r: 11px;
-  --r2: 17px;
+  --r: 8px;
+  --r2: 12px;
   --player: 72px;
   --sidebar: 260px;
+  --font-display: 'Scheherazade New', serif;
+  --font-body: 'Noto Naskh Arabic', serif;
+  --font-verse: 'Amiri', serif;
 }
 
 *,
@@ -43,8 +46,8 @@ html {
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'Crimson Pro', Georgia, serif;
-  font-size: 16px;
+  font-family: var(--font-body);
+  font-size: 15px;
   line-height: 1.65;
   min-height: 100vh;
   padding-bottom: var(--player);
@@ -91,7 +94,7 @@ h2,
 h3,
 h4,
 h5 {
-  font-family: 'Cinzel', serif;
+  font-family: var(--font-display);
   line-height: 1.15
 }
 
@@ -123,9 +126,9 @@ h5 {
 }
 
 .navbar-brand {
-  font-family: 'Cinzel', serif;
-  font-size: 1.2rem;
-  font-weight: 900;
+  font-family: var(--font-display);
+  font-size: var(--size-logo, 30px);
+  font-weight: 700;
   color: var(--gold);
   letter-spacing: .08em;
   text-transform: uppercase;
@@ -145,9 +148,9 @@ h5 {
 .nav-link {
   padding: .4rem .85rem;
   border-radius: 8px;
-  font-size: .78rem;
-  font-family: 'Cinzel', serif;
-  font-weight: 600;
+  font-size: 12px;
+  font-family: var(--font-body);
+  font-weight: 500;
   letter-spacing: .04em;
   color: var(--text2);
   transition: all .18s;
@@ -185,8 +188,8 @@ h5 {
   padding: .58rem 1.3rem;
   border-radius: var(--r);
   border: none;
-  font-family: 'Cinzel', serif;
-  font-size: .75rem;
+  font-family: var(--font-body);
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: .05em;
   text-transform: uppercase;
@@ -340,7 +343,7 @@ h5 {
   color: var(--text);
   padding: .7rem 1rem;
   font-size: .95rem;
-  font-family: 'Crimson Pro', serif;
+  font-family: var(--font-body);
   transition: border-color .18s, box-shadow .18s;
   width: 100%;
 }
@@ -475,9 +478,9 @@ textarea.form-control {
 }
 
 .t-card-title {
-  font-family: 'Cinzel', serif;
-  font-size: .84rem;
-  font-weight: 600;
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 500;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
@@ -530,7 +533,7 @@ textarea.form-control {
 }
 
 .q-name {
-  font-family: 'Cinzel', serif;
+  font-family: var(--font-display);
   font-size: .88rem;
   font-weight: 700;
   color: #fff
@@ -590,7 +593,7 @@ textarea.form-control {
 
 
 .sec-title {
-  font-family: 'Cinzel', serif;
+  font-family: var(--font-display);
   font-size: 1.3rem;
   font-weight: 700;
   color: var(--text);
@@ -677,9 +680,9 @@ textarea.form-control {
 }
 
 .p-title {
-  font-family: 'Cinzel', serif;
-  font-size: .82rem;
-  font-weight: 600;
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis
@@ -829,7 +832,7 @@ textarea.form-control {
 .sidebar-logo {
   padding: 1.35rem;
   border-bottom: 1px solid var(--border);
-  font-family: 'Cinzel', serif;
+  font-family: var(--font-display);
   font-size: 1.05rem;
   font-weight: 900;
   color: var(--gold);
@@ -853,7 +856,7 @@ textarea.form-control {
   text-transform: uppercase;
   letter-spacing: .14em;
   color: var(--text3);
-  font-family: 'Cinzel', serif;
+  font-family: var(--font-display);
   padding: .65rem 1.3rem .25rem
 }
 
@@ -980,7 +983,7 @@ textarea.form-control {
 }
 
 .stat-val {
-  font-family: 'Cinzel', serif;
+  font-family: var(--font-display);
   font-size: 1.7rem;
   font-weight: 700;
   line-height: 1
@@ -1016,7 +1019,7 @@ textarea.form-control {
   color: var(--text2);
   background: var(--surface2);
   border-bottom: 1px solid var(--border);
-  font-family: 'Cinzel', serif;
+  font-family: var(--font-display);
   white-space: nowrap
 }
 
@@ -1057,7 +1060,7 @@ textarea.form-control {
 }
 
 .modal-title {
-  font-family: 'Cinzel', serif;
+  font-family: var(--font-display);
   font-size: 1.05rem;
   font-weight: 700;
   margin-bottom: .8rem
@@ -1103,9 +1106,9 @@ textarea.form-control {
 }
 
 .track-title {
-  font-family: 'Cinzel', serif;
-  font-size: .84rem;
-  font-weight: 600;
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis
@@ -1199,9 +1202,9 @@ textarea.form-control {
 }
 
 .t-list-title {
-  font-family: 'Cinzel', serif;
-  font-size: .84rem;
-  font-weight: 600;
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1297,7 +1300,7 @@ textarea.form-control {
   transition: all .18s;
   width: 205px;
   outline: none;
-  font-family: 'Crimson Pro', serif;
+  font-family: var(--font-body);
 }
 
 .search-input:focus {
@@ -1388,7 +1391,7 @@ textarea.form-control {
 
 .user-pill-name {
   font-size: .77rem;
-  font-family: 'Cinzel', serif;
+  font-family: var(--font-display);
   color: var(--text2)
 }
 
@@ -1419,7 +1422,7 @@ textarea.form-control {
   border: none;
   width: 100%;
   text-align: left;
-  font-family: 'Crimson Pro', serif;
+  font-family: var(--font-body);
   cursor: pointer
 }
 
@@ -1458,4 +1461,17 @@ textarea.form-control {
   .admin-topbar {
     padding: 1rem 1.2rem
   }
+}
+
+.quran-verse {
+  background: var(--bg);
+  border-left: 3px solid var(--green);
+  font-family: var(--font-verse);
+  font-size: 22px;
+  color: #FFFFFF;
+  line-height: 2;
+  direction: rtl;
+  text-align: right;
+  padding: 1rem 1.5rem;
+  border-radius: 4px;
 }

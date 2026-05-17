@@ -30,7 +30,7 @@ class TilawaController extends Controller
 
     public function create()
     {
-        $qaris = Qari::where('status', 'active')->orderBy('name')->get(['id', 'name']);
+        $qaris = Qari::where('status', 'active')->orderBy('name_ar')->get(['id', 'name_ar']);
         return view('admin.tilawat.create', compact('qaris'));
     }
 
