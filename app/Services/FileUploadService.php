@@ -1,0 +1,102 @@
+<?php
+
+namespace App\Services;
+
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+
+class FileUploadService
+{
+    private string $disk = 'public';
+    private string $uploadDriver;
+
+    public function __construct()
+    {
+        $this->uploadDriver = config('filesystems.upload_driver', 'public');
+    }
+
+    public function uploadAudio(UploadedFile $file, string $title): string
+    {
+        $filename = Str::slug($title) . '-' . time() . '.mp3';
+        return $this->store($file, 'tilawat', $filename);
+    }
+
+    public function uploadCover(UploadedFile $file): string
+    {
+        $filename = Str::random(32) . '.' . $file->getClientOriginalExtension();
+        return $this->store($file, 'tilawa-covers', $filename);
+    }
+
+    public function delete(?string $path): bool
+    {
+        if (!$path) {
+            return true;
+        }
+
+        return match ($this->uploadDriver) {
+            'archive' => $this->deleteArchive($path),
+            's3' => $this->deleteS3($path),
+            default => Storage::disk($this->disk)->delete($path),
+        };
+    }
+
+    private function store(UploadedFile $file, string $directory, string $filename): string
+    {
+        return match ($this->uploadDriver) {
+            'archive' => $this->storeArchive($file, $directory, $filename),
+            's3' => $this->storeS3($file, $directory, $filename),
+            default => $file->storeAs($directory, $filename, $this->disk),
+        };
+    }
+
+    private function storeArchive(UploadedFile $file, string $directory, string $filename): string
+    {
+        $archiveService = app(\App\Services\ArchiveOrgService::class);
+        $itemId = 'tilawa-' . Str::random(8);
+
+        $result = $archiveService->upload(
+            $file,
+            $itemId,
+            $filename,
+            ['title' => $filename, 'mediatype' => 'audio']
+        );
+
+        return $result['url'];
+    }
+
+    private function deleteArchive(string $path): bool
+    {
+        try {
+            if (!filter_var($path, FILTER_VALIDATE_URL)) {
+                return true;
+            }
+
+            $archiveService = app(\App\Services\ArchiveOrgService::class);
+            preg_match('/archive\.org\/download\/([^\/]+)\/(.+)$/', $path, $matches);
+
+            if (isset($matches[1]) && isset($matches[2])) {
+                return $archiveService->delete($matches[1], $matches[2]);
+            }
+
+            return false;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    private function storeS3(UploadedFile $file, string $directory, string $filename): string
+    {
+        return Storage::disk('s3')->putFileAs(
+            $directory,
+            $file,
+            $filename,
+            'public'
+        );
+    }
+
+    private function deleteS3(string $path): bool
+    {
+        return Storage::disk('s3')->delete($path);
+    }
+}
