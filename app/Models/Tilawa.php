@@ -44,7 +44,7 @@ class Tilawa extends Model
         if ($this->archive_url) {
             return $this->archive_url;
         }
-        return asset('storage/' . $this->audio_path);
+        return asset('uploads/' . $this->audio_path);
     }
     public function getFormattedDurationAttribute(): string
     {
