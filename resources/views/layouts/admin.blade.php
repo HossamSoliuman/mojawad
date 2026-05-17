@@ -7,7 +7,7 @@
 <title>@yield('title','Admin') — {{ __('Tilawa') }}</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-@vite(['resources/css/app.css','resources/js/app.js'])
+@vite(['resources/css/app.css','resources/js/app.js','resources/js/filepond.js'])
 </head>
 <body x-data="{ sideOpen: false }">
 <div class="bg-dots"></div>

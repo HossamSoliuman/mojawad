@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\TmpUploadController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\QariController;
 use App\Http\Controllers\TilawaController;
@@ -38,6 +39,9 @@ Route::get('/api/search', \App\Http\Controllers\Api\SearchController::class)->na
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin|creator'])->group(function () {
 
     Route::get('/', DashboardController::class)->name('dashboard');
+
+    Route::post('/upload/tmp',          [TmpUploadController::class, 'store'])->name('upload.tmp');
+    Route::delete('/upload/tmp/{token}', [TmpUploadController::class, 'destroy'])->name('upload.tmp.destroy');
 
     // Qaris CRUD
     Route::get('/qaris',               [\App\Http\Controllers\Admin\QariController::class, 'index'])->name('qaris.index');

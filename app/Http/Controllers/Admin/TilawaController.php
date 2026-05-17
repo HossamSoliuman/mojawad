@@ -41,7 +41,7 @@ class TilawaController extends Controller
             $slug .= '-' . Str::random(4);
         }
 
-        $audioPath = $this->uploadService->uploadAudio($request->file('audio'), $request->title);
+        $audioPath = $this->uploadService->moveFromTmp($request->audio_tmp, 'tilawat');
 
         $tilawa = Tilawa::create([
             'qari_id'        => $request->qari_id,
@@ -53,8 +53,8 @@ class TilawaController extends Controller
             'audio_path'     => $audioPath,
             'archive_url'    => null,
             'duration'       => 0,
-            'cover_image'    => $request->hasFile('cover_image')
-                ? $this->uploadService->uploadCover($request->file('cover_image'))
+            'cover_image'    => $request->filled('cover_image_tmp')
+                ? $this->uploadService->moveFromTmp($request->cover_image_tmp, 'tilawa-covers')
                 : null,
             'status'         => $request->status,
             'is_featured'    => $request->boolean('is_featured'),
@@ -100,16 +100,16 @@ class TilawaController extends Controller
             'is_featured'    => $request->boolean('is_featured'),
         ];
 
-        if ($request->hasFile('audio')) {
+        if ($request->filled('audio_tmp')) {
             $this->uploadService->delete($tilawa->audio_path);
-            $updates['audio_path']    = $this->uploadService->uploadAudio($request->file('audio'), $request->title);
+            $updates['audio_path']    = $this->uploadService->moveFromTmp($request->audio_tmp, 'tilawat');
             $updates['upload_status'] = 'done';
             $updates['upload_error']  = null;
         }
 
-        if ($request->hasFile('cover_image')) {
+        if ($request->filled('cover_image_tmp')) {
             $this->uploadService->delete($tilawa->cover_image);
-            $updates['cover_image'] = $this->uploadService->uploadCover($request->file('cover_image'));
+            $updates['cover_image'] = $this->uploadService->moveFromTmp($request->cover_image_tmp, 'tilawa-covers');
         }
 
         $tilawa->update($updates);

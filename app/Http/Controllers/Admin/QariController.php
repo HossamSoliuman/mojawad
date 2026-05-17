@@ -6,12 +6,16 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreQariRequest;
 use App\Http\Requests\UpdateQariRequest;
 use App\Models\Qari;
+use App\Services\FileUploadService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\{Auth, Cache, Storage};
 use Illuminate\Support\Str;
 
 class QariController extends Controller
 {
+    public function __construct(private FileUploadService $uploadService)
+    {
+    }
     public function index(Request $request)
     {
         $qaris = Qari::withCount('tilawat')->when($request->search, fn($q) => $q->where('name', 'like', '%' . $request->search . '%'))->when($request->status, fn($q) => $q->where('status', $request->status))->latest()->paginate(15)->withQueryString();
@@ -29,13 +33,15 @@ class QariController extends Controller
         if (Qari::where('slug', $slug)->exists()) $slug .= '-' . Str::random(4);
         Qari::create(
             [
-                'name' => $request->name,
-                'slug' => $slug,
-                'biography' => $request->biography ?? null,
-                'status' => $request->status,
+                'name'        => $request->name,
+                'slug'        => $slug,
+                'biography'   => $request->biography ?? null,
+                'status'      => $request->status,
                 'is_featured' => $request->boolean('is_featured'),
-                'image' => $request->hasFile('image') ? $request->file('image')->store('qari-images', 'public') : null,
-                'created_by' => Auth::id()
+                'image'       => $request->filled('image_tmp')
+                    ? $this->uploadService->moveFromTmp($request->image_tmp, 'qari-images')
+                    : null,
+                'created_by'  => Auth::id()
             ]
         );
         Cache::forget('homepage_data');
@@ -50,9 +56,9 @@ class QariController extends Controller
     public function update(UpdateQariRequest $request, Qari $qari)
     {
         $updates = ['name' => $request->name, 'biography' => $request->biography ?? null, 'status' => $request->status, 'is_featured' => $request->boolean('is_featured')];
-        if ($request->hasFile('image')) {
+        if ($request->filled('image_tmp')) {
             if ($qari->image) Storage::disk('public')->delete($qari->image);
-            $updates['image'] = $request->file('image')->store('qari-images', 'public');
+            $updates['image'] = $this->uploadService->moveFromTmp($request->image_tmp, 'qari-images');
         }
         $qari->update($updates);
         Cache::forget('homepage_data');

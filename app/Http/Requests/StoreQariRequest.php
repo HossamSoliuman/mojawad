@@ -14,10 +14,10 @@ class StoreQariRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:255',
-            'biography' => 'nullable|string',
-            'status' => 'required|in:active,inactive,pending',
-            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
+            'name'        => 'required|string|max:255',
+            'biography'   => 'nullable|string',
+            'status'      => 'required|in:active,inactive,pending',
+            'image_tmp'   => 'nullable|string|exists:tmp_uploads,id',
             'is_featured' => 'boolean',
         ];
     }

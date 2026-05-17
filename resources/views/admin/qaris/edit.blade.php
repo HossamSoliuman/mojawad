@@ -5,7 +5,7 @@
 @section('content')
 
 <div style="max-width:660px">
-  <form method="POST" action="{{ route('admin.qaris.update',$qari) }}" enctype="multipart/form-data">
+  <form method="POST" action="{{ route('admin.qaris.update',$qari) }}">
     @csrf @method('PUT')
 
     @if($errors->any())
@@ -44,8 +44,10 @@
         <span style="font-size:.8rem;color:var(--text2)">Upload a new image to replace</span>
       </div>
       @endif
-      <input type="file" name="image" accept="image/jpeg,image/png,image/webp" class="form-control">
-      @error('image')<span class="form-error">{{ $message }}</span>@enderror
+      <input type="hidden" name="image_tmp" id="image_tmp_input">
+      <input type="file" id="image-pond" data-filepond data-pond-type="image" data-pond-token="image_tmp" accept="image/jpeg,image/png,image/webp">
+      <span class="form-hint">Leave empty to keep current image</span>
+      @error('image_tmp')<span class="form-error">{{ $message }}</span>@enderror
     </div>
 
     <div class="form-group">
@@ -60,4 +62,13 @@
     </div>
   </form>
 </div>
+
+<style>
+.filepond--root { font-family: inherit; }
+.filepond--panel-root { background: var(--surface); border: 1.5px dashed var(--border); border-radius: 10px; }
+.filepond--drop-label { color: var(--text2); font-size: .85rem; }
+.filepond--label-action { color: var(--gold); text-decoration: underline; cursor: pointer; }
+.filepond--item-panel { background: var(--surface2, var(--surface)); }
+.filepond--file-action-button { background: var(--gold); }
+</style>
 @endsection

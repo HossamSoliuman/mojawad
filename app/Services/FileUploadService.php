@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\TmpUpload;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -14,6 +15,19 @@ class FileUploadService
     public function __construct()
     {
         $this->uploadDriver = config('filesystems.upload_driver', 'public');
+    }
+
+    public function moveFromTmp(string $token, string $directory): string
+    {
+        $tmp      = TmpUpload::findOrFail($token);
+        $ext      = pathinfo($tmp->original_name, PATHINFO_EXTENSION);
+        $filename = Str::random(32) . ($ext ? '.' . $ext : '');
+        $newPath  = $directory . '/' . $filename;
+
+        Storage::disk($tmp->disk)->move($tmp->path, $newPath);
+        $tmp->delete();
+
+        return $newPath;
     }
 
     public function uploadAudio(UploadedFile $file, string $title): string

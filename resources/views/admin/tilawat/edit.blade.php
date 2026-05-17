@@ -5,7 +5,7 @@
 @section('content')
 
 <div style="max-width:700px">
-  <form method="POST" action="{{ route('admin.tilawat.update',$tilawa) }}" enctype="multipart/form-data">
+  <form method="POST" action="{{ route('admin.tilawat.update',$tilawa) }}" id="tilawa-form">
     @csrf @method('PUT')
 
     @if($errors->any())
@@ -54,21 +54,23 @@
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
       <div class="form-group">
         <label class="form-label"><i class="fas fa-file-audio"></i> Replace Audio</label>
-        <div style="font-size:.78rem;color:var(--green);margin-bottom:.45rem">
-          <i class="fas fa-check-circle"></i> Audio uploaded · {{ $tilawa->formatted_duration }}
+        <div style="font-size:.78rem;color:var(--green);margin-bottom:.6rem">
+          <i class="fas fa-check-circle"></i> Current: {{ $tilawa->formatted_duration }}
         </div>
-        <input type="file" name="audio" accept="audio/mp3,audio/mpeg,audio/ogg,audio/wav" class="form-control">
-        <span class="form-hint">Leave empty to keep current</span>
-        @error('audio')<span class="form-error">{{ $message }}</span>@enderror
+        <input type="hidden" name="audio_tmp" id="audio_tmp_input">
+        <input type="file" id="audio-pond" data-filepond data-pond-type="audio" data-pond-token="audio_tmp" accept="audio/mp3,audio/mpeg,audio/ogg,audio/wav">
+        <span class="form-hint">Leave empty to keep current audio</span>
+        @error('audio_tmp')<span class="form-error">{{ $message }}</span>@enderror
       </div>
       <div class="form-group">
         <label class="form-label"><i class="fas fa-image"></i> Replace Cover</label>
         @if($tilawa->cover_image)
-        <img src="{{ $tilawa->cover_url }}" style="width:44px;height:44px;border-radius:7px;object-fit:cover;margin-bottom:.45rem" alt="">
+        <img src="{{ $tilawa->cover_url }}" style="width:44px;height:44px;border-radius:7px;object-fit:cover;margin-bottom:.6rem" alt="">
         @endif
-        <input type="file" name="cover_image" accept="image/jpeg,image/png,image/webp" class="form-control">
-        <span class="form-hint">Leave empty to keep current</span>
-        @error('cover_image')<span class="form-error">{{ $message }}</span>@enderror
+        <input type="hidden" name="cover_image_tmp" id="cover_image_tmp_input">
+        <input type="file" id="cover-pond" data-filepond data-pond-type="cover" data-pond-token="cover_image_tmp" accept="image/jpeg,image/png,image/webp">
+        <span class="form-hint">Leave empty to keep current cover</span>
+        @error('cover_image_tmp')<span class="form-error">{{ $message }}</span>@enderror
       </div>
     </div>
 
@@ -86,32 +88,12 @@
   </form>
 </div>
 
-<div id="upload-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:1.25rem">
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:2.5rem 3rem;text-align:center;max-width:400px;width:90%">
-    <div style="font-size:1rem;font-weight:600;color:var(--text1);margin-bottom:.35rem" id="overlay-title">Saving file…</div>
-    <div style="font-size:.85rem;color:var(--text2);margin-bottom:1.5rem">Please wait while your file is being saved. You will be redirected automatically.</div>
-    <div style="background:var(--bg);border-radius:99px;height:10px;overflow:hidden;border:1px solid var(--border)">
-      <div style="height:100%;width:100%;border-radius:99px;background:linear-gradient(90deg,var(--gold),#f97316);animation:indeterminate 1.5s ease-in-out infinite"></div>
-    </div>
-  </div>
-</div>
-
 <style>
-@keyframes indeterminate {
-  0%   { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
+.filepond--root { font-family: inherit; }
+.filepond--panel-root { background: var(--surface); border: 1.5px dashed var(--border); border-radius: 10px; }
+.filepond--drop-label { color: var(--text2); font-size: .85rem; }
+.filepond--label-action { color: var(--gold); text-decoration: underline; cursor: pointer; }
+.filepond--item-panel { background: var(--surface2, var(--surface)); }
+.filepond--file-action-button { background: var(--gold); }
 </style>
-
-<script>
-document.querySelector('form').addEventListener('submit', function () {
-  var audioInput = document.querySelector('input[name="audio"]');
-  if (audioInput && audioInput.files && audioInput.files.length > 0) {
-    var overlay = document.getElementById('upload-overlay');
-    overlay.style.display = 'flex';
-    document.getElementById('submit-btn').disabled = true;
-  }
-});
-</script>
 @endsection
-
