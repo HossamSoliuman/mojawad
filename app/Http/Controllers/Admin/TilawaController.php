@@ -6,12 +6,16 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreTilawaRequest;
 use App\Http\Requests\UpdateTilawaRequest;
 use App\Models\{Qari, Tilawa};
+use App\Services\FileUploadService;
 use Illuminate\Http\{JsonResponse, Request};
-use Illuminate\Support\Facades\{Auth, Cache, Storage};
+use Illuminate\Support\Facades\{Auth, Cache};
 use Illuminate\Support\Str;
 
 class TilawaController extends Controller
 {
+    public function __construct(private FileUploadService $uploadService)
+    {
+    }
     public function index(Request $request)
     {
         $tilawat = Tilawa::with('qari')
@@ -37,8 +41,7 @@ class TilawaController extends Controller
             $slug .= '-' . Str::random(4);
         }
 
-        $archiveFilename = Str::slug($request->title) . '-' . time() . '.mp3';
-        $audioPath = $request->file('audio')->storeAs('tilawat', $archiveFilename, 'public');
+        $audioPath = $this->uploadService->uploadAudio($request->file('audio'), $request->title);
 
         $tilawa = Tilawa::create([
             'qari_id'        => $request->qari_id,
@@ -51,7 +54,7 @@ class TilawaController extends Controller
             'archive_url'    => null,
             'duration'       => 0,
             'cover_image'    => $request->hasFile('cover_image')
-                ? $request->file('cover_image')->store('tilawa-covers', 'public')
+                ? $this->uploadService->uploadCover($request->file('cover_image'))
                 : null,
             'status'         => $request->status,
             'is_featured'    => $request->boolean('is_featured'),
@@ -98,17 +101,15 @@ class TilawaController extends Controller
         ];
 
         if ($request->hasFile('audio')) {
-            if ($tilawa->audio_path) Storage::disk('public')->delete($tilawa->audio_path);
-
-            $archiveFilename = Str::slug($request->title) . '-' . time() . '.mp3';
-            $updates['audio_path']    = $request->file('audio')->storeAs('tilawat', $archiveFilename, 'public');
+            $this->uploadService->delete($tilawa->audio_path);
+            $updates['audio_path']    = $this->uploadService->uploadAudio($request->file('audio'), $request->title);
             $updates['upload_status'] = 'done';
             $updates['upload_error']  = null;
         }
 
         if ($request->hasFile('cover_image')) {
-            if ($tilawa->cover_image) Storage::disk('public')->delete($tilawa->cover_image);
-            $updates['cover_image'] = $request->file('cover_image')->store('tilawa-covers', 'public');
+            $this->uploadService->delete($tilawa->cover_image);
+            $updates['cover_image'] = $this->uploadService->uploadCover($request->file('cover_image'));
         }
 
         $tilawa->update($updates);
@@ -120,8 +121,8 @@ class TilawaController extends Controller
 
     public function destroy(Tilawa $tilawa)
     {
-        if ($tilawa->audio_path) Storage::disk('public')->delete($tilawa->audio_path);
-        if ($tilawa->cover_image) Storage::disk('public')->delete($tilawa->cover_image);
+        $this->uploadService->delete($tilawa->audio_path);
+        $this->uploadService->delete($tilawa->cover_image);
         $tilawa->delete();
         Cache::forget('homepage_data');
 
