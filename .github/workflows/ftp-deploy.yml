@@ -31,9 +31,6 @@ jobs:
       - name: Build assets
         run: npm run build
 
-      - name: Run migrations
-        run: php artisan migrate --force
-
       - name: Create storage link
         run: php artisan storage:link
 
