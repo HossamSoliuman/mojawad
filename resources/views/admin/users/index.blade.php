@@ -2,6 +2,9 @@
 @section('title','Users')
 @section('page-title','Users')
 @section('breadcrumb')<a href="{{ route('admin.dashboard') }}">Dashboard</a> › Users @endsection
+@section('topbar-actions')
+<a href="{{ route('admin.users.create') }}" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Add User</a>
+@endsection
 @section('content')
 
 <form method="GET" style="margin-bottom:1.4rem">
@@ -34,15 +37,23 @@
         </td>
         <td style="font-size:.8rem;color:var(--text2)">{{ $u->created_at->format('d M Y') }}</td>
         <td>
-          <form method="POST" action="{{ route('admin.users.role',$u) }}" style="display:flex;align-items:center;gap:.45rem">
-            @csrf @method('PUT')
-            <select name="role" style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:.26rem .55rem;color:var(--text);font-size:.8rem;cursor:pointer">
-              @foreach($roles as $r)
-              <option value="{{ $r->name }}" {{ $u->hasRole($r->name)?'selected':'' }}>{{ ucfirst($r->name) }}</option>
-              @endforeach
-            </select>
-            <button type="submit" class="btn-icon" title="Save role"><i class="fas fa-check"></i></button>
-          </form>
+          <div style="display:flex;align-items:center;gap:.75rem">
+            <form method="POST" action="{{ route('admin.users.role',$u) }}" style="display:flex;align-items:center;gap:.45rem">
+              @csrf @method('PUT')
+              <select name="role" style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:.26rem .55rem;color:var(--text);font-size:.8rem;cursor:pointer">
+                @foreach($roles as $r)
+                <option value="{{ $r->name }}" {{ $u->hasRole($r->name)?'selected':'' }}>{{ ucfirst($r->name) }}</option>
+                @endforeach
+              </select>
+              <button type="submit" class="btn-icon" title="Save role"><i class="fas fa-check"></i></button>
+            </form>
+            @if($u->id !== auth()->id())
+            <form method="POST" action="{{ route('admin.users.destroy',$u) }}" onsubmit="return confirm('Delete user {{ addslashes($u->name) }}?')">
+              @csrf @method('DELETE')
+              <button type="submit" class="btn-icon" style="color:var(--red)" title="Delete"><i class="fas fa-trash"></i></button>
+            </form>
+            @endif
+          </div>
         </td>
       </tr>
       @empty

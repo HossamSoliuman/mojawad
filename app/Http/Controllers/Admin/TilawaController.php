@@ -19,7 +19,8 @@ class TilawaController extends Controller
     public function index(Request $request)
     {
         $tilawat = Tilawa::with('qari')
-            ->when($request->search, fn($q) => $q->where('title', 'like', '%' . $request->search . '%'))
+            ->when(!Auth::user()->hasRole('admin'), fn($q) => $q->where('uploaded_by', Auth::id()))
+            ->when($request->search, fn($q) => $q->where(fn($sub) => $sub->where('title_ar', 'like', '%' . $request->search . '%')->orWhere('title_en', 'like', '%' . $request->search . '%')))
             ->when($request->status, fn($q) => $q->where('status', $request->status))
             ->latest()
             ->paginate(15)
@@ -30,7 +31,10 @@ class TilawaController extends Controller
 
     public function create()
     {
-        $qaris = Qari::where('status', 'active')->orderBy('name_ar')->get(['id', 'name_ar']);
+        $qaris = Qari::where('status', 'active')
+            ->when(!Auth::user()->hasRole('admin'), fn($q) => $q->where('created_by', Auth::id()))
+            ->orderBy('name_ar')
+            ->get(['id', 'name_ar']);
         return view('admin.tilawat.create', compact('qaris'));
     }
 
@@ -86,7 +90,10 @@ class TilawaController extends Controller
 
     public function edit(Tilawa $tilawa)
     {
-        $qaris = Qari::where('status', 'active')->orderBy('name')->get(['id', 'name']);
+        $qaris = Qari::where('status', 'active')
+            ->when(!Auth::user()->hasRole('admin'), fn($q) => $q->where('created_by', Auth::id()))
+            ->orderBy('name_ar')
+            ->get(['id', 'name_ar']);
         return view('admin.tilawat.edit', compact('tilawa', 'qaris'));
     }
 

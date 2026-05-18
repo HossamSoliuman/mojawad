@@ -8,7 +8,7 @@ class StoreQariRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return auth()->user()?->hasRole('admin') ?? false;
+        return true;
     }
 
     public function rules(): array

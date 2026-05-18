@@ -43,28 +43,28 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin|creator'
     Route::post('/upload/tmp',          [TmpUploadController::class, 'store'])->name('upload.tmp');
     Route::delete('/upload/tmp/{token}', [TmpUploadController::class, 'destroy'])->name('upload.tmp.destroy');
 
-    // Qaris CRUD
     Route::get('/qaris',               [\App\Http\Controllers\Admin\QariController::class, 'index'])->name('qaris.index');
     Route::get('/qaris/create',        [\App\Http\Controllers\Admin\QariController::class, 'create'])->name('qaris.create');
     Route::post('/qaris',              [\App\Http\Controllers\Admin\QariController::class, 'store'])->name('qaris.store');
-    Route::get('/qaris/{qari}/edit',   [\App\Http\Controllers\Admin\QariController::class, 'edit'])->name('qaris.edit');
-    Route::put('/qaris/{qari}',        [\App\Http\Controllers\Admin\QariController::class, 'update'])->name('qaris.update');
-    Route::delete('/qaris/{qari}',     [\App\Http\Controllers\Admin\QariController::class, 'destroy'])->name('qaris.destroy');
+    Route::get('/qaris/{qari}/edit',   [\App\Http\Controllers\Admin\QariController::class, 'edit'])->name('qaris.edit')->middleware('can:update,qari');
+    Route::put('/qaris/{qari}',        [\App\Http\Controllers\Admin\QariController::class, 'update'])->name('qaris.update')->middleware('can:update,qari');
+    Route::delete('/qaris/{qari}',     [\App\Http\Controllers\Admin\QariController::class, 'destroy'])->name('qaris.destroy')->middleware('can:delete,qari');
 
-    // Tilawat CRUD
     Route::get('/tilawat',                        [\App\Http\Controllers\Admin\TilawaController::class, 'index'])->name('tilawat.index');
     Route::get('/tilawat/create',                 [\App\Http\Controllers\Admin\TilawaController::class, 'create'])->name('tilawat.create');
     Route::post('/tilawat',                       [\App\Http\Controllers\Admin\TilawaController::class, 'store'])->name('tilawat.store');
-    Route::get('/tilawat/{tilawa}/uploading',     [\App\Http\Controllers\Admin\TilawaController::class, 'uploading'])->name('tilawat.uploading');
-    Route::get('/tilawat/{tilawa}/upload-status', [\App\Http\Controllers\Admin\TilawaController::class, 'uploadStatus'])->name('tilawat.upload-status');
-    Route::get('/tilawat/{tilawa}/edit',          [\App\Http\Controllers\Admin\TilawaController::class, 'edit'])->name('tilawat.edit');
-    Route::put('/tilawat/{tilawa}',               [\App\Http\Controllers\Admin\TilawaController::class, 'update'])->name('tilawat.update');
-    Route::delete('/tilawat/{tilawa}',            [\App\Http\Controllers\Admin\TilawaController::class, 'destroy'])->name('tilawat.destroy');
+    Route::get('/tilawat/{tilawa}/uploading',     [\App\Http\Controllers\Admin\TilawaController::class, 'uploading'])->name('tilawat.uploading')->middleware('can:view,tilawa');
+    Route::get('/tilawat/{tilawa}/upload-status', [\App\Http\Controllers\Admin\TilawaController::class, 'uploadStatus'])->name('tilawat.upload-status')->middleware('can:view,tilawa');
+    Route::get('/tilawat/{tilawa}/edit',          [\App\Http\Controllers\Admin\TilawaController::class, 'edit'])->name('tilawat.edit')->middleware('can:update,tilawa');
+    Route::put('/tilawat/{tilawa}',               [\App\Http\Controllers\Admin\TilawaController::class, 'update'])->name('tilawat.update')->middleware('can:update,tilawa');
+    Route::delete('/tilawat/{tilawa}',            [\App\Http\Controllers\Admin\TilawaController::class, 'destroy'])->name('tilawat.destroy')->middleware('can:delete,tilawa');
 
-    // Users (admin only)
     Route::middleware('role:admin')->group(function () {
         Route::get('/users',                    [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('users.index');
+        Route::get('/users/create',             [\App\Http\Controllers\Admin\UserController::class, 'create'])->name('users.create');
+        Route::post('/users',                   [\App\Http\Controllers\Admin\UserController::class, 'store'])->name('users.store');
         Route::put('/users/{user}/role',        [\App\Http\Controllers\Admin\UserController::class, 'updateRole'])->name('users.role');
+        Route::delete('/users/{user}',          [\App\Http\Controllers\Admin\UserController::class, 'destroy'])->name('users.destroy');
     });
 });
 

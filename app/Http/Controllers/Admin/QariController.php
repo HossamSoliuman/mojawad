@@ -18,7 +18,13 @@ class QariController extends Controller
     }
     public function index(Request $request)
     {
-        $qaris = Qari::withCount('tilawat')->when($request->search, fn($q) => $q->where('name', 'like', '%' . $request->search . '%'))->when($request->status, fn($q) => $q->where('status', $request->status))->latest()->paginate(15)->withQueryString();
+        $qaris = Qari::withCount('tilawat')
+            ->when(!Auth::user()->hasRole('admin'), fn($q) => $q->where('created_by', Auth::id()))
+            ->when($request->search, fn($q) => $q->where(fn($sub) => $sub->where('name_ar', 'like', '%' . $request->search . '%')->orWhere('name_en', 'like', '%' . $request->search . '%')))
+            ->when($request->status, fn($q) => $q->where('status', $request->status))
+            ->latest()
+            ->paginate(15)
+            ->withQueryString();
         return view('admin.qaris.index', compact('qaris'));
     }
     

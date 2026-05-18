@@ -28,10 +28,12 @@
       @endif
     </div>
   </div>
+  @if(Auth::user()->hasRole('admin'))
   <div class="stat-card">
     <div class="stat-icon"><i class="fas fa-users"></i></div>
     <div><div class="stat-val">{{ number_format($stats['total_users']) }}</div><div class="stat-lbl">Users</div></div>
   </div>
+  @endif
   <div class="stat-card">
     <div class="stat-icon"><i class="fas fa-download"></i></div>
     <div><div class="stat-val">{{ number_format($stats['total_downloads']) }}</div><div class="stat-lbl">Downloads</div></div>
