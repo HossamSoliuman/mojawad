@@ -9,6 +9,7 @@
     <meta name="description" content="@yield('meta_desc', 'Premium Tajweed recitations.')">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @livewireStyles
 </head>
 
 <body x-data="{ mobileMenu: false }">
@@ -20,17 +21,17 @@
             <i class="fas fa-bars"></i>
         </button>
 
-        <a href="{{ route('home') }}" class="navbar-brand">
+        <a href="{{ route('home') }}" wire:navigate class="navbar-brand">
             <i class="fas fa-book-open-reader"></i> Tilawa
         </a>
 
         <div class="nav-links">
-            <a href="{{ route('home') }}" class="nav-link {{ request()->routeIs('home') ? 'active' : '' }}"><i
+            <a href="{{ route('home') }}" wire:navigate class="nav-link {{ request()->routeIs('home') ? 'active' : '' }}"><i
                     class="fas fa-house"></i> {{ __('Home') }}</a>
-            <a href="{{ route('qaris.index') }}" class="nav-link {{ request()->routeIs('qaris.*') ? 'active' : '' }}"><i
+            <a href="{{ route('qaris.index') }}" wire:navigate class="nav-link {{ request()->routeIs('qaris.*') ? 'active' : '' }}"><i
                     class="fas fa-microphone"></i> {{ __('Qaris') }}</a>
             @auth
-                <a href="{{ route('library') }}" class="nav-link {{ request()->routeIs('library') ? 'active' : '' }}"><i
+                <a href="{{ route('library') }}" wire:navigate class="nav-link {{ request()->routeIs('library') ? 'active' : '' }}"><i
                         class="fas fa-bookmark"></i> {{ __('Library') }}</a>
             @endauth
         </div>
@@ -74,7 +75,7 @@
                 </div>
             </div>
 
-            {{-- LANGUAGE --}}
+            {{-- LANGUAGE (full reload intentional — changes dir/lang on <html>) --}}
             <div x-data="{ open: false }" class="lang-desktop" style="position:relative">
                 <button class="user-pill" @click="open=!open" @click.away="open=false">
                     <i class="fas fa-globe" style="font-size:.9rem;color:var(--gold)"></i>
@@ -100,7 +101,7 @@
                             <a href="{{ route('admin.dashboard') }}"><i class="fas fa-gauge"
                                     style="color:var(--gold);width:15px"></i> {{ __('Dashboard') }}</a>
                         @endif
-                        <a href="{{ route('profile') }}"><i class="fas fa-user" style="width:15px"></i> {{ __('Profile') }}</a>
+                        <a href="{{ route('profile') }}" wire:navigate><i class="fas fa-user" style="width:15px"></i> {{ __('Profile') }}</a>
                         <form method="POST" action="{{ route('logout') }}">@csrf
                             <button type="submit"><i class="fas fa-arrow-right-from-bracket"
                                     style="color:var(--red);width:15px"></i> {{ __('Logout') }}</button>
@@ -117,37 +118,36 @@
         </div>
     </nav>
 
-    {{-- MOBILE DRAWER (kept outside <nav> — the navbar's backdrop-filter would
-         otherwise trap these fixed elements inside the 62px-tall bar) --}}
+    {{-- MOBILE DRAWER --}}
     <div class="mobile-menu-overlay" x-show="mobileMenu" @click="mobileMenu = false" x-transition.opacity style="display:none"></div>
     <div class="mobile-menu-drawer" :class="mobileMenu ? 'open' : ''">
             <div class="mm-header">
-                <a href="{{ route('home') }}" class="navbar-brand">
+                <a href="{{ route('home') }}" wire:navigate class="navbar-brand">
                     <i class="fas fa-book-open-reader"></i> Tilawa
                 </a>
                 <button class="mobile-toggle" @click="mobileMenu = false"><i class="fas fa-xmark"></i></button>
             </div>
             <div class="mm-links">
-                <a href="{{ route('home') }}" class="mm-link {{ request()->routeIs('home') ? 'active' : '' }}"><i class="fas fa-house"></i> {{ __('Home') }}</a>
-                <a href="{{ route('qaris.index') }}" class="mm-link {{ request()->routeIs('qaris.*') ? 'active' : '' }}"><i class="fas fa-microphone"></i> {{ __('Qaris') }}</a>
+                <a href="{{ route('home') }}" wire:navigate class="mm-link {{ request()->routeIs('home') ? 'active' : '' }}" @click="mobileMenu=false"><i class="fas fa-house"></i> {{ __('Home') }}</a>
+                <a href="{{ route('qaris.index') }}" wire:navigate class="mm-link {{ request()->routeIs('qaris.*') ? 'active' : '' }}" @click="mobileMenu=false"><i class="fas fa-microphone"></i> {{ __('Qaris') }}</a>
                 @auth
-                    <a href="{{ route('library') }}" class="mm-link {{ request()->routeIs('library') ? 'active' : '' }}"><i class="fas fa-bookmark"></i> {{ __('Library') }}</a>
+                    <a href="{{ route('library') }}" wire:navigate class="mm-link {{ request()->routeIs('library') ? 'active' : '' }}" @click="mobileMenu=false"><i class="fas fa-bookmark"></i> {{ __('Library') }}</a>
                 @endauth
-                
+
                 <div class="divider"></div>
-                
+
                 <div class="mm-sec">{{ __('Language') }}</div>
                 <a href="{{ route('lang', 'en') }}" class="mm-link"><i class="fas fa-globe"></i> English</a>
                 <a href="{{ route('lang', 'ar') }}" class="mm-link"><i class="fas fa-globe"></i> العربية</a>
-                
+
                 <div class="divider"></div>
-                
+
                 @auth
                     <div class="mm-sec">{{ __('Account') }}</div>
                     @if (auth()->user()->hasAnyRole(['admin', 'creator']))
                         <a href="{{ route('admin.dashboard') }}" class="mm-link"><i class="fas fa-gauge"></i> {{ __('Dashboard') }}</a>
                     @endif
-                    <a href="{{ route('profile') }}" class="mm-link"><i class="fas fa-user"></i> {{ __('Profile') }}</a>
+                    <a href="{{ route('profile') }}" wire:navigate class="mm-link" @click="mobileMenu=false"><i class="fas fa-user"></i> {{ __('Profile') }}</a>
                     <form method="POST" action="{{ route('logout') }}" style="margin:0">@csrf
                         <button type="submit" class="mm-link" style="width:100%;text-align:left;background:transparent;border:none;cursor:pointer;"><i class="fas fa-arrow-right-from-bracket" style="color:var(--red)"></i> {{ __('Logout') }}</button>
                     </form>
@@ -174,7 +174,8 @@
 
     <main class="z1">@yield('content')</main>
 
-    {{-- AUDIO PLAYER --}}
+    {{-- AUDIO PLAYER — persisted across wire:navigate so audio never stops --}}
+    @persist('player')
     <div class="player-bar hidden z1" id="playerBar" x-data="audioPlayer()">
         <audio id="audioEl" preload="metadata"></audio>
         <div class="p-info">
@@ -208,8 +209,8 @@
                 @input="audio.volume=vol">
         </div>
     </div>
+    @endpersist
 
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <script>
         function playTilawa(id, url, title, qari, cover, duration, downloadUrl) {
             window._playerLoad({
@@ -342,6 +343,7 @@
         });
     </script>
     @stack('scripts')
+    @livewireScripts
 </body>
 
 </html>

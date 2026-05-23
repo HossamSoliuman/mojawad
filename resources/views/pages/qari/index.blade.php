@@ -8,26 +8,6 @@
   </div>
 </div>
 <div class="wrap" style="padding-bottom:3rem">
-  @if($qaris->isEmpty())
-  <div style="text-align:center;padding:5rem 1rem;color:var(--text2)">
-    <i class="fas fa-microphone-slash" style="font-size:3rem;display:block;margin-bottom:1rem"></i>
-    {{ __('No qaris have been added yet.') }}
-  </div>
-  @else
-  <div class="grid-qaris">
-    @foreach($qaris as $q)
-    <a href="{{ route('qaris.show',$q) }}" class="q-card">
-      <img src="{{ $q->image_url }}" alt="{{ $q->name }}" loading="lazy">
-      <div class="q-overlay">
-        @if($q->is_featured)<span style="color:var(--gold);font-size:.68rem;display:block;margin-bottom:.18rem"><i class="fas fa-star"></i></span>@endif
-        <div class="q-name">{{ $q->name }}</div>
-        <div class="q-count">{{ $q->tilawat_count }} {{ __('tilawat') }}</div>
-      </div>
-      <div class="q-play-btn"><i class="fas fa-play"></i></div>
-    </a>
-    @endforeach
-  </div>
-  {{ $qaris->links('vendor.pagination.custom') }}
-  @endif
+  <livewire:qari-list />
 </div>
 @endsection

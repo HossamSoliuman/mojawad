@@ -16,7 +16,7 @@
         {{ __('Immerse yourself in the divine beauty of the Holy Qur\'an with our curated collection of legendary recitations.') }}
       </p>
       <div style="display:flex;gap:.85rem;flex-wrap:wrap">
-        <a href="{{ route('qaris.index') }}" class="btn btn-primary">{{ __('Explore Qaris') }}</a>
+        <a href="{{ route('qaris.index') }}" wire:navigate class="btn btn-primary">{{ __('Explore Qaris') }}</a>
         @guest<a href="{{ route('register') }}" class="btn btn-ghost">{{ __('Create Account') }}</a>@endguest
       </div>
     </div>
@@ -38,8 +38,8 @@
         </button>
       </div>
       <div class="t-card-body">
-        <a href="{{ route('tilawa.show',$t) }}"><div class="t-card-title">{{ $t->title }}</div></a>
-        <a href="{{ route('qaris.show',$t->qari) }}" class="t-card-qari">{{ $t->qari->name }}</a>
+        <a href="{{ route('tilawa.show',$t) }}" wire:navigate><div class="t-card-title">{{ $t->title }}</div></a>
+        <a href="{{ route('qaris.show',$t->qari) }}" wire:navigate class="t-card-qari">{{ $t->qari->name }}</a>
         <div class="t-card-meta">
           <span><i class="fas fa-clock"></i> {{ $t->formatted_duration }}</span>
           <span><i class="fas fa-heart"></i> {{ number_format($t->likes_count) }}</span>
@@ -56,7 +56,7 @@
   <div class="sec-title"><i class="fas fa-microphone gold"></i> {{ __('Qaris') }}</div>
   <div class="grid-qaris">
     @foreach($top_qaris as $q)
-    <a href="{{ route('qaris.show',$q) }}" class="q-card">
+    <a href="{{ route('qaris.show',$q) }}" wire:navigate class="q-card">
       <img src="{{ $q->image_url }}" alt="{{ $q->name }}" loading="lazy">
       <div class="q-overlay">
         @if($q->is_featured)<span style="color:var(--gold);font-size:.68rem;display:block;margin-bottom:.18rem"><i class="fas fa-star"></i></span>@endif
@@ -78,8 +78,8 @@
     <div class="t-list-item" onclick="playTilawa({{ $t->id }},'{{ $t->audio_url }}',{{ json_encode($t->title) }},{{ json_encode($t->qari->name) }},'{{ $t->cover_url }}',{{ $t->duration }},'{{ route('tilawa.download', $t) }}')">
       <img src="{{ $t->cover_url }}" class="t-list-cover" alt="{{ $t->title }}" loading="lazy">
       <div class="t-list-info">
-        <div class="t-list-title"><a href="{{ route('tilawa.show',$t) }}" onclick="event.stopPropagation()" style="color:inherit">{{ $t->title }}</a></div>
-        <div class="t-list-qari"><a href="{{ route('qaris.show',$t->qari) }}" onclick="event.stopPropagation()" style="color:inherit">{{ $t->qari->name }}</a></div>
+        <div class="t-list-title"><a href="{{ route('tilawa.show',$t) }}" wire:navigate onclick="event.stopPropagation()" style="color:inherit">{{ $t->title }}</a></div>
+        <div class="t-list-qari"><a href="{{ route('qaris.show',$t->qari) }}" wire:navigate onclick="event.stopPropagation()" style="color:inherit">{{ $t->qari->name }}</a></div>
       </div>
       <div class="t-list-meta">
         <span><i class="fas fa-clock"></i> {{ $t->formatted_duration }}</span>
@@ -100,8 +100,8 @@
     <div class="t-list-item" onclick="playTilawa({{ $t->id }},'{{ $t->audio_url }}',{{ json_encode($t->title) }},{{ json_encode($t->qari->name) }},'{{ $t->cover_url }}',{{ $t->duration }},'{{ route('tilawa.download', $t) }}')">
       <img src="{{ $t->cover_url }}" class="t-list-cover" alt="{{ $t->title }}" loading="lazy">
       <div class="t-list-info">
-        <div class="t-list-title"><a href="{{ route('tilawa.show',$t) }}" onclick="event.stopPropagation()" style="color:inherit">{{ $t->title }}</a></div>
-        <div class="t-list-qari"><a href="{{ route('qaris.show',$t->qari) }}" onclick="event.stopPropagation()" style="color:inherit">{{ $t->qari->name }}</a></div>
+        <div class="t-list-title"><a href="{{ route('tilawa.show',$t) }}" wire:navigate onclick="event.stopPropagation()" style="color:inherit">{{ $t->title }}</a></div>
+        <div class="t-list-qari"><a href="{{ route('qaris.show',$t->qari) }}" wire:navigate onclick="event.stopPropagation()" style="color:inherit">{{ $t->qari->name }}</a></div>
       </div>
       <div class="t-list-meta">
         <span><i class="fas fa-clock"></i> {{ $t->formatted_duration }}</span>

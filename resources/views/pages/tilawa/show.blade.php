@@ -3,7 +3,7 @@
 @section('content')
 
 <div class="wrap z1" style="padding-top:3rem;padding-bottom:4rem;max-width:860px">
-  <a href="{{ route('qaris.show',$tilawa->qari) }}"
+  <a href="{{ route('qaris.show',$tilawa->qari) }}" wire:navigate
     style="font-size:.8rem;color:var(--text2);display:inline-flex;align-items:center;gap:.4rem;margin-bottom:1.85rem">
     <i class="fas fa-arrow-left"></i> {{ $tilawa->qari->name }}
   </a>
@@ -17,7 +17,7 @@
       <div class="badge badge-gold" style="margin-bottom:.65rem"><i class="fas fa-star"></i> {{ __('Featured') }}</div>
       @endif
       <h1 style="font-size:clamp(1.3rem,3vw,2rem);margin-bottom:.4rem">{{ $tilawa->title }}</h1>
-      <a href="{{ route('qaris.show',$tilawa->qari) }}" class="gold"
+      <a href="{{ route('qaris.show',$tilawa->qari) }}" wire:navigate class="gold"
         style="display:inline-flex;align-items:center;gap:.4rem;margin-bottom:1.1rem;font-size:.96rem">
         <i class="fas fa-microphone"></i> {{ $tilawa->qari->name }}
       </a>
@@ -87,7 +87,7 @@
         </button>
       </div>
       <div class="t-card-body">
-        <a href="{{ route('tilawa.show',$r) }}"><div class="t-card-title">{{ $r->title }}</div></a>
+        <a href="{{ route('tilawa.show',$r) }}" wire:navigate><div class="t-card-title">{{ $r->title }}</div></a>
         <div class="t-card-qari">{{ $r->qari->name }}</div>
         <div class="t-card-meta">
           <span><i class="fas fa-clock"></i> {{ $r->formatted_duration }}</span>

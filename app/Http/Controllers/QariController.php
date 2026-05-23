@@ -16,7 +16,6 @@ class QariController extends Controller
     public function show(Qari $qari)
     {
         abort_if($qari->status !== 'active' && !auth()->user()?->hasRole('admin'), 403);
-        $tilawat = $qari->tilawat()->where('status', 'active')->latest()->paginate(20);
-        return view('pages.qari.show', compact('qari', 'tilawat'));
+        return view('pages.qari.show', compact('qari'));
     }
 }
