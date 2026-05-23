@@ -10,7 +10,7 @@
     <div style="max-width:650px; text-shadow: 0 2px 20px rgba(0,0,0,0.8)">
       <div class="badge badge-gold" style="margin-bottom:1.25rem">{{ __('Premium Tajweed Collection') }}</div>
       <h1 style="font-size:clamp(2.5rem,6vw,4.5rem);margin-bottom:1rem;line-height:1;font-weight:900">
-        {{ __('The World\'s Finest') }}<br><span class="gold">{{ __('Qur\'an Tilawat') }}</span>
+        {{ __('The World\'s Finest') }}<br><span class="gold">test{{ __('Qur\'an Tilawat') }}</span>
       </h1>
       <p style="font-size:1.2rem;color:var(--text2);margin-bottom:2.5rem;max-width:500px;line-height:1.8">
         {{ __('Immerse yourself in the divine beauty of the Holy Qur\'an with our curated collection of legendary recitations.') }}
