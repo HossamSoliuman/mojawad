@@ -330,3 +330,47 @@ html[dir="rtl"] .tbl th {
     }
 }
 
+/* =============================================
+   Admin — responsive form & layout utilities
+   ============================================= */
+
+/* 2-col on desktop, 1-col on mobile */
+.admin-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+@media(max-width: 768px) {
+    /* Every form field gets its own full-width row */
+    .admin-form-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Topbar: let action buttons wrap below the title on small screens */
+    .admin-topbar {
+        flex-wrap: wrap;
+        gap: .65rem;
+    }
+
+    /* Filter bars (index pages): stack vertically and go full-width */
+    .admin-filter-bar {
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+    .admin-filter-bar input[type="text"],
+    .admin-filter-bar select {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* Search wraps used in users / index pages */
+    .admin-search-wrap {
+        display: block;
+        width: 100%;
+    }
+    .admin-search-wrap input[type="text"] {
+        width: 100% !important;
+    }
+}
+

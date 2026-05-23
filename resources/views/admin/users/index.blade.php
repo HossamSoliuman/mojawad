@@ -8,7 +8,7 @@
 @section('content')
 
 <form method="GET" style="margin-bottom:1.4rem">
-  <div style="position:relative;display:inline-block">
+  <div class="admin-search-wrap" style="position:relative;display:inline-block">
     <i class="fas fa-magnifying-glass" style="position:absolute;left:.82rem;top:50%;transform:translateY(-50%);color:var(--text3);font-size:.78rem;pointer-events:none"></i>
     <input type="text" name="search" value="{{ request('search') }}" placeholder="Search users…"
       style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);color:var(--text);padding:.58rem 1rem .58rem 2.2rem;font-size:.86rem;width:275px;outline:none;font-family:'Crimson Pro',serif"

@@ -14,8 +14,8 @@
     </div>
     @endif
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
-      <div class="form-group" style="grid-column:1/-1; display:grid; grid-template-columns:1fr 1fr; gap:1rem">
+    <div class="admin-form-grid">
+      <div class="form-group admin-form-grid" style="grid-column:1/-1">
         <div>
           <label class="form-label"><i class="fas fa-user"></i> {{ __('Qari Name (Arabic)') }} <span style="color:var(--red)">*</span></label>
           <input type="text" name="name_ar" class="form-control" value="{{ old('name_ar', $qari->name_ar) }}" required placeholder="{{ __('الاسم بالعربية') }}" dir="rtl">
@@ -57,7 +57,7 @@
       @error('image_tmp')<span class="form-error">{{ $message }}</span>@enderror
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+    <div class="admin-form-grid" style="margin-bottom:1rem">
       <div class="form-group">
         <label class="form-label"><i class="fas fa-align-left"></i> {{ __('Biography (Arabic)') }}</label>
         <textarea name="biography_ar" class="form-control" rows="8" dir="rtl">{{ old('biography_ar', $qari->biography_ar) }}</textarea>
@@ -70,7 +70,7 @@
       </div>
     </div>
 
-    <div style="display:flex;gap:.65rem;margin-top:1.4rem">
+    <div style="display:flex;gap:.65rem;margin-top:1.4rem;flex-wrap:wrap">
       <button type="submit" class="btn btn-primary"><i class="fas fa-floppy-disk"></i> {{ __('Update Qari') }}</button>
       <a href="{{ route('admin.qaris.index') }}" class="btn btn-ghost"><i class="fas fa-xmark"></i> {{ __('Cancel') }}</a>
     </div>

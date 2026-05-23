@@ -11,7 +11,7 @@
 <div class="alert alert-success" style="margin-bottom:1.4rem"><i class="fas fa-check-circle"></i> Tilawa created and uploaded to Archive.org successfully.</div>
 @endif
 
-<form method="GET" style="display:flex;align-items:center;gap:.65rem;margin-bottom:1.4rem;flex-wrap:wrap">
+<form method="GET" class="admin-filter-bar" style="display:flex;align-items:center;gap:.65rem;margin-bottom:1.4rem;flex-wrap:wrap">
   <div style="position:relative">
     <i class="fas fa-magnifying-glass" style="position:absolute;left:.82rem;top:50%;transform:translateY(-50%);color:var(--text3);font-size:.78rem;pointer-events:none"></i>
     <input type="text" name="search" value="{{ request('search') }}" placeholder="Search tilawat…"
