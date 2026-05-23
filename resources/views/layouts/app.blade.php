@@ -201,12 +201,11 @@
         </div>
         <div class="p-vol">
             <a href="#" class="p-btn" id="pDownload" title="Download" style="display:none; color:var(--text2); text-decoration:none;"><i class="fas fa-download"></i></a>
-            <button class="p-btn" @click="muted=!muted;audio.muted=muted">
+            <button class="p-btn" @click="muted=!muted">
                 <i class="fas"
                     :class="muted ? 'fa-volume-xmark' : (vol > 0.5 ? 'fa-volume-high' : 'fa-volume-low')"></i>
             </button>
-            <input type="range" class="vol-slider" min="0" max="1" step="0.02" x-model="vol"
-                @input="audio.volume=vol">
+            <input type="range" class="vol-slider" min="0" max="1" step="0.02" x-model.number="vol">
         </div>
     </div>
     @endpersist
@@ -233,6 +232,7 @@
                 pct: 0,
                 vol: 1,
                 muted: false,
+                _lastSave: 0,
                 init() {
                     if (!window.globalAudio) {
                         window.globalAudio = new Audio();
@@ -241,31 +241,44 @@
 
                     window._playerLoad = (d) => this.load(d);
 
+                    // ── Restore saved sound level / mute (kept across sessions,
+                    //    independent of which track is loaded) ──
+                    try {
+                        const prefs = JSON.parse(localStorage.getItem('tilawa_prefs') || '{}');
+                        if (typeof prefs.vol === 'number') this.vol = prefs.vol;
+                        if (typeof prefs.muted === 'boolean') this.muted = prefs.muted;
+                    } catch (e) {}
+                    this.audio.volume = this.vol;
+                    this.audio.muted = this.muted;
+
+                    // Persist sound level / mute the instant they change
+                    this.$watch('vol', (v) => { this.audio.volume = v; this.savePrefs(); });
+                    this.$watch('muted', (m) => { this.audio.muted = m; this.savePrefs(); });
+
                     this.audio.addEventListener('timeupdate', () => {
                         this.cur = this.audio.currentTime;
                         this.dur = this.audio.duration || this.dur;
                         this.pct = this.dur ? (this.cur / this.dur) * 100 : 0;
-
-                        localStorage.setItem('tilawa_player', JSON.stringify({
-                            src: this.audio.src,
-                            time: this.audio.currentTime,
-                            playing: !this.audio.paused,
-                            title: document.getElementById('pTitle').textContent,
-                            qari: document.getElementById('pQari').textContent,
-                            cover: document.getElementById('pCover').src,
-                            duration: this.dur,
-                            downloadUrl: document.getElementById('pDownload').href || ''
-                        }));
+                        this.saveProgress();
                     });
 
-                    this.audio.addEventListener('ended', () => this.playing = false);
-                    this.audio.addEventListener('play', () => this.playing = true);
-                    this.audio.addEventListener('pause', () => this.playing = false);
+                    this.audio.addEventListener('ended', () => { this.playing = false; this.saveProgress(true); });
+                    this.audio.addEventListener('play',  () => { this.playing = true;  this.saveProgress(true); });
+                    this.audio.addEventListener('pause', () => { this.playing = false; this.saveProgress(true); });
+                    window.addEventListener('beforeunload', () => this.saveProgress(true));
 
-                    const saved = localStorage.getItem('tilawa_player');
-                    if (saved) {
-                        const d = JSON.parse(saved);
-                        if (d.src) {
+                    // ── Restore now-playing track ──
+                    // During SPA navigation (wire:navigate) window.globalAudio stays
+                    // alive, so this only does real work after a hard reload / new tab.
+                    if (this.audio.src) {
+                        this.cur = this.audio.currentTime;
+                        this.dur = this.audio.duration || this.dur;
+                        this.pct = this.dur ? (this.cur / this.dur) * 100 : 0;
+                        this.playing = !this.audio.paused;
+                    } else {
+                        let d = null;
+                        try { d = JSON.parse(localStorage.getItem('tilawa_player') || 'null'); } catch (e) {}
+                        if (d && d.src) {
                             document.getElementById('pCover').src = d.cover || '';
                             document.getElementById('pTitle').textContent = d.title || '';
                             document.getElementById('pQari').textContent = d.qari || '';
@@ -284,6 +297,25 @@
                         }
                     }
                 },
+                savePrefs() {
+                    localStorage.setItem('tilawa_prefs', JSON.stringify({ vol: this.vol, muted: this.muted }));
+                },
+                saveProgress(force = false) {
+                    const now = Date.now();
+                    if (!force && now - this._lastSave < 1000) return;
+                    this._lastSave = now;
+                    if (!this.audio.src) return;
+                    localStorage.setItem('tilawa_player', JSON.stringify({
+                        src: this.audio.src,
+                        time: this.audio.currentTime,
+                        playing: !this.audio.paused,
+                        title: document.getElementById('pTitle').textContent,
+                        qari: document.getElementById('pQari').textContent,
+                        cover: document.getElementById('pCover').src,
+                        duration: this.dur,
+                        downloadUrl: document.getElementById('pDownload').href || ''
+                    }));
+                },
                 load(d) {
                     document.getElementById('pCover').src = d.cover;
                     document.getElementById('pTitle').textContent = d.title;
@@ -301,8 +333,11 @@
                         this.audio.load();
                     }
 
+                    this.audio.volume = this.vol;
+                    this.audio.muted = this.muted;
                     this.dur = d.duration || 0;
                     this.audio.play().catch(() => {});
+                    this.saveProgress(true);
                 },
                 toggle() {
                     this.playing ? this.audio.pause() : this.audio.play()

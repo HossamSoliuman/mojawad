@@ -10,7 +10,9 @@
       "Bash(npm run *)",
       "Bash(composer require *)",
       "PowerShell(Get-Command *)",
-      "PowerShell(composer require *)"
+      "PowerShell(composer require *)",
+      "Bash(git -C /d/projects/mojawad status --short)",
+      "Bash(git -C /d/projects/mojawad log --oneline -5)"
     ]
   }
 }
