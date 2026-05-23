@@ -1002,7 +1002,8 @@ textarea.form-control {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r2);
-  overflow: hidden
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .tbl {
@@ -1454,6 +1455,7 @@ textarea.form-control {
 
 @media(max-width:640px) {
   .hero {
+    height: auto;
     min-height: 50vh;
     padding: 2.5rem 0
   }

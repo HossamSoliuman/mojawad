@@ -59,24 +59,50 @@ html[dir="rtl"] .hero div[style*="display:flex"] {
     .nav-links, .lang-desktop, .user-desktop {
         display: none !important;
     }
-    
+
     .mobile-toggle {
         display: inline-flex;
         align-items: center;
         justify-content: center;
     }
-    
+
     .navbar {
         padding: 0 .8rem;
         gap: .5rem;
     }
-    
+
+    /* Brand is locked at 30px by default — too wide for a phone bar */
+    .navbar-brand {
+        font-size: 1.2rem;
+        flex-shrink: 0;
+    }
+
+    .mobile-toggle {
+        flex-shrink: 0;
+    }
+
+    /* Search fills leftover space and must be allowed to shrink (min-width:0
+       on every level, incl. the input's intrinsic ~20ch width) or the bar
+       overflows and the page scrolls sideways. */
+    .navbar-right {
+        flex: 1 1 auto;
+        min-width: 0;
+        gap: .4rem;
+        margin-left: auto;
+        justify-content: flex-end;
+    }
+    .search-wrap {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
     html[dir="rtl"] .navbar {
         flex-direction: row;
     }
-    
+
     .search-input {
-        width: 140px;
+        width: 100%;
+        min-width: 0;
         padding-left: 1.8rem;
     }
     html[dir="rtl"] .search-input {
@@ -84,7 +110,7 @@ html[dir="rtl"] .hero div[style*="display:flex"] {
         padding-right: 1.8rem;
     }
     .search-input:focus {
-        width: 180px;
+        width: 100%;
     }
     
     .search-dropdown {

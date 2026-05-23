@@ -11,11 +11,11 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
-<body x-data>
+<body x-data="{ mobileMenu: false }">
     <div class="bg-dots"></div>
 
     {{-- NAVBAR --}}
-    <nav class="navbar z1" x-data="{ mobileMenu: false }">
+    <nav class="navbar z1">
         <button class="mobile-toggle" @click="mobileMenu = !mobileMenu">
             <i class="fas fa-bars"></i>
         </button>
@@ -115,10 +115,12 @@
                 </div>
             @endauth
         </div>
+    </nav>
 
-        {{-- MOBILE DRAWER --}}
-        <div class="mobile-menu-overlay" x-show="mobileMenu" @click="mobileMenu = false" x-transition.opacity style="display:none"></div>
-        <div class="mobile-menu-drawer" :class="mobileMenu ? 'open' : ''">
+    {{-- MOBILE DRAWER (kept outside <nav> — the navbar's backdrop-filter would
+         otherwise trap these fixed elements inside the 62px-tall bar) --}}
+    <div class="mobile-menu-overlay" x-show="mobileMenu" @click="mobileMenu = false" x-transition.opacity style="display:none"></div>
+    <div class="mobile-menu-drawer" :class="mobileMenu ? 'open' : ''">
             <div class="mm-header">
                 <a href="{{ route('home') }}" class="navbar-brand">
                     <i class="fas fa-book-open-reader"></i> Tilawa
@@ -157,7 +159,6 @@
                 @endauth
             </div>
         </div>
-    </nav>
 
     {{-- FLASH --}}
     @if (session('success') || session('error'))
