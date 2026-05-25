@@ -21,7 +21,9 @@ class Qari extends Model
     }
     public function getImageUrlAttribute(): string
     {
-        return $this->image ? asset('storage/' . $this->image) : 'https://ui-avatars.com/api/?name=' . urlencode($this->name_ar) . '&background=1e1e35&color=c9a153&size=400';
+        return $this->image
+            ? \Illuminate\Support\Facades\Storage::disk('public')->url($this->image)
+            : 'https://ui-avatars.com/api/?name=' . urlencode($this->name_ar) . '&background=1e1e35&color=c9a153&size=400';
     }
 
     public function getNameAttribute(): string

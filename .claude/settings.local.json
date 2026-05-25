@@ -12,7 +12,23 @@
       "PowerShell(Get-Command *)",
       "PowerShell(composer require *)",
       "Bash(git -C /d/projects/mojawad status --short)",
-      "Bash(git -C /d/projects/mojawad log --oneline -5)"
+      "Bash(git -C /d/projects/mojawad log --oneline -5)",
+      "PowerShell(php artisan db:seed --class=QariSeeder 2>&1)",
+      "PowerShell(php artisan db:seed --class=QariSeeder)",
+      "WebFetch(domain:en.wikipedia.org)",
+      "WebSearch",
+      "WebFetch(domain:ms.wikipedia.org)",
+      "WebFetch(domain:commons.wikimedia.org)",
+      "WebFetch(domain:www.wikidata.org)",
+      "WebFetch(domain:ar.wikipedia.org)",
+      "WebFetch(domain:api.wikimedia.org)",
+      "WebFetch(domain:www.assabile.com)",
+      "PowerShell(php artisan tinker --execute=\"echo App\\\\Models\\\\Qari::whereNotNull\\('image'\\)->count\\(\\) . ' qaris with images, ' . App\\\\Models\\\\Qari::whereNull\\('image'\\)->count\\(\\) . ' without';\")",
+      "PowerShell(php artisan tinker --execute=\"echo Illuminate\\\\Support\\\\Facades\\\\Storage::disk\\('public'\\)->path\\('qaris'\\);\")",
+      "PowerShell(php artisan tinker --execute=\"try { \\\\$r = Illuminate\\\\Support\\\\Facades\\\\Http::timeout\\(20\\)->withHeaders\\(['User-Agent' => 'Mozilla/5.0']\\)->get\\('https://upload.wikimedia.org/wikipedia/commons/7/70/Hussary.jpg'\\); echo 'Status: ' . \\\\$r->status\\(\\) . ' Size: ' . strlen\\(\\\\$r->body\\(\\)\\) . ' bytes'; } catch\\(\\\\Exception \\\\$e\\) { echo 'Error: ' . \\\\$e->getMessage\\(\\); }\")",
+      "PowerShell(php test_img.php)",
+      "PowerShell(php artisan tinker --execute=\"echo App\\\\Models\\\\Qari::whereNotNull\\('image'\\)->count\\(\\) . ' with images, ' . App\\\\Models\\\\Qari::whereNull\\('image'\\)->count\\(\\) . ' without';\" ; Get-ChildItem public\\\\uploads\\\\qari-images 2>$null | Select-Object Name | Format-Table -AutoSize)",
+      "PowerShell(php artisan tinker --execute=\"echo App\\\\Models\\\\Qari::whereNotNull\\('image'\\)->count\\(\\) . ' with images, ' . App\\\\Models\\\\Qari::whereNull\\('image'\\)->count\\(\\) . ' without';\")"
     ]
   }
 }
