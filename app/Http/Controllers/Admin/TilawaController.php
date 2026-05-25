@@ -74,6 +74,97 @@ class TilawaController extends Controller
             ->with('success', 'Tilawa uploaded successfully.');
     }
 
+    public function uploader(Request $request)
+    {
+        $qaris = Qari::where('status', 'active')
+            ->orderBy('name_ar')
+            ->get(['id', 'name_ar', 'name_en', 'image'])
+            ->map(fn(Qari $q) => [
+                'id'    => $q->id,
+                'name'  => $q->name,
+                'image' => $q->image_url,
+            ]);
+
+        $defaultQari = null;
+        if ($id = $request->session()->get('uploader_qari_id')) {
+            $defaultQari = $qaris->firstWhere('id', $id);
+        }
+
+        return view('admin.tilawat.uploader', [
+            'qaris'       => $qaris,
+            'defaultQari' => $defaultQari,
+            'titleMode'   => $request->session()->get('uploader_title_mode', 'filename'),
+        ]);
+    }
+
+    public function setDefaultQari(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'qari_id'    => 'nullable|exists:qaris,id',
+            'title_mode' => 'nullable|in:filename,manual',
+        ]);
+
+        if (array_key_exists('title_mode', $data) && $data['title_mode']) {
+            $request->session()->put('uploader_title_mode', $data['title_mode']);
+        }
+
+        if (empty($data['qari_id'])) {
+            $request->session()->forget('uploader_qari_id');
+            return response()->json(['success' => true, 'cleared' => true]);
+        }
+
+        $qari = Qari::where('status', 'active')->findOrFail($data['qari_id']);
+        $request->session()->put('uploader_qari_id', $qari->id);
+
+        return response()->json([
+            'success' => true,
+            'qari'    => ['id' => $qari->id, 'name' => $qari->name, 'image' => $qari->image_url],
+        ]);
+    }
+
+    public function quickStore(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'qari_id'   => 'required|exists:qaris,id',
+            'audio_tmp' => 'required|string|exists:tmp_uploads,id',
+            'title'     => 'required|string|max:255',
+        ]);
+
+        $qari = Qari::where('status', 'active')->findOrFail($data['qari_id']);
+
+        $title = trim($data['title']);
+        $base  = Str::slug($title) ?: 'tilawa';
+        $slug  = $base;
+        while (Tilawa::where('slug', $slug)->exists()) {
+            $slug = $base . '-' . Str::random(6);
+        }
+
+        $audioPath = $this->uploadService->moveFromTmp($data['audio_tmp'], 'tilawat');
+
+        $tilawa = Tilawa::create([
+            'qari_id'       => $qari->id,
+            'title_ar'      => $title,
+            'title_en'      => null,
+            'slug'          => $slug,
+            'audio_path'    => $audioPath,
+            'archive_url'   => null,
+            'duration'      => 0,
+            'cover_image'   => null,
+            'status'        => 'pending',
+            'is_featured'   => false,
+            'uploaded_by'   => Auth::id(),
+            'upload_status' => 'done',
+        ]);
+
+        Cache::forget('homepage_data');
+
+        return response()->json([
+            'success' => true,
+            'id'      => $tilawa->id,
+            'title'   => $tilawa->title_ar,
+        ]);
+    }
+
     public function uploading(Tilawa $tilawa)
     {
         return view('admin.tilawat.uploading', compact('tilawa'));

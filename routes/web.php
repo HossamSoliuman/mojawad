@@ -40,6 +40,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin|creator'
 
     Route::get('/', DashboardController::class)->name('dashboard');
 
+    // ── Focused uploader (moderators/creators) ────────────────────────────
+    Route::get('/upload',          [\App\Http\Controllers\Admin\TilawaController::class, 'uploader'])->name('upload');
+    Route::post('/uploader/qari',  [\App\Http\Controllers\Admin\TilawaController::class, 'setDefaultQari'])->name('uploader.qari');
+    Route::post('/tilawat/quick-store', [\App\Http\Controllers\Admin\TilawaController::class, 'quickStore'])->name('tilawat.quick-store');
+
     Route::post('/upload/tmp',          [TmpUploadController::class, 'store'])->name('upload.tmp');
     Route::delete('/upload/tmp/{token}', [TmpUploadController::class, 'destroy'])->name('upload.tmp.destroy');
 

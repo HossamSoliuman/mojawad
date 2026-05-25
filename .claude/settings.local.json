@@ -28,7 +28,19 @@
       "PowerShell(php artisan tinker --execute=\"try { \\\\$r = Illuminate\\\\Support\\\\Facades\\\\Http::timeout\\(20\\)->withHeaders\\(['User-Agent' => 'Mozilla/5.0']\\)->get\\('https://upload.wikimedia.org/wikipedia/commons/7/70/Hussary.jpg'\\); echo 'Status: ' . \\\\$r->status\\(\\) . ' Size: ' . strlen\\(\\\\$r->body\\(\\)\\) . ' bytes'; } catch\\(\\\\Exception \\\\$e\\) { echo 'Error: ' . \\\\$e->getMessage\\(\\); }\")",
       "PowerShell(php test_img.php)",
       "PowerShell(php artisan tinker --execute=\"echo App\\\\Models\\\\Qari::whereNotNull\\('image'\\)->count\\(\\) . ' with images, ' . App\\\\Models\\\\Qari::whereNull\\('image'\\)->count\\(\\) . ' without';\" ; Get-ChildItem public\\\\uploads\\\\qari-images 2>$null | Select-Object Name | Format-Table -AutoSize)",
-      "PowerShell(php artisan tinker --execute=\"echo App\\\\Models\\\\Qari::whereNotNull\\('image'\\)->count\\(\\) . ' with images, ' . App\\\\Models\\\\Qari::whereNull\\('image'\\)->count\\(\\) . ' without';\")"
+      "PowerShell(php artisan tinker --execute=\"echo App\\\\Models\\\\Qari::whereNotNull\\('image'\\)->count\\(\\) . ' with images, ' . App\\\\Models\\\\Qari::whereNull\\('image'\\)->count\\(\\) . ' without';\")",
+      "PowerShell(php artisan tinker --execute=\"\\\\$u = App\\\\Models\\\\User::role\\('creator'\\)->first\\(\\); echo \\\\$u ? \\('creator: '.\\\\$u->email\\) : 'NO creator user';\")",
+      "PowerShell(php -l app\\\\Http\\\\Controllers\\\\Admin\\\\TilawaController.php; php -l app\\\\Http\\\\Controllers\\\\Admin\\\\DashboardController.php; php -l app\\\\Http\\\\Controllers\\\\Auth\\\\AuthenticatedSessionController.php)",
+      "PowerShell(php check_creator.php)",
+      "PowerShell(php artisan view:cache 2>&1; php artisan view:clear 2>&1)",
+      "PowerShell(php artisan serve --port=8123 2>&1)",
+      "PowerShell(php artisan serve --port=8234 2>&1)",
+      "PowerShell(php artisan serve --port=8345 2>&1)",
+      "Bash(kill %1)",
+      "PowerShell(php verify_uploader.php)",
+      "Bash(php *)",
+      "PowerShell(Out-Null *)",
+      "Bash(node *)"
     ]
   }
 }

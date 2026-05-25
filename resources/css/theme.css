@@ -8,6 +8,7 @@
   --surface3: #333333;
   --hover: #3a3a3a;
   --gold: #1DB954;
+  --gold-rgb: 29, 185, 84;
   --gold-light: #1ed760;
   --gold-dark: #1aa34a;
   --gold-faint: rgba(29, 185, 84, 0.08);
@@ -16,6 +17,7 @@
   --border2: rgba(255, 255, 255, 0.20);
   --border3: rgba(255, 255, 255, 0.35);
   --text: #FFFFFF;
+  --text1: #FFFFFF;
   --text2: #B3B3B3;
   --text3: #888888;
   --red: #e05454;

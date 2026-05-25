@@ -10,6 +10,9 @@ class AuthenticatedSessionController extends Controller {
         if(!Auth::attempt($credentials,$request->boolean('remember')))
             return back()->withErrors(['email'=>'These credentials do not match our records.'])->onlyInput('email');
         $request->session()->regenerate();
+        $user = Auth::user();
+        if($user->hasRole('creator') && !$user->hasRole('admin'))
+            return redirect()->route('admin.upload');
         return redirect()->intended(route('home'));
     }
     public function destroy(Request $request) {
