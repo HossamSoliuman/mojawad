@@ -67,7 +67,7 @@
         <a href="{{ route('qaris.show',$t->qari) }}" wire:navigate class="t-card-qari">{{ $t->qari->name }}</a>
         <div class="t-card-meta">
           <span><i class="fas fa-clock"></i> {{ $t->formatted_duration }}</span>
-          <span><i class="fas fa-heart"></i> {{ number_format($t->likes_count) }}</span>
+          <span><i class="fas fa-heart"></i> <span data-like-count="{{ $t->id }}">{{ number_format($t->likes_count) }}</span></span>
         </div>
       </div>
     </div>
@@ -108,7 +108,7 @@
       </div>
       <div class="t-list-meta">
         <span><i class="fas fa-clock"></i> {{ $t->formatted_duration }}</span>
-        <span style="color:var(--gold)"><i class="fas fa-heart"></i> {{ number_format($t->likes_count) }}</span>
+        <span style="color:var(--gold)"><i class="fas fa-heart"></i> <span data-like-count="{{ $t->id }}">{{ number_format($t->likes_count) }}</span></span>
       </div>
       <div class="t-list-play"><i class="fas fa-play"></i></div>
     </div>
@@ -141,48 +141,4 @@
 
 </div>
 
-@push('scripts')
-<script>
-  document.addEventListener('alpine:init', () => {
-    Alpine.data('quranRadio', () => ({
-      audio: null,
-      playing: false,
-      loading: false,
-      stream: 'https://n0e.radiojar.com/8s5u5tpdtwzuv',
-      init() {
-        if (!window.quranRadioAudio) {
-          // Keep one Audio element alive for the whole session (survives wire:navigate).
-          // Pre-buffer the live stream up-front so the first click starts instantly.
-          const a = new Audio();
-          a.preload = 'auto';
-          a.src = this.stream;
-          a.load();
-          window.quranRadioAudio = a;
-        }
-        this.audio = window.quranRadioAudio;
-        this.playing = !this.audio.paused && !!this.audio.src;
-        this.audio.addEventListener('playing', () => { this.playing = true; this.loading = false; });
-        this.audio.addEventListener('pause', () => { this.playing = false; });
-        this.audio.addEventListener('waiting', () => { this.loading = true; });
-        this.audio.addEventListener('error', () => { this.playing = false; this.loading = false; });
-      },
-      toggle() {
-        if (this.playing) {
-          this.audio.pause();
-          return;
-        }
-        // Optimistic UI: flip to loading the instant the user clicks.
-        this.loading = true;
-        if (window.globalAudio && !window.globalAudio.paused) {
-          window.globalAudio.pause();
-        }
-        if (!this.audio.src) {
-          this.audio.src = this.stream;
-        }
-        this.audio.play().catch(() => { this.loading = false; });
-      },
-    }));
-  });
-</script>
-@endpush
 @endsection

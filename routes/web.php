@@ -29,13 +29,15 @@ Route::prefix('tilawa')->name('tilawa.')->group(function () {
 
 // ── Auth-required ────────────────────────────────────────────────────────
 Route::middleware('auth')->group(function () {
-    Route::get('/library', fn () => view('pages.library'))->name('library');
+    Route::get('/likes', fn () => view('pages.likes'))->name('likes');
     Route::get('/profile', fn () => view('pages.profile'))->name('profile');
 });
 
 // ── AJAX API ─────────────────────────────────────────────────────────────
 Route::middleware('auth')->prefix('api')->group(function () {
+    Route::get('/like/{tilawa}', [LikeController::class,    'status'])->name('api.like.status');
     Route::post('/like/{tilawa}', [LikeController::class,   'toggle'])->name('api.like');
+    Route::post('/likes/sync', [LikeController::class,      'sync'])->name('api.likes.sync');
     Route::post('/save/{tilawa}', [SaveController::class,   'toggle'])->name('api.save');
 });
 Route::get('/api/search', SearchController::class)->name('api.search');

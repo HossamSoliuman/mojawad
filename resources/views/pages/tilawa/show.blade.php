@@ -24,8 +24,8 @@
 
       <div style="display:flex;gap:.38rem;flex-wrap:wrap;margin-bottom:1.5rem">
         <span class="badge badge-muted"><i class="fas fa-clock"></i> {{ $tilawa->formatted_duration }}</span>
-        <span class="badge badge-muted" id="likeCountBadge">
-          <i class="fas fa-heart"></i> {{ number_format($tilawa->likes_count) }}
+        <span class="badge badge-muted">
+          <i class="fas fa-heart"></i> <span data-like-count="{{ $tilawa->id }}">{{ number_format($tilawa->likes_count) }}</span>
         </span>
         <span class="badge badge-muted"><i class="fas fa-download"></i> {{ number_format($tilawa->downloads_count) }}</span>
         @if($tilawa->recorded_at)
@@ -42,21 +42,13 @@
           <i class="fas fa-play"></i> {{ __('Play') }}
         </button>
 
-        @auth
         <button class="btn btn-sm {{ $liked ? 'btn-primary' : 'btn-ghost' }}" id="likeBtn"
+          data-tilawa-id="{{ $tilawa->id }}"
+          data-liked-text="{{ __('Liked') }}" data-like-text="{{ __('Like') }}"
           onclick="toggleLike({{ $tilawa->id }})">
           <i class="fas fa-heart"></i>
           <span id="likeBtnText">{{ $liked ? __('Liked') : __('Like') }}</span>
         </button>
-        <button class="btn btn-sm {{ $saved ? 'btn-primary' : 'btn-ghost' }}" id="saveBtn"
-          onclick="toggleSave({{ $tilawa->id }})">
-          <i class="fas fa-bookmark"></i>
-          <span id="saveBtnText">{{ $saved ? __('Saved') : __('Save') }}</span>
-        </button>
-        @else
-        <a href="{{ route('login') }}" class="btn btn-ghost btn-sm"><i class="fas fa-heart"></i> {{ __('Like') }}</a>
-        <a href="{{ route('login') }}" class="btn btn-ghost btn-sm"><i class="fas fa-bookmark"></i> {{ __('Save') }}</a>
-        @endauth
 
         <a href="{{ route('tilawa.download',$tilawa) }}" class="btn btn-ghost btn-sm">
           <i class="fas fa-download"></i> {{ __('Download') }}
@@ -91,7 +83,7 @@
         <div class="t-card-qari">{{ $r->qari->name }}</div>
         <div class="t-card-meta">
           <span><i class="fas fa-clock"></i> {{ $r->formatted_duration }}</span>
-          <span><i class="fas fa-heart"></i> {{ number_format($r->likes_count) }}</span>
+          <span><i class="fas fa-heart"></i> <span data-like-count="{{ $r->id }}">{{ number_format($r->likes_count) }}</span></span>
         </div>
       </div>
     </div>
@@ -102,37 +94,40 @@
 
 @push('scripts')
 <script>
-const csrf = document.querySelector('meta[name=csrf-token]').content;
-
-async function toggleLike(id) {
+function toggleLike(id) {
   const btn = document.getElementById('likeBtn');
-  btn.disabled = true;
-  const r = await fetch(`/api/like/${id}`, { method:'POST', headers:{'X-CSRF-TOKEN':csrf,'Accept':'application/json'} });
-  const d = await r.json();
-  btn.disabled = false;
-  if (d.liked) {
-    btn.className = btn.className.replace('btn-ghost','btn-primary');
-    document.getElementById('likeBtnText').textContent = "{{ __('Liked') }}";
-  } else {
-    btn.className = btn.className.replace('btn-primary','btn-ghost');
-    document.getElementById('likeBtnText').textContent = "{{ __('Like') }}";
-  }
-  document.getElementById('likeCountBadge').innerHTML = '<i class="fas fa-heart"></i> ' + d.count.toLocaleString();
+  if (btn) btn.disabled = true;
+  window.toggleTilawaLike(id).finally(() => { if (btn) btn.disabled = false; });
 }
 
-async function toggleSave(id) {
-  const btn = document.getElementById('saveBtn');
-  btn.disabled = true;
-  const r = await fetch(`/api/save/${id}`, { method:'POST', headers:{'X-CSRF-TOKEN':csrf,'Accept':'application/json'} });
-  const d = await r.json();
-  btn.disabled = false;
-  if (d.saved) {
-    btn.className = btn.className.replace('btn-ghost','btn-primary');
-    document.getElementById('saveBtnText').textContent = "{{ __('Saved') }}";
-  } else {
-    btn.className = btn.className.replace('btn-primary','btn-ghost');
-    document.getElementById('saveBtnText').textContent = "{{ __('Save') }}";
-  }
+function paintLikeBtn(liked) {
+  const btn = document.getElementById('likeBtn');
+  if (!btn) return;
+  btn.classList.toggle('btn-primary', liked);
+  btn.classList.toggle('btn-ghost', !liked);
+  const txt = document.getElementById('likeBtnText');
+  if (txt) txt.textContent = liked ? btn.dataset.likedText : btn.dataset.likeText;
+}
+
+// For signed-out visitors the server renders the button as un-liked; reflect
+// any like they stored locally on this device.
+function initGuestLikeBtn() {
+  if (window._likeEnabled) return;
+  const btn = document.getElementById('likeBtn');
+  if (btn) paintLikeBtn(window.isTilawaLiked(btn.dataset.tilawaId));
+}
+initGuestLikeBtn();
+
+// One persistent listener (survives wire:navigate) that targets the current
+// track-page button via its data attributes, so it never goes stale.
+if (!window._showLikeSync) {
+  window._showLikeSync = true;
+  document.addEventListener('livewire:navigated', initGuestLikeBtn);
+  window.addEventListener('tilawa-like-changed', (e) => {
+    const btn = document.getElementById('likeBtn');
+    if (!btn || Number(btn.dataset.tilawaId) !== Number(e.detail.id)) return;
+    paintLikeBtn(e.detail.liked);
+  });
 }
 </script>
 @endpush

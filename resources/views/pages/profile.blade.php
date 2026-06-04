@@ -15,18 +15,12 @@
   </div>
   <div class="card" style="padding:1.65rem">
     <h3 style="font-size:.95rem;margin-bottom:1.15rem"><i class="fas fa-chart-simple gold"></i> {{ __('Activity') }}</h3>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;text-align:center">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;text-align:center">
       <div>
         <div style="font-family:'Cinzel',serif;font-size:1.7rem;font-weight:700;color:var(--gold)">
           {{ auth()->user()->likes()->count() }}
         </div>
         <div style="font-size:.78rem;color:var(--text2)">{{ __('Liked') }}</div>
-      </div>
-      <div>
-        <div style="font-family:'Cinzel',serif;font-size:1.7rem;font-weight:700;color:var(--gold)">
-          {{ auth()->user()->savedTilawat()->count() }}
-        </div>
-        <div style="font-size:.78rem;color:var(--text2)">{{ __('Saved') }}</div>
       </div>
       <div>
         <div style="font-family:'Cinzel',serif;font-size:1.7rem;font-weight:700;color:var(--gold)">

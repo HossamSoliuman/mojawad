@@ -30,7 +30,7 @@
         @endif
       </div>
       <span style="font-size:.74rem;color:var(--text2);font-family:monospace;flex-shrink:0">{{ $t->formatted_duration }}</span>
-      <span style="font-size:.74rem;color:var(--text2);flex-shrink:0"><i class="fas fa-heart"></i> {{ number_format($t->likes_count) }}</span>
+      <span style="font-size:.74rem;color:var(--text2);flex-shrink:0"><i class="fas fa-heart"></i> <span data-like-count="{{ $t->id }}">{{ number_format($t->likes_count) }}</span></span>
       <a href="{{ route('tilawa.show', $t) }}" wire:navigate onclick="event.stopPropagation()" class="btn-icon" title="{{ __('Details') }}">
         <i class="fas fa-circle-info"></i>
       </a>

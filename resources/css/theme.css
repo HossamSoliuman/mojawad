@@ -1030,6 +1030,31 @@ textarea.form-control {
   color: var(--gold-light)
 }
 
+.p-btn.liked {
+  color: var(--gold)
+}
+
+.p-btn.liked:hover {
+  color: var(--gold-light)
+}
+
+.p-like {
+  flex-shrink: 0;
+  margin-inline-start: .15rem
+}
+
+@keyframes likePop {
+  0% { transform: scale(1) }
+  30% { transform: scale(1.4) }
+  55% { transform: scale(.85) }
+  80% { transform: scale(1.12) }
+  100% { transform: scale(1) }
+}
+
+.like-pop {
+  animation: likePop .45s ease
+}
+
 .p-btn.play {
   width: 42px;
   height: 42px;
@@ -1742,6 +1767,300 @@ textarea.form-control {
 .dropdown button:hover {
   background: var(--hover);
   color: var(--text)
+}
+
+.ni-user-hd {
+  padding: .6rem .95rem .35rem;
+  font-size: .72rem;
+  color: var(--text3);
+  font-family: var(--font-display);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: .25rem;
+}
+
+
+/* ============================================================
+   Floating glass island navigation
+   ============================================================ */
+.nav-island {
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  max-width: calc(100vw - 24px);
+  padding: .4rem .55rem;
+  border-radius: 999px;
+  background: rgba(35, 35, 35, .72);
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 34px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .05);
+  transition: box-shadow .3s ease;
+}
+
+.nav-island.searching {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .55), 0 0 0 1px var(--gold-faint);
+}
+
+.ni-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .35rem .65rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--gold);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.ni-brand i {
+  font-size: 1.1rem;
+}
+
+/* Links morph away when searching */
+.ni-links {
+  display: flex;
+  align-items: center;
+  gap: .1rem;
+  max-width: 600px;
+  overflow: hidden;
+  transition: max-width .38s cubic-bezier(.4, 0, .2, 1), opacity .25s ease, margin .38s;
+}
+
+.nav-island.searching .ni-links {
+  max-width: 0;
+  opacity: 0;
+  margin: 0 -.35rem;
+}
+
+.ni-link {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  padding: .45rem .85rem;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: .9rem;
+  font-weight: 600;
+  color: var(--text2);
+  white-space: nowrap;
+  transition: color .18s, background .18s;
+}
+
+.ni-link i {
+  font-size: .9rem;
+}
+
+.ni-link:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, .06);
+}
+
+.ni-link.active {
+  color: var(--gold);
+  background: var(--gold-faint);
+}
+
+/* Search */
+.ni-search {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.ni-search-input {
+  width: 0;
+  min-width: 0;
+  opacity: 0;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: var(--surface2);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: .9rem;
+  outline: none;
+  transition: width .38s cubic-bezier(.4, 0, .2, 1), opacity .25s ease, padding .38s, border-color .18s;
+}
+
+.nav-island.searching .ni-search-input {
+  width: 320px;
+  opacity: 1;
+  padding: .5rem 1rem;
+  border-color: var(--border);
+}
+
+.nav-island.searching .ni-search-input:focus {
+  border-color: var(--gold);
+}
+
+.ni-search-trigger {
+  display: inline-flex;
+}
+
+.nav-island.searching .ni-search-trigger {
+  display: none;
+}
+
+.ni-search-close {
+  background: none;
+  border: none;
+  color: var(--text2);
+  font-size: 1rem;
+  padding: 0 .55rem;
+  line-height: 1;
+}
+
+.ni-search-close:hover {
+  color: var(--gold);
+}
+
+.ni-search-results {
+  position: absolute;
+  top: calc(100% + .85rem);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(360px, 88vw);
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--r2);
+  box-shadow: 0 16px 50px rgba(0, 0, 0, .6);
+  overflow: hidden;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* Actions: language / user / auth — collapse away when searching */
+.ni-actions {
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+  max-width: 300px;
+  overflow: hidden;
+  transition: max-width .38s cubic-bezier(.4, 0, .2, 1), opacity .25s ease, margin .38s;
+}
+
+.nav-island.searching .ni-actions {
+  max-width: 0;
+  opacity: 0;
+  margin: 0 -.25rem;
+}
+
+.ni-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--text2);
+  font-size: .95rem;
+  flex-shrink: 0;
+  transition: color .18s, background .18s;
+}
+
+.ni-icon-btn:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, .06);
+}
+
+.ni-avatar-btn {
+  display: inline-flex;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 50%;
+  line-height: 0;
+  flex-shrink: 0;
+}
+
+.ni-avatar-btn .avatar {
+  border: 1px solid var(--border2);
+  transition: border-color .18s;
+}
+
+.ni-avatar-btn:hover .avatar {
+  border-color: var(--gold);
+}
+
+.ni-join {
+  display: inline-flex;
+  align-items: center;
+  padding: .45rem 1rem;
+  border-radius: 999px;
+  background: var(--gold);
+  color: #0b1f12;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: .85rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background .18s, transform .18s;
+}
+
+.ni-join:hover {
+  background: var(--gold-light);
+  color: #0b1f12;
+  transform: translateY(-1px);
+}
+
+/* Keep dropdowns from clipping outside the rounded island */
+.nav-island .dropdown {
+  top: calc(100% + .7rem);
+}
+
+/* Clearance below the floating island on non-home pages */
+.main-nav-pad {
+  padding-top: 76px;
+}
+
+/* Tablet: trim link labels to icons to save space */
+@media(max-width:860px) {
+  .ni-link span {
+    display: none;
+  }
+
+  .ni-link {
+    padding: .45rem .6rem;
+  }
+}
+
+/* Phone: compact island, hide brand wordmark, full-width search */
+@media(max-width:560px) {
+  .nav-island {
+    gap: .2rem;
+    padding: .35rem .4rem;
+  }
+
+  .ni-brand-name {
+    display: none;
+  }
+
+  .ni-brand {
+    padding: .35rem .45rem;
+  }
+
+  .ni-join {
+    padding: .42rem .8rem;
+    font-size: .8rem;
+  }
+
+  .nav-island.searching .ni-search-input {
+    width: 62vw;
+  }
+
+  .ni-icon-btn {
+    width: 34px;
+    height: 34px;
+  }
 }
 
 @media(max-width:1024px) {
