@@ -1479,3 +1479,449 @@ textarea.form-control {
   padding: 1rem 1.5rem;
   border-radius: 4px;
 }
+
+/* ── Reviewer role badge ─────────────────────────────────────────── */
+.badge-blue {
+  background: rgba(59, 130, 246, .12);
+  color: #6ba6ff;
+  border: 1px solid rgba(59, 130, 246, .25)
+}
+
+/* ── Card-select (click-to-pick instead of dropdowns) ────────────── */
+.card-select {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem;
+}
+
+.card-select.card-select-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+}
+
+.card-opt {
+  position: relative;
+  cursor: pointer;
+}
+
+.card-opt input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.card-opt-inner {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .6rem .85rem;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  color: var(--text2);
+  font-size: .88rem;
+  font-weight: 600;
+  transition: border-color .16s, background .16s, color .16s;
+  height: 100%;
+}
+
+.card-opt:hover .card-opt-inner {
+  border-color: var(--gold);
+}
+
+.card-opt input:checked + .card-opt-inner,
+.card-opt-inner.card-opt-active {
+  border-color: var(--gold);
+  background: rgba(201, 161, 83, .12);
+  color: var(--text);
+  box-shadow: 0 0 0 1px var(--gold) inset;
+}
+
+.card-opt[type="button"],
+button.card-opt {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+}
+
+.card-opt-inner img {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.card-opt-inner i {
+  font-size: .9rem;
+}
+
+.card-opt input:checked + .card-opt-inner .card-opt-check {
+  opacity: 1;
+}
+
+.card-opt-check {
+  margin-left: auto;
+  color: var(--gold);
+  opacity: 0;
+  transition: opacity .16s;
+}
+
+/* ── Review queue cards ──────────────────────────────────────────── */
+.review-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: .8rem;
+}
+
+.review-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: .85rem;
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+}
+
+/* ── Focus card (the one being worked on) ─────────────────────────── */
+.review-focus {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 1.4rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.3rem;
+}
+
+.review-focus-main,
+.review-focus-side {
+  display: flex;
+  flex-direction: column;
+  gap: .85rem;
+}
+
+.review-focus-side {
+  justify-content: space-between;
+}
+
+@media (max-width: 760px) {
+  .review-focus {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+/* ── Queue strip ──────────────────────────────────────────────────── */
+.review-strip-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  flex-wrap: wrap;
+  margin: 1.4rem 0 .65rem;
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text3);
+}
+
+.review-group-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.review-group-toggle button {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .35rem .7rem;
+  font-size: .72rem;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--text2);
+  background: var(--surface);
+  border: none;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+
+.review-group-toggle button + button {
+  border-inline-start: 1px solid var(--border);
+}
+
+.review-group-toggle button.is-active {
+  background: var(--gold);
+  color: #1a1205;
+  font-weight: 600;
+}
+
+.review-group {
+  margin-bottom: 1rem;
+}
+
+.review-group-label {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-bottom: .5rem;
+  font-size: .82rem;
+  font-weight: 600;
+  color: var(--gold);
+}
+
+.review-group-count {
+  font-size: .68rem;
+  font-weight: 600;
+  color: var(--text3);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: .05rem .45rem;
+}
+
+.review-strip {
+  display: flex;
+  gap: .7rem;
+  overflow-x: auto;
+  padding-bottom: .55rem;
+  scroll-snap-type: x proximity;
+}
+
+.review-chip {
+  flex: 0 0 auto;
+  width: 190px;
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  cursor: pointer;
+  text-align: start;
+  scroll-snap-align: start;
+  transition: border-color .15s, background .15s;
+}
+
+.review-chip:hover {
+  border-color: var(--gold);
+}
+
+.review-chip.is-active {
+  border-color: var(--gold);
+  background: var(--surface2);
+  box-shadow: 0 0 0 1px var(--gold);
+}
+
+.review-chip img {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.review-chip-body {
+  min-width: 0;
+  flex: 1;
+}
+
+.review-chip-title {
+  font-size: .82rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.review-chip-qari {
+  font-size: .72rem;
+  color: var(--gold);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.review-card-head {
+  display: flex;
+  gap: .65rem;
+  align-items: flex-start;
+}
+
+.review-card-head img.rc-cover {
+  width: 46px;
+  height: 46px;
+  border-radius: 9px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.review-meta-row {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: .74rem;
+  color: var(--text2);
+}
+
+.review-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: .3rem;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: .55rem .7rem;
+}
+
+.review-checklist label {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  font-size: .76rem;
+  color: var(--text2);
+  cursor: pointer;
+}
+
+.review-checklist input {
+  accent-color: var(--gold);
+  width: 14px;
+  height: 14px;
+}
+
+.review-actions {
+  display: flex;
+  gap: .5rem;
+  margin-top: auto;
+}
+
+.review-history-panel {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: .7rem .85rem;
+  font-size: .8rem;
+}
+
+.review-history-panel .rh-item {
+  display: flex;
+  gap: .5rem;
+  padding: .35rem 0;
+  border-bottom: 1px dashed var(--border);
+}
+
+.review-history-panel .rh-item:last-child {
+  border-bottom: none;
+}
+
+.rejection-banner {
+  background: rgba(184, 50, 50, .1);
+  border: 1px solid rgba(184, 50, 50, .28);
+  border-radius: 10px;
+  padding: .85rem 1rem;
+  color: #e86060;
+  font-size: .88rem;
+  display: flex;
+  gap: .6rem;
+  align-items: flex-start;
+}
+
+/* ── Reviewer toast ───────────────────────────────────────────────── */
+.review-toast {
+  position: fixed;
+  top: 1.2rem;
+  inset-inline-end: 1.2rem;
+  z-index: 60;
+}
+
+/* ── Reviewer module — mobile ─────────────────────────────────────── */
+@media (max-width: 640px) {
+  .review-focus {
+    padding: 1rem;
+    border-radius: 12px;
+  }
+
+  /* On mobile, surface the actions before the verify checklist */
+  .review-focus-side {
+    flex-direction: column-reverse;
+  }
+
+  .review-actions {
+    margin-top: 0;
+  }
+
+  .review-strip-head {
+    margin-top: 1.1rem;
+  }
+
+  .review-group-toggle {
+    width: 100%;
+  }
+
+  .review-group-toggle button {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .review-chip {
+    width: 78vw;
+    max-width: 260px;
+  }
+
+  /* Toast: span the top instead of a fixed narrow box */
+  .review-toast {
+    inset-inline: 1rem;
+    inset-inline-end: 1rem;
+  }
+}
+
+/* ── Stacked table on mobile (label-per-cell cards) ───────────────── */
+@media (max-width: 640px) {
+  .tbl-stack thead {
+    display: none;
+  }
+
+  .tbl-stack,
+  .tbl-stack tbody,
+  .tbl-stack tr,
+  .tbl-stack td {
+    display: block;
+    width: 100%;
+  }
+
+  .tbl-stack tr {
+    border-bottom: 1px solid var(--border);
+    padding: .5rem 0;
+  }
+
+  .tbl-stack tr:last-child {
+    border-bottom: none;
+  }
+
+  .tbl-stack td {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    border-bottom: none;
+    padding: .4rem 1rem;
+    text-align: end;
+  }
+
+  .tbl-stack td::before {
+    content: attr(data-label);
+    font-size: .67rem;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--text3);
+    font-family: var(--font-display);
+    flex-shrink: 0;
+    text-align: start;
+  }
+}

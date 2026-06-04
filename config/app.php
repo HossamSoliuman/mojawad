@@ -54,7 +54,7 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
-    'queue_restart_token'=>env('QUEUE_RESTART_TOKEN'),
+    'queue_restart_token' => env('QUEUE_RESTART_TOKEN'),
 
     /*
     |--------------------------------------------------------------------------
@@ -80,9 +80,9 @@ return [
     |
     */
 
-    'locale' => env('APP_LOCALE', 'en'),
+    'locale' => env('APP_LOCALE', 'ar'),
 
-    'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
+    'fallback_locale' => env('APP_FALLBACK_LOCALE', 'ar'),
 
     'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
 

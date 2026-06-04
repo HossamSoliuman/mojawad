@@ -28,6 +28,16 @@
       @endif
     </div>
   </div>
+  <a href="{{ route('admin.tilawat.index', ['review' => 'pending']) }}" class="stat-card" style="text-decoration:none">
+    <div class="stat-icon"><i class="fas fa-clipboard-check"></i></div>
+    <div>
+      <div class="stat-val">{{ number_format($stats['pending_review']) }}</div>
+      <div class="stat-lbl">In Review</div>
+      @if($stats['rejected_tilawat']>0)
+      <div style="margin-top:.38rem"><span class="badge badge-red"><i class="fas fa-xmark"></i> {{ $stats['rejected_tilawat'] }} rejected</span></div>
+      @endif
+    </div>
+  </a>
   @if(Auth::user()->hasRole('admin'))
   <div class="stat-card">
     <div class="stat-icon"><i class="fas fa-users"></i></div>

@@ -2,15 +2,20 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Tilawa extends Model
 {
     use HasFactory;
+
     protected $table = 'tilawat';
-    protected $fillable = ['qari_id', 'title_ar', 'title_en', 'slug', 'description_ar', 'description_en', 'recorded_at', 'recorded_place', 'audio_path', 'duration', 'cover_image', 'uploaded_by', 'is_featured', 'downloads_count', 'likes_count', 'status', 'archive_url', 'archive_item_id', 'archive_filename', 'migrated_to_archive', 'upload_status', 'upload_error'];
-    protected $casts = ['is_featured' => 'boolean', 'recorded_at' => 'date'];
+
+    protected $fillable = ['qari_id', 'title_ar', 'title_en', 'slug', 'description_ar', 'description_en', 'recorded_at', 'recorded_place', 'audio_path', 'duration', 'cover_image', 'uploaded_by', 'is_featured', 'downloads_count', 'likes_count', 'status', 'review_status', 'rejection_note', 'reviewed_by', 'reviewed_at', 'archive_url', 'archive_item_id', 'archive_filename', 'migrated_to_archive', 'upload_status', 'upload_error'];
+
+    protected $casts = ['is_featured' => 'boolean', 'recorded_at' => 'date', 'reviewed_at' => 'datetime'];
 
     public function qari()
     {
@@ -21,19 +26,50 @@ class Tilawa extends Model
     {
         return $this->belongsTo(User::class, 'uploaded_by');
     }
+
+    public function reviewer()
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
+    }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(TilawaReview::class)->latest();
+    }
+
+    public function scopePendingReview(Builder $query): Builder
+    {
+        return $query->where('review_status', 'pending');
+    }
+
+    public function logReview(string $action, ?string $note = null, ?int $reviewerId = null): TilawaReview
+    {
+        return $this->reviews()->create([
+            'reviewer_id' => $reviewerId,
+            'action' => $action,
+            'note' => $note,
+        ]);
+    }
+
     public function likes()
     {
         return $this->hasMany(Like::class);
     }
+
     public function savedByUsers()
     {
         return $this->hasMany(SavedTilawa::class);
     }
+
     public function getCoverUrlAttribute(): string
     {
-        if ($this->cover_image) return asset('storage/' . $this->cover_image);
+        if ($this->cover_image) {
+            return asset('storage/'.$this->cover_image);
+        }
+
         return $this->relationLoaded('qari') && $this->qari ? $this->qari->image_url : asset('images/default-cover.jpg');
     }
+
     public function getAudioUrlAttribute(): string
     {
         return $this->audio_src;
@@ -44,12 +80,15 @@ class Tilawa extends Model
         if ($this->archive_url) {
             return $this->archive_url;
         }
-        return asset('uploads/' . $this->audio_path);
+
+        return asset('uploads/'.$this->audio_path);
     }
+
     public function getFormattedDurationAttribute(): string
     {
         $m = floor($this->duration / 60);
         $s = $this->duration % 60;
+
         return sprintf('%d:%02d', $m, $s);
     }
 
@@ -62,5 +101,4 @@ class Tilawa extends Model
     {
         return (app()->getLocale() === 'en' && $this->description_en) ? $this->description_en : $this->description_ar;
     }
-
 }

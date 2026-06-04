@@ -25,6 +25,7 @@ class TilawaController extends Controller
             ->when(! Auth::user()->hasRole('admin'), fn ($q) => $q->where('uploaded_by', Auth::id()))
             ->when($request->search, fn ($q) => $q->where(fn ($sub) => $sub->where('title_ar', 'like', '%'.$request->search.'%')->orWhere('title_en', 'like', '%'.$request->search.'%')))
             ->when($request->status, fn ($q) => $q->where('status', $request->status))
+            ->when($request->review, fn ($q) => $q->where('review_status', $request->review))
             ->latest()
             ->paginate(15)
             ->withQueryString();
@@ -37,7 +38,7 @@ class TilawaController extends Controller
         $qaris = Qari::where('status', 'active')
             ->when(! Auth::user()->hasRole('admin'), fn ($q) => $q->where('created_by', Auth::id()))
             ->orderBy('name_ar')
-            ->get(['id', 'name_ar']);
+            ->get(['id', 'name_ar', 'name_en', 'image']);
 
         return view('admin.tilawat.create', compact('qaris'));
     }
@@ -50,6 +51,10 @@ class TilawaController extends Controller
         }
 
         $audioPath = $this->uploadService->moveFromTmp($request->audio_tmp, 'tilawat');
+
+        $isAdmin = Auth::user()->hasRole('admin');
+        $status = $isAdmin ? ($request->status ?? 'active') : 'pending';
+        $reviewStatus = ($isAdmin && $status === 'active') ? 'approved' : 'pending';
 
         $tilawa = Tilawa::create([
             'qari_id' => $request->qari_id,
@@ -66,16 +71,23 @@ class TilawaController extends Controller
             'cover_image' => $request->filled('cover_image_tmp')
                 ? $this->uploadService->moveFromTmp($request->cover_image_tmp, 'tilawa-covers')
                 : null,
-            'status' => $request->status,
+            'status' => $status,
+            'review_status' => $reviewStatus,
             'is_featured' => $request->boolean('is_featured'),
             'uploaded_by' => Auth::id(),
             'upload_status' => 'done',
         ]);
 
+        if ($reviewStatus === 'pending') {
+            $tilawa->logReview('submitted');
+        }
+
         Cache::forget('homepage_data');
 
         return redirect()->route('admin.tilawat.index')
-            ->with('success', 'Tilawa uploaded successfully.');
+            ->with('success', $reviewStatus === 'pending'
+                ? 'Tilawa submitted for review.'
+                : 'Tilawa uploaded successfully.');
     }
 
     public function uploader(Request $request)
@@ -156,10 +168,13 @@ class TilawaController extends Controller
             'duration' => AudioDurationService::getSeconds($audioPath),
             'cover_image' => null,
             'status' => 'pending',
+            'review_status' => 'pending',
             'is_featured' => false,
             'uploaded_by' => Auth::id(),
             'upload_status' => 'done',
         ]);
+
+        $tilawa->logReview('submitted');
 
         Cache::forget('homepage_data');
 
@@ -189,7 +204,7 @@ class TilawaController extends Controller
         $qaris = Qari::where('status', 'active')
             ->when(! Auth::user()->hasRole('admin'), fn ($q) => $q->where('created_by', Auth::id()))
             ->orderBy('name_ar')
-            ->get(['id', 'name_ar']);
+            ->get(['id', 'name_ar', 'name_en', 'image']);
 
         return view('admin.tilawat.edit', compact('tilawa', 'qaris'));
     }
@@ -204,9 +219,23 @@ class TilawaController extends Controller
             'description_en' => $request->description_en,
             'recorded_at' => $request->recorded_at,
             'recorded_place' => $request->recorded_place,
-            'status' => $request->status,
             'is_featured' => $request->boolean('is_featured'),
         ];
+
+        $isAdmin = Auth::user()->hasRole('admin');
+        $resubmitted = false;
+
+        if ($isAdmin) {
+            $updates['status'] = $request->status ?? $tilawa->status;
+            if ($updates['status'] === 'active') {
+                $updates['review_status'] = 'approved';
+            }
+        } else {
+            $updates['status'] = 'pending';
+            $updates['review_status'] = 'pending';
+            $updates['rejection_note'] = null;
+            $resubmitted = true;
+        }
 
         if ($request->filled('audio_tmp')) {
             $this->uploadService->delete($tilawa->audio_path);
@@ -223,10 +252,43 @@ class TilawaController extends Controller
         }
 
         $tilawa->update($updates);
+
+        if ($resubmitted) {
+            $tilawa->logReview('resubmitted');
+        }
+
         Cache::forget('homepage_data');
 
         return redirect()->route('admin.tilawat.index')
-            ->with('success', 'Tilawa updated successfully.');
+            ->with('success', $resubmitted
+                ? 'Tilawa resubmitted for review.'
+                : 'Tilawa updated successfully.');
+    }
+
+    public function quickUpdate(Request $request, Tilawa $tilawa)
+    {
+        $data = $request->validate([
+            'status' => 'nullable|in:active,inactive,pending',
+            'is_featured' => 'nullable|boolean',
+        ]);
+
+        $updates = [];
+
+        if (array_key_exists('status', $data) && $data['status'] !== null) {
+            $updates['status'] = $data['status'];
+            if ($data['status'] === 'active') {
+                $updates['review_status'] = 'approved';
+            }
+        }
+
+        if ($request->has('is_featured')) {
+            $updates['is_featured'] = $request->boolean('is_featured');
+        }
+
+        $tilawa->update($updates);
+        Cache::forget('homepage_data');
+
+        return back()->with('success', 'Tilawa updated.');
     }
 
     public function destroy(Tilawa $tilawa)

@@ -1,7 +1,12 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\TmpUploadController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Api\LikeController;
+use App\Http\Controllers\Api\SaveController;
+use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\QariController;
 use App\Http\Controllers\TilawaController;
@@ -12,71 +17,84 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', HomeController::class)->name('home');
 
 Route::prefix('qaris')->name('qaris.')->group(function () {
-    Route::get('/',            [QariController::class, 'index'])->name('index');
+    Route::get('/', [QariController::class, 'index'])->name('index');
     Route::get('/{qari:slug}', [QariController::class, 'show'])->name('show');
 });
 
 Route::prefix('tilawa')->name('tilawa.')->group(function () {
-    Route::get('/{tilawa:slug}',          [TilawaController::class, 'show'])->name('show');
+    Route::get('/{tilawa:slug}', [TilawaController::class, 'show'])->name('show');
     Route::get('/{tilawa:slug}/download', [TilawaController::class, 'download'])
-         ->name('download')->middleware('throttle:30,1');
+        ->name('download')->middleware('throttle:30,1');
 });
 
 // ── Auth-required ────────────────────────────────────────────────────────
 Route::middleware('auth')->group(function () {
-    Route::get('/library', fn() => view('pages.library'))->name('library');
-    Route::get('/profile', fn() => view('pages.profile'))->name('profile');
+    Route::get('/library', fn () => view('pages.library'))->name('library');
+    Route::get('/profile', fn () => view('pages.profile'))->name('profile');
 });
 
 // ── AJAX API ─────────────────────────────────────────────────────────────
 Route::middleware('auth')->prefix('api')->group(function () {
-    Route::post('/like/{tilawa}',  [\App\Http\Controllers\Api\LikeController::class,   'toggle'])->name('api.like');
-    Route::post('/save/{tilawa}',  [\App\Http\Controllers\Api\SaveController::class,   'toggle'])->name('api.save');
+    Route::post('/like/{tilawa}', [LikeController::class,   'toggle'])->name('api.like');
+    Route::post('/save/{tilawa}', [SaveController::class,   'toggle'])->name('api.save');
 });
-Route::get('/api/search', \App\Http\Controllers\Api\SearchController::class)->name('api.search');
+Route::get('/api/search', SearchController::class)->name('api.search');
 
 // ── Admin ────────────────────────────────────────────────────────────────
-Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin|creator'])->group(function () {
+Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
 
-    Route::get('/', DashboardController::class)->name('dashboard');
-
-    // ── Focused uploader (moderators/creators) ────────────────────────────
-    Route::get('/upload',          [\App\Http\Controllers\Admin\TilawaController::class, 'uploader'])->name('upload');
-    Route::post('/uploader/qari',  [\App\Http\Controllers\Admin\TilawaController::class, 'setDefaultQari'])->name('uploader.qari');
-    Route::post('/tilawat/quick-store', [\App\Http\Controllers\Admin\TilawaController::class, 'quickStore'])->name('tilawat.quick-store');
-
-    Route::post('/upload/tmp',          [TmpUploadController::class, 'store'])->name('upload.tmp');
-    Route::delete('/upload/tmp/{token}', [TmpUploadController::class, 'destroy'])->name('upload.tmp.destroy');
-
-    Route::get('/qaris',               [\App\Http\Controllers\Admin\QariController::class, 'index'])->name('qaris.index');
-    Route::get('/qaris/create',        [\App\Http\Controllers\Admin\QariController::class, 'create'])->name('qaris.create');
-    Route::post('/qaris',              [\App\Http\Controllers\Admin\QariController::class, 'store'])->name('qaris.store');
-    Route::get('/qaris/{qari}/edit',   [\App\Http\Controllers\Admin\QariController::class, 'edit'])->name('qaris.edit')->middleware('can:update,qari');
-    Route::put('/qaris/{qari}',        [\App\Http\Controllers\Admin\QariController::class, 'update'])->name('qaris.update')->middleware('can:update,qari');
-    Route::delete('/qaris/{qari}',     [\App\Http\Controllers\Admin\QariController::class, 'destroy'])->name('qaris.destroy')->middleware('can:delete,qari');
-
-    Route::get('/tilawat',                        [\App\Http\Controllers\Admin\TilawaController::class, 'index'])->name('tilawat.index');
-    Route::get('/tilawat/create',                 [\App\Http\Controllers\Admin\TilawaController::class, 'create'])->name('tilawat.create');
-    Route::post('/tilawat',                       [\App\Http\Controllers\Admin\TilawaController::class, 'store'])->name('tilawat.store');
-    Route::get('/tilawat/{tilawa}/uploading',     [\App\Http\Controllers\Admin\TilawaController::class, 'uploading'])->name('tilawat.uploading')->middleware('can:view,tilawa');
-    Route::get('/tilawat/{tilawa}/upload-status', [\App\Http\Controllers\Admin\TilawaController::class, 'uploadStatus'])->name('tilawat.upload-status')->middleware('can:view,tilawa');
-    Route::get('/tilawat/{tilawa}/edit',          [\App\Http\Controllers\Admin\TilawaController::class, 'edit'])->name('tilawat.edit')->middleware('can:update,tilawa');
-    Route::put('/tilawat/{tilawa}',               [\App\Http\Controllers\Admin\TilawaController::class, 'update'])->name('tilawat.update')->middleware('can:update,tilawa');
-    Route::delete('/tilawat/{tilawa}',            [\App\Http\Controllers\Admin\TilawaController::class, 'destroy'])->name('tilawat.destroy')->middleware('can:delete,tilawa');
-
-    Route::middleware('role:admin')->group(function () {
-        Route::get('/users',                    [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('users.index');
-        Route::get('/users/create',             [\App\Http\Controllers\Admin\UserController::class, 'create'])->name('users.create');
-        Route::post('/users',                   [\App\Http\Controllers\Admin\UserController::class, 'store'])->name('users.store');
-        Route::put('/users/{user}/role',        [\App\Http\Controllers\Admin\UserController::class, 'updateRole'])->name('users.role');
-        Route::delete('/users/{user}',          [\App\Http\Controllers\Admin\UserController::class, 'destroy'])->name('users.destroy');
+    // ── Reviewer queue (reviewer role only) ───────────────────────────────
+    Route::middleware('role:reviewer')->group(function () {
+        Route::get('/review', [ReviewController::class, 'index'])->name('review.index');
+        Route::get('/review/history', [ReviewController::class, 'history'])->name('review.history');
     });
+
+    // ── Content management (admins & creators) ────────────────────────────
+    Route::middleware('role:admin|creator')->group(function () {
+
+        Route::get('/', DashboardController::class)->name('dashboard');
+
+        // ── Focused uploader (moderators/creators) ────────────────────────────
+        Route::get('/upload', [App\Http\Controllers\Admin\TilawaController::class, 'uploader'])->name('upload');
+        Route::post('/uploader/qari', [App\Http\Controllers\Admin\TilawaController::class, 'setDefaultQari'])->name('uploader.qari');
+        Route::post('/tilawat/quick-store', [App\Http\Controllers\Admin\TilawaController::class, 'quickStore'])->name('tilawat.quick-store');
+
+        Route::post('/upload/tmp', [TmpUploadController::class, 'store'])->name('upload.tmp');
+        Route::delete('/upload/tmp/{token}', [TmpUploadController::class, 'destroy'])->name('upload.tmp.destroy');
+
+        Route::get('/qaris', [App\Http\Controllers\Admin\QariController::class, 'index'])->name('qaris.index');
+        Route::get('/qaris/create', [App\Http\Controllers\Admin\QariController::class, 'create'])->name('qaris.create');
+        Route::post('/qaris', [App\Http\Controllers\Admin\QariController::class, 'store'])->name('qaris.store');
+        Route::get('/qaris/{qari}/edit', [App\Http\Controllers\Admin\QariController::class, 'edit'])->name('qaris.edit')->middleware('can:update,qari');
+        Route::put('/qaris/{qari}', [App\Http\Controllers\Admin\QariController::class, 'update'])->name('qaris.update')->middleware('can:update,qari');
+        Route::delete('/qaris/{qari}', [App\Http\Controllers\Admin\QariController::class, 'destroy'])->name('qaris.destroy')->middleware('can:delete,qari');
+
+        Route::get('/tilawat', [App\Http\Controllers\Admin\TilawaController::class, 'index'])->name('tilawat.index');
+        Route::get('/tilawat/create', [App\Http\Controllers\Admin\TilawaController::class, 'create'])->name('tilawat.create');
+        Route::post('/tilawat', [App\Http\Controllers\Admin\TilawaController::class, 'store'])->name('tilawat.store');
+        Route::get('/tilawat/{tilawa}/uploading', [App\Http\Controllers\Admin\TilawaController::class, 'uploading'])->name('tilawat.uploading')->middleware('can:view,tilawa');
+        Route::get('/tilawat/{tilawa}/upload-status', [App\Http\Controllers\Admin\TilawaController::class, 'uploadStatus'])->name('tilawat.upload-status')->middleware('can:view,tilawa');
+        Route::get('/tilawat/{tilawa}/edit', [App\Http\Controllers\Admin\TilawaController::class, 'edit'])->name('tilawat.edit')->middleware('can:update,tilawa');
+        Route::put('/tilawat/{tilawa}/quick', [App\Http\Controllers\Admin\TilawaController::class, 'quickUpdate'])->name('tilawat.quick-update')->middleware('role:admin');
+        Route::put('/tilawat/{tilawa}', [App\Http\Controllers\Admin\TilawaController::class, 'update'])->name('tilawat.update')->middleware('can:update,tilawa');
+        Route::delete('/tilawat/{tilawa}', [App\Http\Controllers\Admin\TilawaController::class, 'destroy'])->name('tilawat.destroy')->middleware('can:delete,tilawa');
+
+        Route::middleware('role:admin')->group(function () {
+            Route::get('/users', [UserController::class, 'index'])->name('users.index');
+            Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
+            Route::post('/users', [UserController::class, 'store'])->name('users.store');
+            Route::put('/users/{user}/role', [UserController::class, 'updateRole'])->name('users.role');
+            Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+        });
+
+    }); // end role:admin|creator content group
 });
 
 Route::get('/lang/{locale}', function ($locale) {
     if (in_array($locale, ['en', 'ar'])) {
         session()->put('locale', $locale);
     }
+
     return redirect()->back();
 })->name('lang');
 

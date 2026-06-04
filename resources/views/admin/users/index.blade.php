@@ -31,7 +31,7 @@
         </td>
         <td style="font-size:.84rem;color:var(--text2)">{{ $u->email }}</td>
         <td>
-          <span class="badge {{ $u->hasRole('admin')?'badge-gold':($u->hasRole('creator')?'badge-green':'badge-muted') }}">
+          <span class="badge {{ $u->hasRole('admin')?'badge-gold':($u->hasRole('creator')?'badge-green':($u->hasRole('reviewer')?'badge-blue':'badge-muted')) }}">
             {{ $u->roles->first()?->name ?? 'user' }}
           </span>
         </td>

@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 @vite(['resources/css/app.css','resources/js/app.js','resources/js/filepond.js'])
+@livewireStyles
 </head>
 <body x-data="{ sideOpen: false }">
 <div class="bg-dots"></div>
@@ -19,6 +20,7 @@
       <a href="{{ route('home') }}"><i class="fas fa-book-open-reader"></i> Tilawa</a>
     </div>
     <nav class="sidebar-nav">
+      @hasanyrole('admin|creator')
       <div class="nav-sec-lbl">{{ __('Overview') }}</div>
       <a href="{{ route('admin.dashboard') }}" class="s-link {{ request()->routeIs('admin.dashboard') ? 'active':'' }}">
         <i class="fas fa-gauge-high"></i> {{ __('Dashboard') }}
@@ -36,6 +38,20 @@
       <a href="{{ route('admin.tilawat.create') }}" class="s-link" style="padding-left:2.1rem;font-size:.78rem">
         <i class="fas fa-plus"></i> {{ __('Add Tilawa') }}
       </a>
+      @endhasanyrole
+      @role('reviewer')
+      <div class="nav-sec-lbl">{{ __('Review') }}</div>
+      <a href="{{ route('admin.review.index') }}" class="s-link {{ request()->routeIs('admin.review.index') ? 'active':'' }}">
+        <i class="fas fa-clipboard-check"></i> {{ __('Review Queue') }}
+        @php($pendingReviewCount = \App\Models\Tilawa::pendingReview()->count())
+        @if($pendingReviewCount > 0)
+        <span class="badge badge-amber" style="margin-inline-start:auto;padding:.15rem .5rem">{{ $pendingReviewCount }}</span>
+        @endif
+      </a>
+      <a href="{{ route('admin.review.history') }}" class="s-link {{ request()->routeIs('admin.review.history') ? 'active':'' }}">
+        <i class="fas fa-clock-rotate-left"></i> {{ __('History') }}
+      </a>
+      @endrole
       @role('admin')
       <div class="nav-sec-lbl" style="margin-top:.35rem">{{ __('Community') }}</div>
       <a href="{{ route('admin.users.index') }}" class="s-link {{ request()->routeIs('admin.users.*') ? 'active':'' }}">
@@ -130,7 +146,6 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 <script>
 function playTilawa(id, url, title, qari, cover, duration) {
   window._playerLoad({ id, url, title, qari, cover, duration });
@@ -164,5 +179,6 @@ if(window.innerWidth<=1024) document.getElementById('menuBtn').style.display='fl
 window.addEventListener('resize', () => { document.getElementById('menuBtn').style.display = window.innerWidth<=1024?'flex':'none'; });
 </script>
 @stack('scripts')
+@livewireScripts
 </body>
 </html>

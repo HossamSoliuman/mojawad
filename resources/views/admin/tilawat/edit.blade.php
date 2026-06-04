@@ -14,6 +14,21 @@
     </div>
     @endif
 
+    @if($tilawa->review_status === 'rejected' && $tilawa->rejection_note)
+    <div class="rejection-banner" style="margin-bottom:1.25rem">
+      <i class="fas fa-circle-exclamation" style="margin-top:.15rem"></i>
+      <div>
+        <div style="font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:.72rem">{{ __('Returned for changes') }}</div>
+        <div style="margin-top:.3rem;color:var(--text)">{{ $tilawa->rejection_note }}</div>
+        <div style="margin-top:.3rem;font-size:.78rem;color:var(--text2)">{{ __('Fix the issue above and save to resubmit for review.') }}</div>
+      </div>
+    </div>
+    @elseif($tilawa->review_status === 'pending' && ! auth()->user()->hasRole('admin'))
+    <div class="alert" style="margin-bottom:1.25rem;background:rgba(212,134,10,.1);border:1px solid rgba(212,134,10,.25);color:#f5a832">
+      <i class="fas fa-clock"></i> {{ __('This tilawa is awaiting review.') }}
+    </div>
+    @endif
+
     <div class="admin-form-grid">
       <div class="form-group admin-form-grid" style="grid-column:1/-1">
         <div>
@@ -27,22 +42,24 @@
           @error('title_en')<span class="form-error">{{ $message }}</span>@enderror
         </div>
       </div>
-      <div class="form-group">
+      <div class="form-group" style="grid-column:1/-1">
         <label class="form-label"><i class="fas fa-microphone"></i> {{ __('Qari') }} <span style="color:var(--red)">*</span></label>
-        <select name="qari_id" class="form-control" required>
-          @foreach($qaris as $q)
-          <option value="{{ $q->id }}" {{ old('qari_id',$tilawa->qari_id)==$q->id ? 'selected':'' }}>{{ $q->name }}</option>
-          @endforeach
-        </select>
+        <x-card-select name="qari_id" :selected="old('qari_id', $tilawa->qari_id)" grid :options="$qaris->map(fn($q) => [
+          'value' => $q->id,
+          'label' => $q->name,
+          'image' => $q->image_url,
+        ])->all()" />
       </div>
-      <div class="form-group">
+      @role('admin')
+      <div class="form-group" style="grid-column:1/-1">
         <label class="form-label"><i class="fas fa-circle-check"></i> {{ __('Status') }}</label>
-        <select name="status" class="form-control">
-          <option value="pending"  {{ old('status',$tilawa->status)==='pending'  ? 'selected':'' }}>{{ __('Pending') }}</option>
-          <option value="active"   {{ old('status',$tilawa->status)==='active'   ? 'selected':'' }}>{{ __('Active') }}</option>
-          <option value="inactive" {{ old('status',$tilawa->status)==='inactive' ? 'selected':'' }}>{{ __('Inactive') }}</option>
-        </select>
+        <x-card-select name="status" :selected="old('status', $tilawa->status)" :options="[
+          ['value' => 'active', 'label' => __('Active'), 'icon' => 'fa-circle-check'],
+          ['value' => 'pending', 'label' => __('Pending'), 'icon' => 'fa-clock'],
+          ['value' => 'inactive', 'label' => __('Inactive'), 'icon' => 'fa-ban'],
+        ]" />
       </div>
+      @endrole
       <div class="form-group">
         <label class="form-label"><i class="fas fa-calendar"></i> {{ __('Recorded Date') }}</label>
         <input type="date" name="recorded_at" class="form-control" value="{{ old('recorded_at',$tilawa->recorded_at?->format('Y-m-d')) }}">
@@ -97,7 +114,11 @@
     </div>
 
     <div style="display:flex;gap:.65rem;margin-top:1.4rem;flex-wrap:wrap">
+      @if(! auth()->user()->hasRole('admin') && in_array($tilawa->review_status, ['rejected', 'pending']))
+      <button type="submit" class="btn btn-primary" id="submit-btn"><i class="fas fa-paper-plane"></i> {{ __('Save & Resubmit for Review') }}</button>
+      @else
       <button type="submit" class="btn btn-primary" id="submit-btn"><i class="fas fa-floppy-disk"></i> {{ __('Update Tilawa') }}</button>
+      @endif
       <a href="{{ route('admin.tilawat.index') }}" class="btn btn-ghost"><i class="fas fa-xmark"></i> {{ __('Cancel') }}</a>
     </div>
   </form>

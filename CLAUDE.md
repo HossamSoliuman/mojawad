@@ -253,3 +253,9 @@ protected function isAccessible(User $user, ?string $path = null): bool
 - IMPORTANT: Always use `search-docs` tool for version-specific Tailwind CSS documentation and updated code examples. Never rely on training data.
 - IMPORTANT: Activate `tailwindcss-development` every time you're working with a Tailwind CSS or styling-related task.
 </laravel-boost-guidelines>
+
+## Localization
+
+- This app is Arabic-facing. Every user-visible string MUST go through `__()` (or `@lang`), never hardcoded text.
+- Whenever you add or change a `__()` key in Blade/PHP, immediately add the matching Arabic translation to `lang/ar.json`. Do this in the same change — do not leave it for later.
+- After editing `lang/ar.json`, verify it is still valid JSON.

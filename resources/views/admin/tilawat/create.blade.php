@@ -27,23 +27,25 @@
           @error('title_en')<span class="form-error">{{ $message }}</span>@enderror
         </div>
       </div>
-      <div class="form-group">
+      <div class="form-group" style="grid-column:1/-1">
         <label class="form-label"><i class="fas fa-microphone"></i> {{ __('Qari') }} <span style="color:var(--red)">*</span></label>
-        <select name="qari_id" class="form-control" required>
-          @foreach($qaris as $q)
-          <option value="{{ $q->id }}"  {{ old('qari_id')==$q->id ? 'selected':'' }}>{{ $q->name }}</option>
-          @endforeach
-        </select>
+        <x-card-select name="qari_id" :selected="old('qari_id')" grid :options="$qaris->map(fn($q) => [
+          'value' => $q->id,
+          'label' => $q->name,
+          'image' => $q->image_url,
+        ])->all()" />
         @error('qari_id')<span class="form-error">{{ $message }}</span>@enderror
       </div>
-      <div class="form-group">
+      @role('admin')
+      <div class="form-group" style="grid-column:1/-1">
         <label class="form-label"><i class="fas fa-circle-check"></i> {{ __('Status') }}</label>
-        <select name="status" class="form-control">
-          <option value="pending"  {{ old('status')==='pending'  ? 'selected':'' }}>{{ __('Pending') }}</option>
-          <option value="active"   {{ old('status','active')==='active'   ? 'selected':'' }}>{{ __('Active') }}</option>
-          <option value="inactive" {{ old('status')==='inactive' ? 'selected':'' }}>{{ __('Inactive') }}</option>
-        </select>
+        <x-card-select name="status" :selected="old('status','active')" :options="[
+          ['value' => 'active', 'label' => __('Active'), 'icon' => 'fa-circle-check'],
+          ['value' => 'pending', 'label' => __('Pending'), 'icon' => 'fa-clock'],
+          ['value' => 'inactive', 'label' => __('Inactive'), 'icon' => 'fa-ban'],
+        ]" />
       </div>
+      @endrole
       <div class="form-group">
         <label class="form-label"><i class="fas fa-calendar"></i> {{ __('Recorded Date') }}</label>
         <input type="date" name="recorded_at" class="form-control" value="{{ old('recorded_at') }}">
