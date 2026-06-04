@@ -2,7 +2,7 @@
 @section('title','Login')
 @section('content')
 <h2 style="font-size:1.3rem;margin-bottom:.4rem">Welcome Back</h2>
-<p style="color:var(--text2);font-size:.9rem;margin-bottom:1.65rem">Sign in to your Tilawa account</p>
+<p style="color:var(--text2);font-size:.9rem;margin-bottom:1.65rem">Sign in to your Mojawad account</p>
 @if($errors->any())
 <div class="alert alert-error" style="margin-bottom:1.1rem"><i class="fas fa-circle-exclamation"></i> {{ $errors->first() }}</div>
 @endif

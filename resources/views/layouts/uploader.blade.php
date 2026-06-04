@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token() }}">
-<title>@yield('title', __('Upload')) — {{ __('Tilawa') }}</title>
+<title>@yield('title', __('Upload')) — Mojawad</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 @vite(['resources/css/app.css','resources/js/app.js'])
 </head>
@@ -14,7 +14,7 @@
 <div class="up-shell z1">
   <header class="up-topbar">
     <a href="{{ route('admin.upload') }}" class="navbar-brand" style="font-size:1.15rem">
-      <i class="fas fa-book-open-reader"></i> {{ __('Tilawa') }}
+      <i class="fas fa-book-open-reader"></i> Mojawad
     </a>
     <div style="display:flex;align-items:center;gap:.6rem">
       <div x-data="{ open: false }" style="position:relative">

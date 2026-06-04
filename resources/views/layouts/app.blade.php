@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Tilawa') — {{ __('Qur\'an Recitations') }}</title>
+    <title>@yield('title', 'Mojawad') — {{ __('Qur\'an Recitations') }}</title>
     <meta name="description" content="@yield('meta_desc', 'Premium Tajweed recitations.')">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -22,7 +22,7 @@
         </button>
 
         <a href="{{ route('home') }}" wire:navigate class="navbar-brand">
-            <i class="fas fa-book-open-reader"></i> Tilawa
+            <i class="fas fa-book-open-reader"></i> Mojawad
         </a>
 
         <div class="nav-links">
@@ -123,7 +123,7 @@
     <div class="mobile-menu-drawer" :class="mobileMenu ? 'open' : ''">
             <div class="mm-header">
                 <a href="{{ route('home') }}" wire:navigate class="navbar-brand">
-                    <i class="fas fa-book-open-reader"></i> Tilawa
+                    <i class="fas fa-book-open-reader"></i> Mojawad
                 </a>
                 <button class="mobile-toggle" @click="mobileMenu = false"><i class="fas fa-xmark"></i></button>
             </div>

@@ -2,7 +2,7 @@
 @section('title','Register')
 @section('content')
 <h2 style="font-size:1.3rem;margin-bottom:.4rem">Create Account</h2>
-<p style="color:var(--text2);font-size:.9rem;margin-bottom:1.65rem">Join the Tilawa community</p>
+<p style="color:var(--text2);font-size:.9rem;margin-bottom:1.65rem">Join the Mojawad community</p>
 @if($errors->any())
 <div class="alert alert-error" style="margin-bottom:1.1rem">
   @foreach($errors->all() as $e)<div><i class="fas fa-circle-exclamation"></i> {{ $e }}</div>@endforeach
