@@ -41,7 +41,7 @@ function createPond(inputEl, { type = 'audio', required = false, tokenInputName 
 
     activeTokens.set(pondId, null);
 
-    const maxSize = type === 'audio' ? '200MB' : '4MB';
+    const maxSize = type === 'audio' ? '200MB' : '20MB';
 
     const acceptedTypes = type === 'audio'
         ? ['audio/mpeg', 'audio/mp3', 'audio/ogg', 'audio/wav']

@@ -614,32 +614,341 @@ textarea.form-control {
 
 .hero {
   position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* ── Split hero: live content on one side, scrolling reciter wall on the other ── */
+.hero-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   height: 100vh;
+}
+
+.hero-live {
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 1.1rem;
+  padding: clamp(1.5rem, 5vw, 4.5rem);
+}
+
+.hero-eyebrow {
+  display: inline-flex;
   align-items: center;
+  gap: .5rem;
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--text2);
+}
+
+.hero-heading {
+  font-size: clamp(1.9rem, 3.4vw, 3.1rem);
+  font-weight: 800;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.hero-sub {
+  font-size: clamp(.95rem, 1.4vw, 1.1rem);
+  color: var(--text2);
+  max-width: 46ch;
+  margin: 0 0 .4rem;
+}
+
+/* ── Continuous vertical reciter marquee ── */
+.hero-marquee {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .9rem;
+  padding: .9rem;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 12%, #000 88%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 12%, #000 88%, transparent);
+}
+
+.marquee-col {
+  min-height: 0;
   overflow: hidden;
 }
 
-.hero-bg {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
+.marquee-track {
+  display: flex;
+  flex-direction: column;
+  animation: marqueeUp 45s linear infinite;
+  will-change: transform;
 }
 
-.hero-bg img {
+.marquee-col-2 .marquee-track {
+  animation-duration: 60s;
+}
+
+.hero-marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+.marquee-item {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--border2);
+  margin-bottom: .9rem;
+  transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease;
+}
+
+.marquee-item:hover {
+  transform: translateY(-2px);
+  border-color: var(--gold);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+}
+
+.marquee-item img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: 1;
-  object-position: center;
+  display: block;
+  transition: transform .35s ease;
 }
 
-.hero-bg::after {
-  content: '';
+.marquee-item:hover img {
+  transform: scale(1.06);
+}
+
+.marquee-info {
   position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at center, transparent 0%, rgba(17, 24, 39, 0.45) 60%, rgba(17, 24, 39, 0.96) 100%),
-    linear-gradient(to top, rgba(17, 24, 39, 1) 0%, transparent 18%);
+  inset: auto 0 0 0;
+  padding: 1.4rem .65rem .55rem;
+  background: linear-gradient(to top, rgba(17, 24, 39, 0.94) 20%, transparent);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity .25s ease, transform .25s ease;
+}
+
+.marquee-item:hover .marquee-info {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.marquee-name {
+  font-weight: 800;
+  font-size: .9rem;
+  line-height: 1.25;
+  color: #fff;
+}
+
+.marquee-count {
+  font-size: .72rem;
+  color: var(--text2);
+  margin-top: .15rem;
+}
+
+.marquee-count i {
+  color: var(--gold);
+  margin-inline-end: .25rem;
+}
+
+@keyframes marqueeUp {
+  from {
+    transform: translateY(0);
+  }
+
+  to {
+    transform: translateY(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+  }
+}
+
+/* ── Floating live radio card ── */
+.radio-card {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  padding: 1rem 1.1rem;
+  border-radius: 18px;
+  background: rgba(17, 24, 39, 0.55);
+  border: 1px solid var(--border2);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+  animation: radioFloat 5s ease-in-out infinite;
+  max-width: 92vw;
+}
+
+.radio-card.playing {
+  border-color: var(--gold);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(201, 161, 83, 0.35);
+}
+
+@keyframes radioFloat {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-9px);
+  }
+}
+
+.radio-live {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: .68rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--red);
+  white-space: nowrap;
+}
+
+.radio-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--red);
+  box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  animation: radioPulse 1.6s infinite;
+}
+
+@keyframes radioPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6);
+  }
+
+  70% {
+    box-shadow: 0 0 0 9px rgba(239, 68, 68, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+.radio-eq {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 26px;
+}
+
+.radio-eq span {
+  width: 3px;
+  border-radius: 2px;
+  background: var(--gold);
+  height: 30%;
+}
+
+.radio-card.playing .radio-eq span {
+  animation: radioEq 1s ease-in-out infinite;
+}
+
+.radio-eq span:nth-child(2) {
+  animation-delay: .15s;
+}
+
+.radio-eq span:nth-child(3) {
+  animation-delay: .35s;
+}
+
+.radio-eq span:nth-child(4) {
+  animation-delay: .1s;
+}
+
+.radio-eq span:nth-child(5) {
+  animation-delay: .45s;
+}
+
+.radio-eq span:nth-child(6) {
+  animation-delay: .25s;
+}
+
+.radio-eq span:nth-child(7) {
+  animation-delay: .5s;
+}
+
+@keyframes radioEq {
+
+  0%,
+  100% {
+    height: 25%;
+  }
+
+  50% {
+    height: 100%;
+  }
+}
+
+.radio-meta {
+  min-width: 0;
+}
+
+.radio-name {
+  font-weight: 800;
+  font-size: 1.02rem;
+  line-height: 1.2;
+}
+
+.radio-from {
+  font-size: .76rem;
+  color: var(--text2);
+  margin-top: .15rem;
+  white-space: nowrap;
+}
+
+.radio-from i {
+  color: var(--gold);
+  margin-inline-end: .25rem;
+}
+
+.radio-btn {
+  flex-shrink: 0;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  background: var(--gold);
+  color: #1a1205;
+  font-size: 1.1rem;
+  display: grid;
+  place-items: center;
+  transition: transform .2s, filter .2s;
+}
+
+.radio-btn:hover {
+  transform: scale(1.08);
+  filter: brightness(1.08);
+}
+
+@media (max-width: 480px) {
+  .radio-eq {
+    display: none;
+  }
+
+  .radio-card {
+    gap: .8rem;
+    padding: .85rem .9rem;
+  }
 }
 
 
@@ -1455,13 +1764,23 @@ textarea.form-control {
   }
 }
 
-@media(max-width:640px) {
-  .hero {
+@media(max-width:900px) {
+  .hero-grid {
+    grid-template-columns: 1fr;
     height: auto;
-    min-height: 50vh;
-    padding: 2.5rem 0
   }
 
+  .hero-live {
+    min-height: 56vh;
+    justify-content: center;
+  }
+
+  .hero-marquee {
+    height: 44vh;
+  }
+}
+
+@media(max-width:640px) {
   .admin-topbar {
     padding: 1rem 1.2rem
   }

@@ -2,24 +2,49 @@
 @section('title','Home')
 @section('content')
 
-<section class="hero">
-  <div class="hero-bg">
-    <img src="{{ asset('images/minshawy_hero.png') }}" alt="Sheikh El-Minshawy">
-  </div>
-  <div class="wrap z1" style="width:100%">
-    <div style="max-width:650px; text-shadow: 0 2px 20px rgba(0,0,0,0.8)">
-      <div class="badge badge-gold" style="margin-bottom:1.25rem">{{ __('Premium Tajweed Collection') }}</div>
-      <h1 style="font-size:clamp(2.5rem,6vw,4.5rem);margin-bottom:1rem;line-height:1;font-weight:900">
-        {{ __('The World\'s Finest') }}<br><span class="gold">{{ __('Qur\'an Tilawat') }}</span>
-      </h1>
-      <p style="font-size:1.2rem;color:var(--text2);margin-bottom:2.5rem;max-width:500px;line-height:1.8">
-        {{ __('Immerse yourself in the divine beauty of the Holy Qur\'an with our curated collection of legendary recitations.') }}
-      </p>
-      <div style="display:flex;gap:.85rem;flex-wrap:wrap">
-        <a href="{{ route('qaris.index') }}" wire:navigate class="btn btn-primary">{{ __('Explore Qaris') }}</a>
-        @guest<a href="{{ route('register') }}" class="btn btn-ghost">{{ __('Create Account') }}</a>@endguest
+@php
+  $hero_slides = ($hero_qaris ?? collect())->isNotEmpty() ? $hero_qaris : $top_qaris;
+@endphp
+<section class="hero" x-data="quranRadio()">
+  <div class="hero-grid">
+    <div class="hero-live z1">
+      <span class="hero-eyebrow"><span class="radio-dot"></span> {{ __('Live') }} · {{ __('Broadcasting from Cairo') }}</span>
+      <h1 class="hero-heading">{{ __('The Holy Qur\'an, with you everywhere') }}</h1>
+      <p class="hero-sub">{{ __('Listen to the live broadcast and explore recitations from your favorite reciters.') }}</p>
+
+      <div class="radio-card" :class="playing && 'playing'">
+        <div class="radio-live">
+          <span class="radio-dot"></span> {{ __('Live') }}
+        </div>
+        <div class="radio-eq" aria-hidden="true">
+          <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <div class="radio-meta">
+          <div class="radio-name">{{ __('Holy Qur\'an Radio') }}</div>
+          <div class="radio-from"><i class="fas fa-tower-broadcast"></i> {{ __('Broadcasting from Cairo') }}</div>
+        </div>
+        <button class="radio-btn" @click="toggle()" :title="playing ? '{{ __('Pause') }}' : '{{ __('Listen Live') }}'">
+          <i class="fas" :class="loading ? 'fa-spinner fa-spin' : (playing ? 'fa-pause' : 'fa-play')"></i>
+        </button>
       </div>
     </div>
+
+    @if($hero_slides->isNotEmpty())
+    <div class="hero-marquee">
+      <div class="marquee-col">
+        <div class="marquee-track">
+          @foreach($hero_slides as $q)@include('partials.marquee-qari')@endforeach
+          @foreach($hero_slides as $q)@include('partials.marquee-qari')@endforeach
+        </div>
+      </div>
+      <div class="marquee-col marquee-col-2">
+        <div class="marquee-track">
+          @foreach($hero_slides->reverse() as $q)@include('partials.marquee-qari')@endforeach
+          @foreach($hero_slides->reverse() as $q)@include('partials.marquee-qari')@endforeach
+        </div>
+      </div>
+    </div>
+    @endif
   </div>
 </section>
 
@@ -115,4 +140,49 @@
 @endif
 
 </div>
+
+@push('scripts')
+<script>
+  document.addEventListener('alpine:init', () => {
+    Alpine.data('quranRadio', () => ({
+      audio: null,
+      playing: false,
+      loading: false,
+      stream: 'https://n0e.radiojar.com/8s5u5tpdtwzuv',
+      init() {
+        if (!window.quranRadioAudio) {
+          // Keep one Audio element alive for the whole session (survives wire:navigate).
+          // Pre-buffer the live stream up-front so the first click starts instantly.
+          const a = new Audio();
+          a.preload = 'auto';
+          a.src = this.stream;
+          a.load();
+          window.quranRadioAudio = a;
+        }
+        this.audio = window.quranRadioAudio;
+        this.playing = !this.audio.paused && !!this.audio.src;
+        this.audio.addEventListener('playing', () => { this.playing = true; this.loading = false; });
+        this.audio.addEventListener('pause', () => { this.playing = false; });
+        this.audio.addEventListener('waiting', () => { this.loading = true; });
+        this.audio.addEventListener('error', () => { this.playing = false; this.loading = false; });
+      },
+      toggle() {
+        if (this.playing) {
+          this.audio.pause();
+          return;
+        }
+        // Optimistic UI: flip to loading the instant the user clicks.
+        this.loading = true;
+        if (window.globalAudio && !window.globalAudio.paused) {
+          window.globalAudio.pause();
+        }
+        if (!this.audio.src) {
+          this.audio.src = this.stream;
+        }
+        this.audio.play().catch(() => { this.loading = false; });
+      },
+    }));
+  });
+</script>
+@endpush
 @endsection

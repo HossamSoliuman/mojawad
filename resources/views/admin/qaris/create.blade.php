@@ -47,7 +47,7 @@
       <label class="form-label"><i class="fas fa-image"></i> {{ __('Qari Image') }}</label>
       <input type="hidden" name="image_tmp" id="image_tmp_input">
       <input type="file" id="image-pond" data-filepond data-pond-type="image" data-pond-token="image_tmp" accept="image/jpeg,image/png,image/webp">
-      <span class="form-hint">{{ __('JPG, PNG or WEBP · max 4MB · optional') }}</span>
+      <span class="form-hint">{{ __('JPG, PNG or WEBP · max 20MB · optional') }}</span>
       @error('image_tmp')<span class="form-error">{{ $message }}</span>@enderror
     </div>
 
