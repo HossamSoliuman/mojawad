@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token() }}">
-<title>@yield('title','Admin') — Mojawad</title>
+<title>@yield('title', __('Dashboard')) — Mojawad</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 @vite(['resources/css/app.css','resources/js/app.js','resources/js/filepond.js'])
@@ -13,52 +13,74 @@
 <body x-data="{ sideOpen: false }">
 <div class="bg-dots"></div>
 
+@php($pendingReviewBadge = auth()->user()->hasAnyRole(['admin', 'reviewer']) ? \App\Models\Tilawa::pendingReview()->count() : 0)
+
 <div class="admin-wrap z1">
+  {{-- MOBILE BACKDROP --}}
+  <div class="side-backdrop" x-show="sideOpen" @click="sideOpen=false" x-transition.opacity></div>
+
   {{-- SIDEBAR --}}
   <aside class="admin-sidebar" :class="{ open: sideOpen }" id="sidebar">
     <div class="sidebar-logo">
-      <a href="{{ route('home') }}"><i class="fas fa-book-open-reader"></i> Mojawad</a>
+      <a href="{{ route('home') }}">
+        <span class="logo-glyph"><i class="fas fa-book-open-reader"></i></span>
+        <span>Mojawad</span>
+      </a>
     </div>
     <nav class="sidebar-nav">
-      @hasanyrole('admin|creator')
+      @role('admin')
       <div class="nav-sec-lbl">{{ __('Overview') }}</div>
       <a href="{{ route('admin.dashboard') }}" class="s-link {{ request()->routeIs('admin.dashboard') ? 'active':'' }}">
         <i class="fas fa-gauge-high"></i> {{ __('Dashboard') }}
       </a>
-      <div class="nav-sec-lbl" style="margin-top:.35rem">{{ __('Content') }}</div>
+      <a href="{{ route('admin.reports') }}" class="s-link {{ request()->routeIs('admin.reports') ? 'active':'' }}">
+        <i class="fas fa-chart-line"></i> {{ __('Reports') }}
+      </a>
+      @endrole
+
+      @role('creator')
+      <div class="nav-sec-lbl">{{ __('Publish') }}</div>
+      <a href="{{ route('admin.upload') }}" class="s-link {{ request()->routeIs('admin.upload') ? 'active':'' }}">
+        <i class="fas fa-cloud-arrow-up"></i> {{ __('Upload Tilawat') }}
+      </a>
+      @endrole
+
+      @hasanyrole('admin|creator')
+      <div class="nav-sec-lbl">{{ __('Content') }}</div>
       <a href="{{ route('admin.qaris.index') }}" class="s-link {{ request()->routeIs('admin.qaris.*') ? 'active':'' }}">
         <i class="fas fa-microphone-lines"></i> {{ __('Qaris') }}
       </a>
-      <a href="{{ route('admin.qaris.create') }}" class="s-link" style="padding-left:2.1rem;font-size:.78rem">
-        <i class="fas fa-plus"></i> {{ __('Add Qari') }}
-      </a>
       <a href="{{ route('admin.tilawat.index') }}" class="s-link {{ request()->routeIs('admin.tilawat.*') ? 'active':'' }}">
         <i class="fas fa-music"></i> {{ __('Tilawat') }}
-      </a>
-      <a href="{{ route('admin.tilawat.create') }}" class="s-link" style="padding-left:2.1rem;font-size:.78rem">
-        <i class="fas fa-plus"></i> {{ __('Add Tilawa') }}
+        @role('admin')
+        @if($pendingReviewBadge > 0)
+        <span class="s-badge">{{ $pendingReviewBadge }}</span>
+        @endif
+        @endrole
       </a>
       @endhasanyrole
+
       @role('reviewer')
       <div class="nav-sec-lbl">{{ __('Review') }}</div>
       <a href="{{ route('admin.review.index') }}" class="s-link {{ request()->routeIs('admin.review.index') ? 'active':'' }}">
         <i class="fas fa-clipboard-check"></i> {{ __('Review Queue') }}
-        @php($pendingReviewCount = \App\Models\Tilawa::pendingReview()->count())
-        @if($pendingReviewCount > 0)
-        <span class="badge badge-amber" style="margin-inline-start:auto;padding:.15rem .5rem">{{ $pendingReviewCount }}</span>
+        @if($pendingReviewBadge > 0)
+        <span class="s-badge">{{ $pendingReviewBadge }}</span>
         @endif
       </a>
       <a href="{{ route('admin.review.history') }}" class="s-link {{ request()->routeIs('admin.review.history') ? 'active':'' }}">
         <i class="fas fa-clock-rotate-left"></i> {{ __('History') }}
       </a>
       @endrole
+
       @role('admin')
-      <div class="nav-sec-lbl" style="margin-top:.35rem">{{ __('Community') }}</div>
+      <div class="nav-sec-lbl">{{ __('Community') }}</div>
       <a href="{{ route('admin.users.index') }}" class="s-link {{ request()->routeIs('admin.users.*') ? 'active':'' }}">
         <i class="fas fa-users"></i> {{ __('Users') }}
       </a>
       @endrole
-      <div class="nav-sec-lbl" style="margin-top:.35rem">{{ __('Site') }}</div>
+
+      <div class="nav-sec-lbl">{{ __('Site') }}</div>
       <a href="{{ route('home') }}" class="s-link" target="_blank">
         <i class="fas fa-arrow-up-right-from-square"></i> {{ __('View Site') }}
       </a>
@@ -66,8 +88,8 @@
     <div class="sidebar-footer">
       <img src="{{ auth()->user()->avatar_url }}" class="avatar" width="30" height="30" alt="">
       <div style="flex:1;min-width:0">
-        <div class="sf-name">{{ Str::limit(auth()->user()->name,16) }}</div>
-        <div class="sf-role">{{ auth()->user()->roles->first()?->name ?? 'user' }}</div>
+        <div class="sf-name">{{ Str::limit(auth()->user()->name, 16) }}</div>
+        <div class="sf-role">{{ __(ucfirst(auth()->user()->roles->first()?->name ?? 'user')) }}</div>
       </div>
       <form method="POST" action="{{ route('logout') }}">@csrf
         <button type="submit" class="btn-icon" style="color:var(--red)" title="{{ __('Logout') }}">
@@ -80,19 +102,18 @@
   {{-- MAIN --}}
   <div class="admin-main">
     <div class="admin-topbar">
-      <div style="display:flex;align-items:center;gap:.8rem">
-        <button class="btn-icon" @click="sideOpen=!sideOpen" id="menuBtn" style="display:none">
+      <div style="display:flex;align-items:center;gap:.8rem;min-width:0">
+        <button class="btn-icon topbar-menu" @click="sideOpen=!sideOpen">
           <i class="fas fa-bars"></i>
         </button>
-        <div>
+        <div style="min-width:0">
           <h1>@yield('page-title', __('Dashboard'))</h1>
           @hasSection('breadcrumb')
-          <div style="font-size:.76rem;color:var(--text2);margin-top:.16rem">@yield('breadcrumb')</div>
+          <div class="topbar-crumb">@yield('breadcrumb')</div>
           @endif
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:.6rem">
-        {{-- LANGUAGE --}}
+      <div style="display:flex;align-items:center;gap:.6rem;flex-shrink:0">
         <div x-data="{ open: false }" style="position:relative">
             <button class="user-pill" @click="open=!open" @click.away="open=false">
                 <i class="fas fa-globe" style="font-size:.9rem;color:var(--gold)"></i>
@@ -118,7 +139,7 @@
   </div>
 </div>
 
-{{-- Mini audio player in admin too --}}
+{{-- Mini audio player for previewing tilawat --}}
 <div class="player-bar hidden z1" id="playerBar" x-data="audioPlayer()">
   <audio id="audioEl" preload="metadata"></audio>
   <div class="p-info">
@@ -175,8 +196,6 @@ document.addEventListener('alpine:init', () => {
     fmt(s)   { if(!s||isNaN(s)) return '0:00'; return Math.floor(s/60)+':'+(Math.floor(s%60)<10?'0':'')+Math.floor(s%60) },
   }));
 });
-if(window.innerWidth<=1024) document.getElementById('menuBtn').style.display='flex';
-window.addEventListener('resize', () => { document.getElementById('menuBtn').style.display = window.innerWidth<=1024?'flex':'none'; });
 </script>
 @stack('scripts')
 @livewireScripts

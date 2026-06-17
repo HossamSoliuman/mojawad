@@ -2,9 +2,6 @@
 @section('title','Home')
 @section('content')
 
-@php
-  $hero_slides = ($hero_qaris ?? collect())->isNotEmpty() ? $hero_qaris : $top_qaris;
-@endphp
 <section class="hero" x-data="quranRadio()">
   <div class="hero-grid">
     <div class="hero-live z1">
@@ -28,23 +25,6 @@
         </button>
       </div>
     </div>
-
-    @if($hero_slides->isNotEmpty())
-    <div class="hero-marquee">
-      <div class="marquee-col">
-        <div class="marquee-track">
-          @foreach($hero_slides as $q)@include('partials.marquee-qari')@endforeach
-          @foreach($hero_slides as $q)@include('partials.marquee-qari')@endforeach
-        </div>
-      </div>
-      <div class="marquee-col marquee-col-2">
-        <div class="marquee-track">
-          @foreach($hero_slides->reverse() as $q)@include('partials.marquee-qari')@endforeach
-          @foreach($hero_slides->reverse() as $q)@include('partials.marquee-qari')@endforeach
-        </div>
-      </div>
-    </div>
-    @endif
   </div>
 </section>
 
@@ -53,12 +33,12 @@
 @if($featured_tilawat->isNotEmpty())
 <section class="section">
   <div class="sec-title"><i class="fas fa-star gold"></i> {{ __('Featured Tilawat') }}</div>
-  <div class="grid-tilawat">
+  <div class="grid-tilawat" data-queue>
     @foreach($featured_tilawat as $t)
-    <div class="t-card">
+    <div class="t-card" data-track-id="{{ $t->id }}">
       <div class="t-card-img">
         <img src="{{ $t->cover_url }}" alt="{{ $t->title }}" loading="lazy">
-        <button class="t-play-btn" onclick="playTilawa({{ $t->id }},'{{ $t->audio_url }}',{{ json_encode($t->title) }},{{ json_encode($t->qari->name) }},'{{ $t->cover_url }}',{{ $t->duration }},'{{ route('tilawa.download', $t) }}')">
+        <button class="t-play-btn" data-track="{{ json_encode($t->playerPayload()) }}">
           <i class="fas fa-play"></i>
         </button>
       </div>
@@ -67,7 +47,10 @@
         <a href="{{ route('qaris.show',$t->qari) }}" wire:navigate class="t-card-qari">{{ $t->qari->name }}</a>
         <div class="t-card-meta">
           <span><i class="fas fa-clock"></i> {{ $t->formatted_duration }}</span>
-          <span><i class="fas fa-heart"></i> <span data-like-count="{{ $t->id }}">{{ number_format($t->likes_count) }}</span></span>
+          <button type="button" class="row-like" data-like-btn="{{ $t->id }}"
+            onclick="window.toggleTilawaLike({{ $t->id }})" title="{{ __('Like') }}">
+            <i class="fas fa-heart"></i> <span data-like-count="{{ $t->id }}">{{ number_format($t->likes_count) }}</span>
+          </button>
         </div>
       </div>
     </div>
@@ -98,9 +81,9 @@
 @if($popular_tilawat->isNotEmpty())
 <section class="section" style="padding-top:0">
   <div class="sec-title"><i class="fas fa-fire gold"></i> {{ __('Most Loved') }}</div>
-  <div class="t-list-grid">
+  <div class="t-list-grid" data-queue>
     @foreach($popular_tilawat as $t)
-    <div class="t-list-item" onclick="playTilawa({{ $t->id }},'{{ $t->audio_url }}',{{ json_encode($t->title) }},{{ json_encode($t->qari->name) }},'{{ $t->cover_url }}',{{ $t->duration }},'{{ route('tilawa.download', $t) }}')">
+    <div class="t-list-item" data-track="{{ json_encode($t->playerPayload()) }}" data-track-id="{{ $t->id }}">
       <img src="{{ $t->cover_url }}" class="t-list-cover" alt="{{ $t->title }}" loading="lazy">
       <div class="t-list-info">
         <div class="t-list-title"><a href="{{ route('tilawa.show',$t) }}" wire:navigate onclick="event.stopPropagation()" style="color:inherit">{{ $t->title }}</a></div>
@@ -108,7 +91,10 @@
       </div>
       <div class="t-list-meta">
         <span><i class="fas fa-clock"></i> {{ $t->formatted_duration }}</span>
-        <span style="color:var(--gold)"><i class="fas fa-heart"></i> <span data-like-count="{{ $t->id }}">{{ number_format($t->likes_count) }}</span></span>
+        <button type="button" class="row-like" data-like-btn="{{ $t->id }}"
+          onclick="window.toggleTilawaLike({{ $t->id }})" title="{{ __('Like') }}">
+          <i class="fas fa-heart"></i> <span data-like-count="{{ $t->id }}">{{ number_format($t->likes_count) }}</span>
+        </button>
       </div>
       <div class="t-list-play"><i class="fas fa-play"></i></div>
     </div>
@@ -120,9 +106,9 @@
 @if($recent_tilawat->isNotEmpty())
 <section class="section" style="padding-top:0;padding-bottom:3rem">
   <div class="sec-title"><i class="fas fa-clock-rotate-left gold"></i> {{ __('Recently Added') }}</div>
-  <div class="t-list-grid">
+  <div class="t-list-grid" data-queue>
     @foreach($recent_tilawat as $t)
-    <div class="t-list-item" onclick="playTilawa({{ $t->id }},'{{ $t->audio_url }}',{{ json_encode($t->title) }},{{ json_encode($t->qari->name) }},'{{ $t->cover_url }}',{{ $t->duration }},'{{ route('tilawa.download', $t) }}')">
+    <div class="t-list-item" data-track="{{ json_encode($t->playerPayload()) }}" data-track-id="{{ $t->id }}">
       <img src="{{ $t->cover_url }}" class="t-list-cover" alt="{{ $t->title }}" loading="lazy">
       <div class="t-list-info">
         <div class="t-list-title"><a href="{{ route('tilawa.show',$t) }}" wire:navigate onclick="event.stopPropagation()" style="color:inherit">{{ $t->title }}</a></div>

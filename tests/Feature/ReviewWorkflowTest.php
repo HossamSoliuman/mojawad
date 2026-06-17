@@ -42,13 +42,13 @@ it('puts a creator submission into pending review and keeps it off the public si
     $qari = Qari::factory()->create(['created_by' => $creator->id]);
 
     $this->actingAs($creator)
-        ->post(route('admin.tilawat.store'), [
+        ->postJson(route('admin.tilawat.quick-store'), [
             'qari_id' => $qari->id,
-            'title_ar' => 'سورة الفاتحة',
-            'status' => 'active', // creator attempt to self-publish should be ignored
+            'title' => 'سورة الفاتحة',
             'audio_tmp' => $tmp->id,
         ])
-        ->assertRedirect(route('admin.tilawat.index'));
+        ->assertSuccessful()
+        ->assertJson(['success' => true]);
 
     $tilawa = Tilawa::firstWhere('title_ar', 'سورة الفاتحة');
 

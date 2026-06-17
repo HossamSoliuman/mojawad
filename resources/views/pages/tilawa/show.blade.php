@@ -1,14 +1,17 @@
 @extends('layouts.app')
 @section('title', $tilawa->title)
+@section('meta_desc', $tilawa->description ?: $tilawa->title.' — '.$tilawa->qari->name)
+@section('og_type', 'music.song')
+@section('og_image', $tilawa->cover_url)
 @section('content')
 
 <div class="wrap z1" style="padding-top:3rem;padding-bottom:4rem;max-width:860px">
-  <a href="{{ route('qaris.show',$tilawa->qari) }}" wire:navigate
+  <a href="{{ route('qaris.show',$tilawa->qari) }}" wire:navigate class="back-link"
     style="font-size:.8rem;color:var(--text2);display:inline-flex;align-items:center;gap:.4rem;margin-bottom:1.85rem">
     <i class="fas fa-arrow-left"></i> {{ $tilawa->qari->name }}
   </a>
 
-  <div style="display:flex;gap:2.1rem;flex-wrap:wrap;margin-bottom:2.6rem">
+  <div style="display:flex;gap:2.1rem;flex-wrap:wrap;margin-bottom:2.6rem" data-track-id="{{ $tilawa->id }}">
     <img src="{{ $tilawa->cover_url }}" alt="{{ $tilawa->title }}"
       style="width:205px;height:205px;border-radius:var(--r2);object-fit:cover;border:2px solid var(--border2);box-shadow:0 20px 60px rgba(0,0,0,.55);flex-shrink:0">
 
@@ -23,6 +26,9 @@
       </a>
 
       <div style="display:flex;gap:.38rem;flex-wrap:wrap;margin-bottom:1.5rem">
+        @if($tilawa->surah_name)
+        <span class="badge badge-gold"><i class="fas fa-book-open"></i> {{ $tilawa->surah_name }}</span>
+        @endif
         <span class="badge badge-muted"><i class="fas fa-clock"></i> {{ $tilawa->formatted_duration }}</span>
         <span class="badge badge-muted">
           <i class="fas fa-heart"></i> <span data-like-count="{{ $tilawa->id }}">{{ number_format($tilawa->likes_count) }}</span>
@@ -37,22 +43,25 @@
       </div>
 
       <div style="display:flex;gap:.55rem;flex-wrap:wrap;align-items:center">
-        <button class="btn btn-primary"
-          onclick="playTilawa({{ $tilawa->id }},'{{ $tilawa->audio_url }}',{{ json_encode($tilawa->title) }},{{ json_encode($tilawa->qari->name) }},'{{ $tilawa->cover_url }}',{{ $tilawa->duration }},'{{ route('tilawa.download', $tilawa) }}')">
+        <button class="btn btn-primary" data-track="{{ json_encode($tilawa->playerPayload()) }}">
           <i class="fas fa-play"></i> {{ __('Play') }}
         </button>
 
-        <button class="btn btn-sm {{ $liked ? 'btn-primary' : 'btn-ghost' }}" id="likeBtn"
-          data-tilawa-id="{{ $tilawa->id }}"
+        <button type="button" class="btn btn-ghost btn-sm show-like-btn" id="likeBtn"
+          data-like-btn="{{ $tilawa->id }}"
           data-liked-text="{{ __('Liked') }}" data-like-text="{{ __('Like') }}"
           onclick="toggleLike({{ $tilawa->id }})">
           <i class="fas fa-heart"></i>
-          <span id="likeBtnText">{{ $liked ? __('Liked') : __('Like') }}</span>
+          <span id="likeBtnText">{{ __('Like') }}</span>
         </button>
 
         <a href="{{ route('tilawa.download',$tilawa) }}" class="btn btn-ghost btn-sm">
           <i class="fas fa-download"></i> {{ __('Download') }}
         </a>
+
+        <button type="button" class="btn btn-ghost btn-sm" onclick="shareTilawa()">
+          <i class="fas fa-share-nodes"></i> {{ __('Share') }}
+        </button>
       </div>
     </div>
   </div>
@@ -68,13 +77,12 @@
 
   @if($related->isNotEmpty())
   <div class="sec-title"><i class="fas fa-layer-group gold"></i> {{ __('More from') }} {{ $tilawa->qari->name }}</div>
-  <div class="grid-tilawat">
+  <div class="grid-tilawat" data-queue>
     @foreach($related as $r)
-    <div class="t-card">
+    <div class="t-card" data-track-id="{{ $r->id }}">
       <div class="t-card-img">
         <img src="{{ $r->cover_url }}" alt="{{ $r->title }}" loading="lazy">
-        <button class="t-play-btn"
-          onclick="playTilawa({{ $r->id }},'{{ $r->audio_url }}',{{ json_encode($r->title) }},{{ json_encode($r->qari->name) }},'{{ $r->cover_url }}',{{ $r->duration }},'{{ route('tilawa.download', $r) }}')">
+        <button class="t-play-btn" data-track="{{ json_encode($r->playerPayload()) }}">
           <i class="fas fa-play"></i>
         </button>
       </div>
@@ -83,7 +91,10 @@
         <div class="t-card-qari">{{ $r->qari->name }}</div>
         <div class="t-card-meta">
           <span><i class="fas fa-clock"></i> {{ $r->formatted_duration }}</span>
-          <span><i class="fas fa-heart"></i> <span data-like-count="{{ $r->id }}">{{ number_format($r->likes_count) }}</span></span>
+          <button type="button" class="row-like" data-like-btn="{{ $r->id }}"
+            onclick="window.toggleTilawaLike({{ $r->id }})" title="{{ __('Like') }}">
+            <i class="fas fa-heart"></i> <span data-like-count="{{ $r->id }}">{{ number_format($r->likes_count) }}</span>
+          </button>
         </div>
       </div>
     </div>
@@ -100,33 +111,42 @@ function toggleLike(id) {
   window.toggleTilawaLike(id).finally(() => { if (btn) btn.disabled = false; });
 }
 
-function paintLikeBtn(liked) {
+function paintShowLikeBtn() {
   const btn = document.getElementById('likeBtn');
   if (!btn) return;
+  const liked = window.isTilawaLiked(btn.dataset.likeBtn);
   btn.classList.toggle('btn-primary', liked);
   btn.classList.toggle('btn-ghost', !liked);
   const txt = document.getElementById('likeBtnText');
   if (txt) txt.textContent = liked ? btn.dataset.likedText : btn.dataset.likeText;
 }
+window._likedIdsReady.then(paintShowLikeBtn);
+paintShowLikeBtn();
 
-// For signed-out visitors the server renders the button as un-liked; reflect
-// any like they stored locally on this device.
-function initGuestLikeBtn() {
-  if (window._likeEnabled) return;
-  const btn = document.getElementById('likeBtn');
-  if (btn) paintLikeBtn(window.isTilawaLiked(btn.dataset.tilawaId));
+function shareTilawa() {
+  const data = { title: document.title, url: location.href };
+  if (navigator.share) {
+    navigator.share(data).catch(() => {});
+    return;
+  }
+  navigator.clipboard.writeText(data.url).then(() => {
+    const toast = document.createElement('div');
+    toast.className = 'copy-toast';
+    toast.textContent = @json(__('Link copied to clipboard'));
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2200);
+  }).catch(() => {});
 }
-initGuestLikeBtn();
 
 // One persistent listener (survives wire:navigate) that targets the current
 // track-page button via its data attributes, so it never goes stale.
 if (!window._showLikeSync) {
   window._showLikeSync = true;
-  document.addEventListener('livewire:navigated', initGuestLikeBtn);
+  document.addEventListener('livewire:navigated', paintShowLikeBtn);
   window.addEventListener('tilawa-like-changed', (e) => {
     const btn = document.getElementById('likeBtn');
-    if (!btn || Number(btn.dataset.tilawaId) !== Number(e.detail.id)) return;
-    paintLikeBtn(e.detail.liked);
+    if (!btn || Number(btn.dataset.likeBtn) !== Number(e.detail.id)) return;
+    paintShowLikeBtn();
   });
 }
 </script>

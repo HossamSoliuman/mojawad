@@ -1,14 +1,16 @@
 {
   "permissions": {
     "allow": [
-      "*",
-      "Bash(vendor/bin/pint *)",
-      "PowerShell(php vendor/bin/pint --dirty --format agent app/Http/Controllers/Admin/TilawaController.php app/Services/AudioDurationService.php app/Jobs/UploadToArchiveJob.php 2>&1)"
-    ],
-    "deny": []
+      "Bash(*)",
+      "PowerShell(*)",
+      "Read(*)",
+      "Write(*)",
+      "Edit(*)",
+      "mcp__laravel-boost__browser-logs"
+    ]
   },
+  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
-    "laravel-boost",
-    "herd"
+    "laravel-boost"
   ]
 }

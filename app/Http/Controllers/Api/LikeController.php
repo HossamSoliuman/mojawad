@@ -10,6 +10,13 @@ use Illuminate\Http\Request;
 
 class LikeController extends Controller
 {
+    public function ids(): JsonResponse
+    {
+        return response()->json([
+            'ids' => Like::where('user_id', auth()->id())->pluck('tilawa_id'),
+        ]);
+    }
+
     public function status(Tilawa $tilawa): JsonResponse
     {
         return response()->json([

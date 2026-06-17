@@ -13,14 +13,23 @@ class UserController extends Controller
 {
     public function index(Request $request)
     {
-        $users = User::with('roles')->when($request->search, fn($q) => $q->where('name', 'like', '%' . $request->search . '%')->orWhere('email', 'like', '%' . $request->search . '%'))->latest()->paginate(15)->withQueryString();
+        $users = User::with('roles')
+            ->when($request->search, fn ($q) => $q->where(fn ($sub) => $sub
+                ->where('name', 'like', '%'.$request->search.'%')
+                ->orWhere('email', 'like', '%'.$request->search.'%')))
+            ->when($request->role, fn ($q) => $q->whereHas('roles', fn ($sub) => $sub->where('name', $request->role)))
+            ->latest()
+            ->paginate(15)
+            ->withQueryString();
         $roles = Role::all();
+
         return view('admin.users.index', compact('users', 'roles'));
     }
 
     public function create()
     {
         $roles = Role::all();
+
         return view('admin.users.create', compact('roles'));
     }
 
@@ -47,7 +56,8 @@ class UserController extends Controller
     public function updateRole(UpdateUserRoleRequest $request, User $user)
     {
         $user->syncRoles([$request->role]);
-        return back()->with('success', 'Role updated for ' . $user->name . '.');
+
+        return back()->with('success', 'Role updated for '.$user->name.'.');
     }
 
     public function destroy(User $user)
@@ -57,6 +67,7 @@ class UserController extends Controller
         }
 
         $user->delete();
+
         return back()->with('success', 'User deleted successfully.');
     }
 }

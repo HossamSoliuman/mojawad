@@ -1,5 +1,7 @@
 @extends('layouts.app')
 @section('title', $qari->name)
+@section('meta_desc', __('Listen to Qur\'an recitations by :name', ['name' => $qari->name]))
+@section('og_image', $qari->image_url)
 @section('content')
 
 <div style="position:relative;overflow:hidden;padding-bottom:2rem">
@@ -8,7 +10,7 @@
     <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(17,24,39,.88) 0%,var(--bg) 100%)"></div>
   </div>
   <div class="wrap z1" style="padding-top:2.5rem">
-    <a href="{{ route('qaris.index') }}" wire:navigate style="font-size:.8rem;color:var(--text2);display:inline-flex;align-items:center;gap:.4rem;margin-bottom:1.4rem">
+    <a href="{{ route('qaris.index') }}" wire:navigate class="back-link" style="font-size:.8rem;color:var(--text2);display:inline-flex;align-items:center;gap:.4rem;margin-bottom:1.4rem">
       <i class="fas fa-arrow-left"></i> {{ __('All Qaris') }}
     </a>
     <div style="display:flex;align-items:flex-end;gap:1.85rem;flex-wrap:wrap">
@@ -48,7 +50,7 @@
 @push('scripts')
 <script>
 function playFirst() {
-  const el = document.querySelector('#tList .track-row');
+  const el = document.querySelector('#tList [data-track]');
   if (el) el.click();
 }
 </script>

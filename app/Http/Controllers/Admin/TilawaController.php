@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreTilawaRequest;
 use App\Http\Requests\UpdateTilawaRequest;
 use App\Models\Qari;
 use App\Models\Tilawa;
@@ -21,73 +20,19 @@ class TilawaController extends Controller
 
     public function index(Request $request)
     {
-        $tilawat = Tilawa::with('qari')
+        $tilawat = Tilawa::with('qari', 'uploader')
             ->when(! Auth::user()->hasRole('admin'), fn ($q) => $q->where('uploaded_by', Auth::id()))
             ->when($request->search, fn ($q) => $q->where(fn ($sub) => $sub->where('title_ar', 'like', '%'.$request->search.'%')->orWhere('title_en', 'like', '%'.$request->search.'%')))
             ->when($request->status, fn ($q) => $q->where('status', $request->status))
             ->when($request->review, fn ($q) => $q->where('review_status', $request->review))
+            ->when($request->qari, fn ($q) => $q->where('qari_id', $request->qari))
             ->latest()
             ->paginate(15)
             ->withQueryString();
 
-        return view('admin.tilawat.index', compact('tilawat'));
-    }
+        $qaris = Qari::orderBy('name_ar')->get(['id', 'name_ar', 'name_en']);
 
-    public function create()
-    {
-        $qaris = Qari::where('status', 'active')
-            ->when(! Auth::user()->hasRole('admin'), fn ($q) => $q->where('created_by', Auth::id()))
-            ->orderBy('name_ar')
-            ->get(['id', 'name_ar', 'name_en', 'image']);
-
-        return view('admin.tilawat.create', compact('qaris'));
-    }
-
-    public function store(StoreTilawaRequest $request)
-    {
-        $slug = Str::slug($request->title_ar);
-        if (Tilawa::where('slug', $slug)->exists()) {
-            $slug .= '-'.Str::random(4);
-        }
-
-        $audioPath = $this->uploadService->moveFromTmp($request->audio_tmp, 'tilawat');
-
-        $isAdmin = Auth::user()->hasRole('admin');
-        $status = $isAdmin ? ($request->status ?? 'active') : 'pending';
-        $reviewStatus = ($isAdmin && $status === 'active') ? 'approved' : 'pending';
-
-        $tilawa = Tilawa::create([
-            'qari_id' => $request->qari_id,
-            'title_ar' => $request->title_ar,
-            'title_en' => $request->title_en,
-            'slug' => $slug,
-            'description_ar' => $request->description_ar,
-            'description_en' => $request->description_en,
-            'recorded_at' => $request->recorded_at,
-            'recorded_place' => $request->recorded_place,
-            'audio_path' => $audioPath,
-            'archive_url' => null,
-            'duration' => AudioDurationService::getSeconds($audioPath),
-            'cover_image' => $request->filled('cover_image_tmp')
-                ? $this->uploadService->moveFromTmp($request->cover_image_tmp, 'tilawa-covers')
-                : null,
-            'status' => $status,
-            'review_status' => $reviewStatus,
-            'is_featured' => $request->boolean('is_featured'),
-            'uploaded_by' => Auth::id(),
-            'upload_status' => 'done',
-        ]);
-
-        if ($reviewStatus === 'pending') {
-            $tilawa->logReview('submitted');
-        }
-
-        Cache::forget('homepage_data');
-
-        return redirect()->route('admin.tilawat.index')
-            ->with('success', $reviewStatus === 'pending'
-                ? 'Tilawa submitted for review.'
-                : 'Tilawa uploaded successfully.');
+        return view('admin.tilawat.index', compact('tilawat', 'qaris'));
     }
 
     public function uploader(Request $request)
