@@ -1883,6 +1883,7 @@ textarea.form-control {
   border-radius: 50%;
   line-height: 0;
   flex-shrink: 0;
+  cursor: pointer;
 }
 
 .ni-avatar-btn .avatar {
@@ -1918,6 +1919,15 @@ textarea.form-control {
 /* Keep dropdowns from clipping outside the rounded island */
 .nav-island .dropdown {
   top: calc(100% + .7rem);
+  right: auto;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+html[dir="rtl"] .nav-island .dropdown {
+  right: auto;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 /* Clearance below the floating island on non-home pages */

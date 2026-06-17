@@ -96,15 +96,15 @@
             </div>
         </div>
 
-        <div class="ni-actions">
+        <div class="ni-actions" :style="user ? 'overflow:visible' : ''">
             {{-- USER --}}
             @auth
-                <div class="ni-menu" style="position:relative">
+                <div class="ni-menu" style="position:relative" @click.outside="user=false">
                     <button type="button" class="ni-avatar-btn" @click="user=!user"
                         title="{{ auth()->user()->name }}">
                         <img src="{{ auth()->user()->avatar_url }}" class="avatar" width="30" height="30" alt="">
                     </button>
-                    <div class="dropdown" x-show="user" x-transition @click.outside="user=false" style="display:none">
+                    <div class="dropdown" x-show="user" x-transition style="display:none">
                         <div class="ni-user-hd">{{ Str::limit(auth()->user()->name, 18) }}</div>
                         @if (auth()->user()->hasAnyRole(['admin', 'creator']))
                             <a href="{{ route('admin.dashboard') }}"><i class="fas fa-gauge"
