@@ -30,6 +30,31 @@
 
 <div class="wrap">
 
+<section class="section" x-data="continueListening()" @tilawa-history-changed.window="load()"
+  x-show="items.length" x-cloak style="display:none">
+  <div class="sec-title"><i class="fas fa-clock-rotate-left gold"></i> {{ __('Continue listening') }}</div>
+  <div class="rail" data-queue>
+    <template x-for="(t, idx) in items" :key="t.id">
+      <div class="t-card rail-card" :data-track-id="t.id">
+        <div class="t-card-img">
+          <img :src="t.cover" :alt="t.title" loading="lazy">
+          <button class="t-play-btn" @click="play(idx)" :title="'{{ __('Play') }}'">
+            <i class="fas fa-play"></i>
+          </button>
+          <button class="card-dismiss" @click.stop="dismiss(t.id)" :title="'{{ __('Remove from history') }}'">
+            <i class="fas fa-xmark"></i>
+          </button>
+          <div class="t-card-progress"><div class="t-card-progress-fill" :style="'width:' + pct(t) + '%'"></div></div>
+        </div>
+        <div class="t-card-body">
+          <div class="t-card-title" x-text="t.title"></div>
+          <div class="t-card-qari" x-text="t.qari"></div>
+        </div>
+      </div>
+    </template>
+  </div>
+</section>
+
 @if($featured_tilawat->isNotEmpty())
 <section class="section">
   <div class="sec-title"><i class="fas fa-star gold"></i> {{ __('Featured Tilawat') }}</div>

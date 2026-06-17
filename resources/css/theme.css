@@ -3127,3 +3127,98 @@ a.att-card:hover {
   }
 }
 
+
+/* ── Watch history: "Continue listening" rail + progress + badges ── */
+[x-cloak] {
+  display: none !important;
+}
+
+.rail {
+  display: flex;
+  gap: 1.1rem;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  padding-bottom: .6rem;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.rail .rail-card {
+  flex: 0 0 200px;
+  scroll-snap-align: start;
+}
+
+@media(max-width:768px) {
+  .rail .rail-card {
+    flex-basis: 152px;
+  }
+}
+
+.t-card-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4px;
+  background: rgba(0, 0, 0, .55);
+}
+
+.t-card-progress-fill {
+  height: 100%;
+  background: var(--gold);
+  transition: width .25s;
+}
+
+.history-badge {
+  position: absolute;
+  top: .55rem;
+  left: .55rem;
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  font-size: .66rem;
+  font-weight: 700;
+  padding: .2rem .5rem;
+  border-radius: 999px;
+  background: rgba(17, 24, 39, .82);
+  color: var(--gold);
+  backdrop-filter: blur(4px);
+}
+
+html[dir="rtl"] .history-badge {
+  left: auto;
+  right: .55rem;
+}
+
+.card-dismiss {
+  position: absolute;
+  top: .55rem;
+  right: .55rem;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(17, 24, 39, .82);
+  color: #fff;
+  font-size: .8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  cursor: pointer;
+  transition: all .2s;
+  backdrop-filter: blur(4px);
+}
+
+html[dir="rtl"] .card-dismiss {
+  right: auto;
+  left: .55rem;
+}
+
+.t-card:hover .card-dismiss {
+  opacity: 1;
+}
+
+.card-dismiss:hover {
+  background: var(--red, #d24b4b);
+}

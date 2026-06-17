@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Api\LikeController;
 use App\Http\Controllers\Api\SaveController;
 use App\Http\Controllers\Api\SearchController;
+use App\Http\Controllers\Api\WatchHistoryController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\QariController;
 use App\Http\Controllers\TilawaController;
@@ -43,6 +44,12 @@ Route::middleware('auth')->prefix('api')->group(function () {
     Route::post('/like/{tilawa}', [LikeController::class,   'toggle'])->name('api.like');
     Route::post('/likes/sync', [LikeController::class,      'sync'])->name('api.likes.sync');
     Route::post('/save/{tilawa}', [SaveController::class,   'toggle'])->name('api.save');
+
+    Route::get('/history', [WatchHistoryController::class,          'index'])->name('api.history.index');
+    Route::post('/history', [WatchHistoryController::class,         'store'])->name('api.history.store');
+    Route::post('/history/sync', [WatchHistoryController::class,    'sync'])->name('api.history.sync');
+    Route::delete('/history/{tilawa}', [WatchHistoryController::class, 'destroy'])->name('api.history.destroy');
+    Route::delete('/history', [WatchHistoryController::class,       'clear'])->name('api.history.clear');
 });
 Route::get('/api/search', SearchController::class)->name('api.search');
 

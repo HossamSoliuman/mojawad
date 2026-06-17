@@ -331,6 +331,139 @@
             window._paintLikeButtons();
         });
 
+        // ── Watch history ────────────────────────────────────────────────────
+        // Mirrors the likes store: guests keep history in localStorage; on login
+        // it is synced to the account. window._watchHistory is the in-memory
+        // source of truth (most-recent first) the "Continue listening" rail reads.
+        window._historyKey = 'tilawa_history';
+        window._watchHistory = [];
+
+        window._getLocalHistory = function () {
+            try {
+                return JSON.parse(localStorage.getItem(window._historyKey) || '[]') || [];
+            } catch (e) {
+                return [];
+            }
+        };
+        window._setLocalHistory = function (arr) {
+            localStorage.setItem(window._historyKey, JSON.stringify(arr.slice(0, 50)));
+        };
+
+        // Move/insert an entry at the front, deduped by id.
+        window._upsertWatch = function (entry) {
+            window._watchHistory = [entry, ...window._watchHistory.filter((e) => Number(e.id) !== Number(entry.id))].slice(0, 50);
+        };
+
+        window._historyChanged = function () {
+            window.dispatchEvent(new CustomEvent('tilawa-history-changed'));
+        };
+
+        // Per-track resume positions shared with the audio player.
+        window._readPositions = function () {
+            try { return JSON.parse(localStorage.getItem('tilawa_positions') || '{}'); } catch (e) { return {}; }
+        };
+
+        let _lastHistorySave = 0; // gates the signed-in network POST (15s)
+        let _lastHistoryTouch = 0; // gates in-memory/local churn (5s)
+        // Single entry point called by the player as playback progresses.
+        window._recordWatch = function (track, position, duration, completed, forced) {
+            if (!track || !track.id) return;
+            position = Math.floor(position || 0);
+            duration = Math.floor(duration || track.duration || 0);
+            if (!completed && position <= 5) return; // ignore accidental taps
+
+            const now = Date.now();
+            if (!forced && !completed && now - _lastHistoryTouch < 5000) return;
+            _lastHistoryTouch = now;
+
+            const entry = {
+                id: track.id, title: track.title, qari: track.qari, cover: track.cover,
+                url: track.url, download: track.download || '', duration,
+                position, completed: !!completed, updated_at: Date.now()
+            };
+            window._upsertWatch(entry);
+            window._historyChanged();
+
+            if (!window._likeEnabled) {
+                window._setLocalHistory(window._watchHistory);
+                return;
+            }
+
+            if (!forced && !completed && now - _lastHistorySave < 15000) return;
+            _lastHistorySave = now;
+
+            // keepalive lets the request finish even if the page is unloading,
+            // while still carrying the CSRF header (unlike navigator.sendBeacon).
+            const csrf = document.querySelector('meta[name=csrf-token]').content;
+            fetch('/api/history', {
+                method: 'POST',
+                keepalive: true,
+                headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: entry.id, position, duration, completed: entry.completed })
+            }).catch(() => {});
+        };
+
+        window._dismissWatch = function (id) {
+            id = Number(id);
+            window._watchHistory = window._watchHistory.filter((e) => Number(e.id) !== id);
+            window._historyChanged();
+            if (!window._likeEnabled) {
+                window._setLocalHistory(window._watchHistory);
+                return;
+            }
+            const csrf = document.querySelector('meta[name=csrf-token]').content;
+            fetch(`/api/history/${id}`, {
+                method: 'DELETE',
+                headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' }
+            }).catch(() => {});
+        };
+
+        // Load history into memory: signed-in → server; guests → localStorage.
+        // Server positions are merged into tilawa_positions so resume works on a
+        // fresh device.
+        window._refreshWatchHistory = async function () {
+            if (!window._likeEnabled) {
+                window._watchHistory = window._getLocalHistory();
+                window._historyChanged();
+                return;
+            }
+            try {
+                const r = await fetch('/api/history', { headers: { 'Accept': 'application/json' } });
+                if (r.ok) {
+                    const data = await r.json();
+                    window._watchHistory = data.items || [];
+                    const map = window._readPositions();
+                    window._watchHistory.forEach((e) => {
+                        if (e.position > 10) map[e.id] = e.position;
+                    });
+                    localStorage.setItem('tilawa_positions', JSON.stringify(map));
+                }
+            } catch (e) {}
+            window._historyChanged();
+        };
+        window._watchHistoryReady = window._refreshWatchHistory();
+        document.addEventListener('livewire:navigated', () => window._refreshWatchHistory());
+
+        // Push locally-stored guest history into the account once authenticated.
+        window._syncGuestHistory = async function () {
+            if (!window._likeEnabled) return;
+            const items = window._getLocalHistory();
+            if (!items.length) return;
+            const csrf = document.querySelector('meta[name=csrf-token]').content;
+            try {
+                const r = await fetch('/api/history/sync', {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ items })
+                });
+                if (r.ok) {
+                    localStorage.removeItem(window._historyKey);
+                    window._refreshWatchHistory();
+                }
+            } catch (e) {}
+        };
+        document.addEventListener('livewire:init', () => window._syncGuestHistory());
+
         // ── Play delegation ──────────────────────────────────────────────────
         // Any element with data-track is playable; clicking it queues every
         // sibling [data-track] inside the nearest [data-queue] container.
@@ -398,6 +531,7 @@
                 queue: [],
                 qIdx: -1,
                 currentId: null,
+                currentTrack: null,
                 liked: false,
                 likePop: false,
                 likeLoading: false,
@@ -473,6 +607,10 @@
                             document.getElementById('playerBar').classList.remove('hidden');
 
                             this.currentId = d.id || null;
+                            this.currentTrack = {
+                                id: d.id, title: d.title, qari: d.qari, cover: d.cover,
+                                url: d.src, download: d.downloadUrl || '', duration: d.duration || 0
+                            };
                             this.queue = Array.isArray(d.queue) ? d.queue : [];
                             this.qIdx = typeof d.qIdx === 'number' ? d.qIdx : -1;
                             this.fetchLikeStatus();
@@ -512,6 +650,9 @@
                     }));
                     this.savePosition();
                     this.updatePositionState();
+                    if (this.currentTrack) {
+                        window._recordWatch(this.currentTrack, this.cur, this.dur, false, force);
+                    }
                 },
                 // ── Per-track resume ──
                 _positions() {
@@ -548,6 +689,7 @@
                     document.getElementById('pTitle').textContent = d.title;
                     document.getElementById('pQari').textContent = d.qari;
                     this.currentId = d.id || null;
+                    this.currentTrack = d;
                     this.fetchLikeStatus();
                     const dl = d.download || d.downloadUrl;
                     if (dl) {
@@ -616,6 +758,9 @@
                 },
                 onEnded() {
                     this.playing = false;
+                    if (this.currentTrack) {
+                        window._recordWatch(this.currentTrack, this.dur, this.dur, true, true);
+                    }
                     if (this.currentId) this.clearPosition(this.currentId);
                     if (this.repeat === 'one') {
                         this.audio.currentTime = 0;
@@ -788,6 +933,36 @@
                         this.audio.src = this.stream;
                     }
                     this.audio.play().catch(() => { this.loading = false; });
+                },
+            }));
+
+            // ── "Continue listening" rail (home) ──────────────────────────────
+            // Reads window._watchHistory (localStorage for guests, server for
+            // signed-in) and shows in-progress tracks, Spotify-style.
+            Alpine.data('continueListening', () => ({
+                items: [],
+                load() {
+                    this.items = (window._watchHistory || []).filter((i) =>
+                        !i.completed && i.position > 5 && (!i.duration || i.position < i.duration - 15)
+                    );
+                    this.$nextTick(() => window._paintNowPlaying());
+                },
+                init() {
+                    // Refreshes are driven by the `tilawa-history-changed` window
+                    // event (bound in markup with .window so Alpine auto-cleans it),
+                    // which the global livewire:navigated refresh re-fires.
+                    window._watchHistoryReady.then(() => this.load());
+                    this.load();
+                },
+                pct(i) {
+                    return i.duration ? Math.min(100, Math.round(i.position / i.duration * 100)) : 0;
+                },
+                play(idx) {
+                    const q = this.items;
+                    if (q[idx]) window._playerLoad(q[idx], q, idx);
+                },
+                dismiss(id) {
+                    window._dismissWatch(id);
                 },
             }));
         });

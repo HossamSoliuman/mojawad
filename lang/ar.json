@@ -262,5 +262,14 @@
     "Save role": "حفظ الدور",
     "Delete this user?": "حذف هذا المستخدم؟",
     "No users found.": "لم يتم العثور على مستخدمين.",
-    "Search users…": "ابحث عن مستخدمين…"
+    "Search users…": "ابحث عن مستخدمين…",
+    "Continue listening": "تابع الاستماع",
+    "Listening history": "سجل الاستماع",
+    "History": "السجل",
+    "No history yet.": "لا يوجد سجل بعد.",
+    "Clear history": "مسح السجل",
+    "Completed": "مكتملة",
+    "Remove from history": "إزالة من السجل",
+    "Your history is stored on this device only. Sign in to keep it everywhere.": "سجلك محفوظ على هذا الجهاز فقط. سجّل الدخول للاحتفاظ به في كل مكان.",
+    "Watched": "استمعت إليها"
 }
