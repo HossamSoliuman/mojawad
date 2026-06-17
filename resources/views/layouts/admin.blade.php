@@ -4,14 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token() }}">
-<title>@yield('title', __('Dashboard')) — Mojawad</title>
+<title>@yield('title', __('Dashboard')) — {{ config('app.name') }} Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-@vite(['resources/css/app.css','resources/js/app.js','resources/js/filepond.js'])
+@vite(['resources/css/app.css','resources/css/admin.css','resources/js/app.js','resources/js/filepond.js'])
 @livewireStyles
 </head>
-<body x-data="{ sideOpen: false }">
-<div class="bg-dots"></div>
+<body class="adm" x-data="{ sideOpen: false }">
 
 @php($pendingReviewBadge = auth()->user()->hasAnyRole(['admin', 'reviewer']) ? \App\Models\Tilawa::pendingReview()->count() : 0)
 
@@ -19,39 +21,49 @@
   {{-- MOBILE BACKDROP --}}
   <div class="side-backdrop" x-show="sideOpen" @click="sideOpen=false" x-transition.opacity></div>
 
-  {{-- SIDEBAR --}}
+  {{-- =========================================================
+       SIDEBAR
+  ========================================================= --}}
   <aside class="admin-sidebar" :class="{ open: sideOpen }" id="sidebar">
+
+    {{-- Logo --}}
     <div class="sidebar-logo">
-      <a href="{{ route('home') }}">
+      <a href="{{ route('home') }}" target="_blank">
         <span class="logo-glyph"><i class="fas fa-book-open-reader"></i></span>
-        <span>Mojawad</span>
+        <span>{{ config('app.name') }}</span>
       </a>
     </div>
+
+    {{-- Navigation --}}
     <nav class="sidebar-nav">
+
       @role('admin')
       <div class="nav-sec-lbl">{{ __('Overview') }}</div>
       <a href="{{ route('admin.dashboard') }}" class="s-link {{ request()->routeIs('admin.dashboard') ? 'active':'' }}">
-        <i class="fas fa-gauge-high"></i> {{ __('Dashboard') }}
+        <i class="fas fa-gauge-high"></i> <span>{{ __('Dashboard') }}</span>
       </a>
       <a href="{{ route('admin.reports') }}" class="s-link {{ request()->routeIs('admin.reports') ? 'active':'' }}">
-        <i class="fas fa-chart-line"></i> {{ __('Reports') }}
+        <i class="fas fa-chart-line"></i> <span>{{ __('Reports') }}</span>
       </a>
       @endrole
 
       @role('creator')
+      <div class="adm-nav-divider"></div>
       <div class="nav-sec-lbl">{{ __('Publish') }}</div>
       <a href="{{ route('admin.upload') }}" class="s-link {{ request()->routeIs('admin.upload') ? 'active':'' }}">
-        <i class="fas fa-cloud-arrow-up"></i> {{ __('Upload Tilawat') }}
+        <i class="fas fa-cloud-arrow-up"></i> <span>{{ __('Upload Tilawat') }}</span>
       </a>
       @endrole
 
       @hasanyrole('admin|creator')
+      <div class="adm-nav-divider"></div>
       <div class="nav-sec-lbl">{{ __('Content') }}</div>
       <a href="{{ route('admin.qaris.index') }}" class="s-link {{ request()->routeIs('admin.qaris.*') ? 'active':'' }}">
-        <i class="fas fa-microphone-lines"></i> {{ __('Qaris') }}
+        <i class="fas fa-microphone-lines"></i> <span>{{ __('Qaris') }}</span>
       </a>
       <a href="{{ route('admin.tilawat.index') }}" class="s-link {{ request()->routeIs('admin.tilawat.*') ? 'active':'' }}">
-        <i class="fas fa-music"></i> {{ __('Tilawat') }}
+        <i class="fas fa-music"></i>
+        <span>{{ __('Tilawat') }}</span>
         @role('admin')
         @if($pendingReviewBadge > 0)
         <span class="s-badge">{{ $pendingReviewBadge }}</span>
@@ -61,85 +73,145 @@
       @endhasanyrole
 
       @role('reviewer')
+      <div class="adm-nav-divider"></div>
       <div class="nav-sec-lbl">{{ __('Review') }}</div>
       <a href="{{ route('admin.review.index') }}" class="s-link {{ request()->routeIs('admin.review.index') ? 'active':'' }}">
-        <i class="fas fa-clipboard-check"></i> {{ __('Review Queue') }}
+        <i class="fas fa-clipboard-check"></i>
+        <span>{{ __('Review Queue') }}</span>
         @if($pendingReviewBadge > 0)
         <span class="s-badge">{{ $pendingReviewBadge }}</span>
         @endif
       </a>
       <a href="{{ route('admin.review.history') }}" class="s-link {{ request()->routeIs('admin.review.history') ? 'active':'' }}">
-        <i class="fas fa-clock-rotate-left"></i> {{ __('History') }}
+        <i class="fas fa-clock-rotate-left"></i> <span>{{ __('History') }}</span>
       </a>
       @endrole
 
       @role('admin')
+      <div class="adm-nav-divider"></div>
       <div class="nav-sec-lbl">{{ __('Community') }}</div>
       <a href="{{ route('admin.users.index') }}" class="s-link {{ request()->routeIs('admin.users.*') ? 'active':'' }}">
-        <i class="fas fa-users"></i> {{ __('Users') }}
+        <i class="fas fa-users"></i> <span>{{ __('Users') }}</span>
       </a>
       @endrole
 
+      <div class="adm-nav-divider"></div>
       <div class="nav-sec-lbl">{{ __('Site') }}</div>
       <a href="{{ route('home') }}" class="s-link" target="_blank">
-        <i class="fas fa-arrow-up-right-from-square"></i> {{ __('View Site') }}
+        <i class="fas fa-arrow-up-right-from-square"></i> <span>{{ __('View Site') }}</span>
       </a>
+
     </nav>
+
+    {{-- Sidebar footer — user info + logout --}}
     <div class="sidebar-footer">
-      <img src="{{ auth()->user()->avatar_url }}" class="avatar" width="30" height="30" alt="">
+      <img src="{{ auth()->user()->avatar_url }}" class="avatar" width="32" height="32" alt="">
       <div style="flex:1;min-width:0">
-        <div class="sf-name">{{ Str::limit(auth()->user()->name, 16) }}</div>
+        <div class="sf-name">{{ Str::limit(auth()->user()->name, 18) }}</div>
         <div class="sf-role">{{ __(ucfirst(auth()->user()->roles->first()?->name ?? 'user')) }}</div>
       </div>
       <form method="POST" action="{{ route('logout') }}">@csrf
-        <button type="submit" class="btn-icon" style="color:var(--red)" title="{{ __('Logout') }}">
+        <button type="submit" class="btn-icon" title="{{ __('Logout') }}">
           <i class="fas fa-arrow-right-from-bracket"></i>
         </button>
       </form>
     </div>
+
   </aside>
 
-  {{-- MAIN --}}
+  {{-- =========================================================
+       MAIN
+  ========================================================= --}}
   <div class="admin-main">
+
+    {{-- TOPBAR --}}
     <div class="admin-topbar">
-      <div style="display:flex;align-items:center;gap:.8rem;min-width:0">
-        <button class="btn-icon topbar-menu" @click="sideOpen=!sideOpen">
+
+      {{-- Left: mobile toggle + breadcrumb --}}
+      <div style="display:flex;align-items:center;gap:.75rem;min-width:0">
+        <button class="btn-icon topbar-menu" @click="sideOpen=!sideOpen" aria-label="{{ __('Menu') }}">
           <i class="fas fa-bars"></i>
         </button>
         <div style="min-width:0">
           <h1>@yield('page-title', __('Dashboard'))</h1>
           @hasSection('breadcrumb')
-          <div class="topbar-crumb">@yield('breadcrumb')</div>
+          <div class="topbar-crumb">
+            <i class="fas fa-house" style="font-size:.65rem"></i>
+            &nbsp;@yield('breadcrumb')
+          </div>
           @endif
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:.6rem;flex-shrink:0">
+
+      {{-- Right: actions --}}
+      <div style="display:flex;align-items:center;gap:.5rem;flex-shrink:0">
+
+        {{-- Language switcher --}}
         <div x-data="{ open: false }" style="position:relative">
-            <button class="user-pill" @click="open=!open" @click.away="open=false">
-                <i class="fas fa-globe" style="font-size:.9rem;color:var(--gold)"></i>
-                <span class="user-pill-name" style="color:var(--text1)">{{ app()->getLocale() == 'ar' ? 'العربية' : 'English' }}</span>
-            </button>
-            <div class="dropdown" x-show="open" x-transition>
-                <a href="{{ route('lang', 'en') }}">English</a>
-                <a href="{{ route('lang', 'ar') }}">العربية</a>
-            </div>
+          <button class="user-pill" @click="open=!open" @click.away="open=false" style="gap:.4rem">
+            <i class="fas fa-globe" style="font-size:.78rem"></i>
+            <span class="user-pill-name">{{ strtoupper(app()->getLocale()) }}</span>
+            <i class="fas fa-chevron-down" style="font-size:.6rem;opacity:.5"></i>
+          </button>
+          <div class="dropdown" x-show="open" x-transition style="min-width:120px">
+            <a href="{{ route('lang', 'en') }}">
+              <i class="fas fa-check" style="font-size:.7rem;opacity:{{ app()->getLocale() === 'en' ? 1 : 0 }}"></i>
+              English
+            </a>
+            <a href="{{ route('lang', 'ar') }}">
+              <i class="fas fa-check" style="font-size:.7rem;opacity:{{ app()->getLocale() === 'ar' ? 1 : 0 }}"></i>
+              العربية
+            </a>
+          </div>
         </div>
+
+        {{-- Page-level action buttons injected by child views --}}
         @yield('topbar-actions')
+
+        {{-- User avatar pill --}}
+        <div x-data="{ open: false }" style="position:relative">
+          <button class="user-pill" @click="open=!open" @click.away="open=false" style="gap:.5rem;padding:.28rem .6rem .28rem .28rem">
+            <img src="{{ auth()->user()->avatar_url }}" class="avatar" width="26" height="26" alt="" style="border-radius:50%;border:1px solid rgba(0,0,0,.1)">
+            <span class="user-pill-name" style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+              {{ Str::limit(auth()->user()->name, 14) }}
+            </span>
+            <i class="fas fa-chevron-down" style="font-size:.6rem;opacity:.5"></i>
+          </button>
+          <div class="dropdown" x-show="open" x-transition style="min-width:160px;right:0">
+            <div class="ni-user-hd">{{ auth()->user()->email }}</div>
+            <a href="{{ route('home') }}" target="_blank">
+              <i class="fas fa-arrow-up-right-from-square"></i> {{ __('View Site') }}
+            </a>
+            <form method="POST" action="{{ route('logout') }}">@csrf
+              <button type="button" onclick="this.closest('form').submit()" style="width:100%">
+                <i class="fas fa-arrow-right-from-bracket"></i> {{ __('Logout') }}
+              </button>
+            </form>
+          </div>
+        </div>
+
       </div>
     </div>
+
+    {{-- PAGE CONTENT --}}
     <div class="admin-body">
       @if(session('success'))
-      <div class="alert alert-success" style="margin-bottom:1.4rem"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
+      <div class="alert alert-success" style="margin-bottom:1.35rem">
+        <i class="fas fa-circle-check"></i> {{ session('success') }}
+      </div>
       @endif
       @if(session('error'))
-      <div class="alert alert-error" style="margin-bottom:1.4rem"><i class="fas fa-circle-exclamation"></i> {{ session('error') }}</div>
+      <div class="alert alert-error" style="margin-bottom:1.35rem">
+        <i class="fas fa-circle-exclamation"></i> {{ session('error') }}
+      </div>
       @endif
       @yield('content')
     </div>
-  </div>
-</div>
 
-{{-- Mini audio player for previewing tilawat --}}
+  </div>{{-- /.admin-main --}}
+</div>{{-- /.admin-wrap --}}
+
+{{-- Mini audio player — hidden in admin via CSS but JS hooks remain available --}}
 <div class="player-bar hidden z1" id="playerBar" x-data="audioPlayer()">
   <audio id="audioEl" preload="metadata"></audio>
   <div class="p-info">

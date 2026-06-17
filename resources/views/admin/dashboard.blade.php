@@ -217,17 +217,28 @@ $deltaPct = function (int $current, int $previous): ?float {
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js"></script>
 <script>
 (() => {
-  const css = getComputedStyle(document.documentElement);
-  const gold = css.getPropertyValue('--gold').trim() || '#c9a35c';
-  const text2 = css.getPropertyValue('--text2').trim() || '#9aa0ae';
-  const border = css.getPropertyValue('--border').trim() || 'rgba(255,255,255,.08)';
-  const labels = @json($charts['labels']).map(d => d.slice(5));
-  const rtl = document.documentElement.dir === 'rtl';
+  /* Admin corporate colours — read from body.adm computed style */
+  const bodyStyle = getComputedStyle(document.body);
+  const primary = bodyStyle.getPropertyValue('--gold').trim() || '#2563eb';
+  const text2   = '#94a3b8';
+  const border   = '#f1f5f9';
+  const labels   = @json($charts['labels']).map(d => d.slice(5));
+  const rtl      = document.documentElement.dir === 'rtl';
+
+  Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
 
   const lineOpts = {
     responsive: true,
     maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
+    plugins: { legend: { display: false }, tooltip: {
+      backgroundColor: '#fff',
+      titleColor: '#0f172a',
+      bodyColor: '#64748b',
+      borderColor: '#e2e8f0',
+      borderWidth: 1,
+      padding: 10,
+      cornerRadius: 8,
+    }},
     scales: {
       x: { reverse: rtl, ticks: { color: text2, maxTicksLimit: 10, font: { size: 10 } }, grid: { display: false } },
       y: { beginAtZero: true, ticks: { color: text2, precision: 0, font: { size: 10 } }, grid: { color: border } },
@@ -235,15 +246,15 @@ $deltaPct = function (int $current, int $previous): ?float {
     interaction: { intersect: false, mode: 'index' },
   };
 
-  const area = (id, data, color) => new Chart(document.getElementById(id), {
+  const area = (id, data, color, alphaHex) => new Chart(document.getElementById(id), {
     type: 'line',
-    data: { labels, datasets: [{ data, borderColor: color, backgroundColor: color + '22',
-      fill: true, tension: .35, pointRadius: 0, borderWidth: 2 }] },
+    data: { labels, datasets: [{ data, borderColor: color, backgroundColor: color + (alphaHex || '18'),
+      fill: true, tension: .38, pointRadius: 0, borderWidth: 2.5 }] },
     options: lineOpts,
   });
 
-  area('dlChart', @json($charts['downloads']), gold);
-  area('likeChart', @json($charts['likes']), '#e0626f');
+  area('dlChart',   @json($charts['downloads']), primary, '14');
+  area('likeChart', @json($charts['likes']),     '#ef4444', '12');
 })();
 </script>
 @endpush

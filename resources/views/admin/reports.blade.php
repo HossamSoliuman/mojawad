@@ -206,20 +206,36 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js"></script>
 <script>
 (() => {
-  const css = getComputedStyle(document.documentElement);
-  const gold = css.getPropertyValue('--gold').trim() || '#c9a35c';
-  const text2 = css.getPropertyValue('--text2').trim() || '#9aa0ae';
-  const border = css.getPropertyValue('--border').trim() || 'rgba(255,255,255,.08)';
-  const labels = @json($series['downloads']['labels']).map(d => d.slice(5));
-  const rtl = document.documentElement.dir === 'rtl';
+  /* Admin corporate chart colours */
+  const primary  = '#2563eb';
+  const danger   = '#ef4444';
+  const text2    = '#94a3b8';
+  const gridLine = '#f1f5f9';
+  const labels   = @json($series['downloads']['labels']).map(d => d.slice(5));
+  const rtl      = document.documentElement.dir === 'rtl';
+
+  Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
+
+  const tooltipDefaults = {
+    backgroundColor: '#fff',
+    titleColor: '#0f172a',
+    bodyColor: '#64748b',
+    borderColor: '#e2e8f0',
+    borderWidth: 1,
+    padding: 10,
+    cornerRadius: 8,
+  };
 
   const baseOpts = (legend) => ({
     responsive: true,
     maintainAspectRatio: false,
-    plugins: { legend: { display: legend, labels: { color: text2, boxWidth: 12, font: { size: 11 } } } },
+    plugins: {
+      legend: { display: legend, labels: { color: text2, boxWidth: 12, font: { size: 11 } } },
+      tooltip: tooltipDefaults,
+    },
     scales: {
       x: { reverse: rtl, ticks: { color: text2, maxTicksLimit: 12, font: { size: 10 } }, grid: { display: false } },
-      y: { beginAtZero: true, ticks: { color: text2, precision: 0, font: { size: 10 } }, grid: { color: border } },
+      y: { beginAtZero: true, ticks: { color: text2, precision: 0, font: { size: 10 } }, grid: { color: gridLine } },
     },
     interaction: { intersect: false, mode: 'index' },
   });
@@ -230,9 +246,9 @@
       labels,
       datasets: [
         { label: @json(__('Downloads')), data: @json($series['downloads']['values']),
-          borderColor: gold, backgroundColor: gold + '22', fill: true, tension: .35, pointRadius: 0, borderWidth: 2 },
+          borderColor: primary, backgroundColor: primary + '14', fill: true, tension: .38, pointRadius: 0, borderWidth: 2.5 },
         { label: @json(__('Likes')), data: @json($series['likes']['values']),
-          borderColor: '#e0626f', backgroundColor: '#e0626f22', fill: true, tension: .35, pointRadius: 0, borderWidth: 2 },
+          borderColor: danger, backgroundColor: danger + '12', fill: true, tension: .38, pointRadius: 0, borderWidth: 2.5 },
       ],
     },
     options: baseOpts(true),
@@ -240,13 +256,13 @@
 
   new Chart(document.getElementById('contentChart'), {
     type: 'bar',
-    data: { labels, datasets: [{ data: @json($series['tilawat']['values']), backgroundColor: gold + 'cc', borderRadius: 3 }] },
+    data: { labels, datasets: [{ data: @json($series['tilawat']['values']), backgroundColor: primary + 'cc', borderRadius: 4 }] },
     options: baseOpts(false),
   });
 
   new Chart(document.getElementById('usersChart'), {
     type: 'bar',
-    data: { labels, datasets: [{ data: @json($series['users']['values']), backgroundColor: '#60a5facc', borderRadius: 3 }] },
+    data: { labels, datasets: [{ data: @json($series['users']['values']), backgroundColor: '#60a5facc', borderRadius: 4 }] },
     options: baseOpts(false),
   });
 })();

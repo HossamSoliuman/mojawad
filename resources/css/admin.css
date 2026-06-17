@@ -1,0 +1,1183 @@
+/* ============================================================
+   Admin Corporate Theme
+   Scoped to body.adm — completely independent of the public site.
+   All --css-vars are overridden at the body level so inline
+   var() references inside admin views are also re-themed.
+   ============================================================ */
+
+body.adm {
+  /* Re-map the site's colour tokens to a light corporate palette */
+  --bg:          #f1f5f9;
+  --bg2:         #e8eef5;
+  --surface:     #ffffff;
+  --surface2:    #f8fafc;
+  --surface3:    #f1f5f9;
+  --hover:       rgba(0,0,0,.035);
+
+  /* Blue replaces gold as the primary accent */
+  --gold:        #2563eb;
+  --gold-rgb:    37,99,235;
+  --gold-light:  #3b82f6;
+  --gold-dark:   #1d4ed8;
+  --gold-faint:  rgba(37,99,235,.08);
+  --gold-glow:   rgba(37,99,235,.14);
+
+  /* Borders */
+  --border:      rgba(0,0,0,.08);
+  --border2:     rgba(0,0,0,.12);
+  --border3:     rgba(0,0,0,.22);
+
+  /* Text */
+  --text:  #0f172a;
+  --text1: #0f172a;
+  --text2: #64748b;
+  --text3: #94a3b8;
+
+  /* Semantic colours */
+  --red:   #ef4444;
+  --green: #10b981;
+  --amber: #f59e0b;
+
+  /* Shape */
+  --r:  8px;
+  --r2: 12px;
+
+  /* Font — override the Arabic display fonts */
+  --font-display: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-body:    'Inter', system-ui, -apple-system, sans-serif;
+  --font-verse:   'Inter', sans-serif;
+
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  background: #f1f5f9;
+  color: #0f172a;
+  padding-bottom: 0 !important; /* no player bar in admin */
+}
+
+/* Decorative dot-grid is a public-site motif */
+body.adm .bg-dots { display: none; }
+
+/* Player bar is not used in the admin */
+body.adm .player-bar { display: none !important; }
+
+
+/* ============================================================
+   SIDEBAR — dark navy
+   ============================================================ */
+body.adm .admin-sidebar {
+  background: #0f172a;
+  border-inline-end: none;
+  box-shadow: 2px 0 12px rgba(0,0,0,.15);
+  width: 256px;
+  --sidebar: 256px;
+  position: fixed;
+  inset-inline-start: 0;
+  top: 0;
+  height: 100vh;
+  z-index: 50;
+}
+
+body.adm .admin-main {
+  margin-inline-start: 256px;
+}
+
+body.adm .sidebar-logo {
+  background: #0a1120;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  padding: 1.1rem 1.2rem;
+}
+
+body.adm .sidebar-logo a {
+  color: #fff;
+  font-family: 'Inter', sans-serif;
+  font-size: .92rem;
+  font-weight: 700;
+  letter-spacing: -.01em;
+  text-transform: none;
+  gap: .65rem;
+}
+
+body.adm .logo-glyph {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  border: none;
+  border-radius: 9px;
+  color: #fff;
+  font-size: .82rem;
+  box-shadow: 0 2px 8px rgba(37,99,235,.45);
+}
+
+body.adm .sidebar-nav {
+  padding: .6rem 0;
+}
+
+body.adm .nav-sec-lbl {
+  font-family: 'Inter', sans-serif;
+  font-size: .61rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.26);
+  padding: .95rem 1.15rem .28rem;
+}
+
+body.adm .s-link {
+  position: relative;
+  font-family: 'Inter', sans-serif;
+  font-size: .81rem;
+  font-weight: 500;
+  color: rgba(255,255,255,.52);
+  border-radius: 7px;
+  margin: 0 .55rem .04rem;
+  padding: .52rem .85rem;
+  gap: .68rem;
+  border-inline-start: none;
+  transition: background .13s, color .13s;
+}
+
+body.adm .s-link i {
+  font-size: .79rem;
+  width: 15px;
+  flex-shrink: 0;
+  color: rgba(255,255,255,.35);
+  transition: color .13s;
+}
+
+body.adm .s-link:hover {
+  background: rgba(255,255,255,.065);
+  color: rgba(255,255,255,.85);
+  border-inline-start-color: transparent;
+}
+
+body.adm .s-link:hover i {
+  color: rgba(255,255,255,.62);
+}
+
+body.adm .s-link.active {
+  background: rgba(59,130,246,.18);
+  color: #93c5fd;
+  border-inline-start-color: transparent;
+}
+
+body.adm .s-link.active::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: -4px; /* sits just outside the rounded corner */
+  top: 20%;
+  bottom: 20%;
+  width: 3px;
+  background: #3b82f6;
+  border-radius: 0 3px 3px 0;
+}
+
+/* RTL flip */
+[dir="rtl"] body.adm .s-link.active::before {
+  inset-inline-start: auto;
+  inset-inline-end: -4px;
+  border-radius: 3px 0 0 3px;
+}
+
+body.adm .s-link.active i {
+  color: #93c5fd;
+}
+
+body.adm .s-badge {
+  font-family: 'Inter', sans-serif;
+  background: rgba(239,68,68,.14);
+  color: #fca5a5;
+  border-color: rgba(239,68,68,.25);
+  font-size: .62rem;
+  padding: .05rem .42rem;
+}
+
+body.adm .sidebar-footer {
+  border-top: 1px solid rgba(255,255,255,.06);
+  padding: .8rem 1rem;
+  gap: .6rem;
+}
+
+body.adm .sidebar-footer img,
+body.adm .sidebar-footer .avatar {
+  border: 2px solid rgba(255,255,255,.12);
+}
+
+body.adm .sf-name {
+  font-family: 'Inter', sans-serif;
+  color: rgba(255,255,255,.78);
+  font-size: .79rem;
+  font-weight: 600;
+}
+
+body.adm .sf-role {
+  font-family: 'Inter', sans-serif;
+  color: rgba(255,255,255,.35);
+  font-size: .67rem;
+}
+
+body.adm .sidebar-footer .btn-icon {
+  color: rgba(255,255,255,.38);
+}
+
+body.adm .sidebar-footer .btn-icon:hover {
+  color: #fca5a5;
+  background: rgba(239,68,68,.1);
+}
+
+body.adm .side-backdrop {
+  background: rgba(15,23,42,.6);
+}
+
+
+/* ============================================================
+   MAIN CONTENT AREA
+   ============================================================ */
+body.adm .admin-main {
+  background: #f1f5f9;
+}
+
+
+/* ============================================================
+   TOPBAR
+   ============================================================ */
+body.adm .admin-topbar {
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+  padding: .88rem 1.75rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,.04);
+}
+
+body.adm .admin-topbar h1 {
+  font-family: 'Inter', sans-serif;
+  font-size: .95rem;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -.01em;
+}
+
+body.adm .topbar-crumb {
+  font-family: 'Inter', sans-serif;
+  font-size: .73rem;
+  color: #94a3b8;
+  margin-top: .08rem;
+}
+
+body.adm .topbar-crumb a {
+  color: #64748b;
+}
+
+body.adm .topbar-crumb a:hover {
+  color: #2563eb;
+}
+
+body.adm .btn-icon.topbar-menu {
+  color: #64748b;
+}
+
+body.adm .btn-icon.topbar-menu:hover {
+  color: #0f172a;
+  background: #f1f5f9;
+}
+
+
+/* ============================================================
+   CONTENT BODY
+   ============================================================ */
+body.adm .admin-body {
+  padding: 1.65rem 1.85rem;
+}
+
+
+/* ============================================================
+   ALERTS
+   ============================================================ */
+body.adm .alert {
+  font-family: 'Inter', sans-serif;
+  font-size: .83rem;
+  border-radius: 9px;
+}
+
+body.adm .alert-success {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #15803d;
+}
+
+body.adm .alert-error {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+body.adm .alert-warning {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #b45309;
+}
+
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+body.adm .btn {
+  font-family: 'Inter', sans-serif;
+  font-size: .8rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  border-radius: 7px;
+  transition: all .14s;
+}
+
+body.adm .btn-primary {
+  background: #2563eb;
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(0,0,0,.1);
+}
+
+body.adm .btn-primary:hover {
+  background: #1d4ed8;
+  color: #fff;
+  transform: none;
+  box-shadow: 0 2px 6px rgba(37,99,235,.28);
+}
+
+body.adm .btn-ghost {
+  background: #fff;
+  border: 1px solid #d1d5db;
+  color: #374151;
+  box-shadow: 0 1px 2px rgba(0,0,0,.05);
+}
+
+body.adm .btn-ghost:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+  color: #0f172a;
+}
+
+body.adm .btn-icon {
+  color: #64748b;
+  border-radius: 6px;
+}
+
+body.adm .btn-icon:hover {
+  color: #0f172a;
+  background: #f1f5f9;
+}
+
+body.adm .btn-danger {
+  background: #ef4444;
+  color: #fff;
+}
+
+body.adm .btn-danger:hover {
+  background: #dc2626;
+  color: #fff;
+  transform: none;
+}
+
+body.adm .btn-success {
+  background: #10b981;
+  color: #fff;
+}
+
+body.adm .btn[disabled],
+body.adm .btn:disabled {
+  opacity: .5;
+}
+
+
+/* ============================================================
+   BADGES
+   ============================================================ */
+body.adm .badge {
+  font-family: 'Inter', sans-serif;
+  font-size: .67rem;
+  font-weight: 600;
+  letter-spacing: .03em;
+  text-transform: none;
+  border-radius: 5px;
+  padding: .22rem .58rem;
+  backdrop-filter: none;
+}
+
+body.adm .badge-green {
+  background: #f0fdf4;
+  color: #15803d;
+  border-color: #86efac;
+}
+
+body.adm .badge-amber {
+  background: #fffbeb;
+  color: #b45309;
+  border-color: #fcd34d;
+}
+
+body.adm .badge-red {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fca5a5;
+}
+
+body.adm .badge-gold {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #93c5fd;
+}
+
+body.adm .badge-muted {
+  background: #f8fafc;
+  color: #64748b;
+  border-color: #e2e8f0;
+}
+
+body.adm .badge-blue {
+  background: #eff6ff;
+  color: #1e40af;
+  border-color: #bfdbfe;
+}
+
+
+/* ============================================================
+   KPI CARDS
+   ============================================================ */
+body.adm .kpi-grid {
+  gap: 1.15rem;
+}
+
+body.adm .kpi-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.25rem 1.35rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,.05), 0 1px 2px -1px rgba(0,0,0,.05);
+  transition: box-shadow .18s, transform .18s;
+}
+
+body.adm .kpi-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 14px rgba(0,0,0,.08);
+  transform: translateY(-2px);
+}
+
+body.adm .kpi-icon {
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+  color: #2563eb;
+  border-radius: 10px;
+}
+
+body.adm .kpi-val {
+  font-family: 'Inter', sans-serif;
+  color: #0f172a;
+  font-size: 1.7rem;
+  font-weight: 700;
+  letter-spacing: -.03em;
+}
+
+body.adm .kpi-lbl {
+  font-family: 'Inter', sans-serif;
+  color: #64748b;
+  font-size: .74rem;
+  margin-top: .28rem;
+  letter-spacing: 0;
+}
+
+body.adm .kpi-chip {
+  font-family: 'Inter', sans-serif;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+  font-size: .69rem;
+  border-radius: 6px;
+  padding: .1rem .42rem;
+}
+
+body.adm .kpi-delta {
+  font-family: 'Inter', sans-serif;
+  border-radius: 6px;
+  font-size: .71rem;
+}
+
+body.adm .kpi-delta.up {
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+body.adm .kpi-delta.down {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+body.adm .kpi-delta.flat {
+  background: #f8fafc;
+  color: #64748b;
+}
+
+
+/* ============================================================
+   PANELS
+   ============================================================ */
+body.adm .panel {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.04);
+}
+
+body.adm .panel-hd {
+  font-family: 'Inter', sans-serif;
+  font-size: .8rem;
+  font-weight: 600;
+  color: #374151;
+  letter-spacing: 0;
+  border-bottom: 1px solid #f1f5f9;
+  padding: .9rem 1.2rem;
+}
+
+body.adm .panel-bd {
+  padding: 1.1rem 1.2rem;
+}
+
+
+/* ============================================================
+   TABLES
+   ============================================================ */
+body.adm .tbl-wrap {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.04);
+}
+
+body.adm .tbl th {
+  font-family: 'Inter', sans-serif;
+  font-size: .67rem;
+  font-weight: 600;
+  color: #64748b;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  padding: .78rem 1rem;
+}
+
+body.adm .tbl td {
+  font-family: 'Inter', sans-serif;
+  font-size: .84rem;
+  color: #374151;
+  border-bottom: 1px solid #f1f5f9;
+  padding: .88rem 1rem;
+}
+
+body.adm .tbl tr:last-child td {
+  border-bottom: none;
+}
+
+body.adm .tbl tbody tr:hover td {
+  background: #fafbfc;
+}
+
+
+/* ============================================================
+   FORM ELEMENTS
+   ============================================================ */
+body.adm .form-label {
+  font-family: 'Inter', sans-serif;
+  font-size: .74rem;
+  font-weight: 600;
+  color: #374151;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+body.adm .form-control {
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  color: #0f172a;
+  font-family: 'Inter', sans-serif;
+  font-size: .9rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,.04);
+  transition: border-color .14s, box-shadow .14s;
+}
+
+body.adm .form-control:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59,130,246,.18);
+}
+
+body.adm .form-control::placeholder {
+  color: #9ca3af;
+}
+
+body.adm select.form-control option {
+  background: #fff;
+  color: #0f172a;
+}
+
+body.adm .form-error {
+  font-family: 'Inter', sans-serif;
+  color: #dc2626;
+  font-size: .74rem;
+}
+
+body.adm .form-hint {
+  font-family: 'Inter', sans-serif;
+  color: #64748b;
+  font-size: .74rem;
+}
+
+
+/* ============================================================
+   FILTER BAR
+   ============================================================ */
+body.adm .filter-bar {
+  margin-bottom: 1.25rem;
+  gap: .6rem;
+}
+
+body.adm .f-search i {
+  color: #9ca3af;
+}
+
+body.adm .f-search input {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  color: #0f172a;
+  font-family: 'Inter', sans-serif;
+  font-size: .84rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,.04);
+}
+
+body.adm .f-search input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59,130,246,.14);
+}
+
+body.adm .f-select {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  color: #0f172a;
+  font-family: 'Inter', sans-serif;
+  font-size: .84rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,.04);
+}
+
+body.adm .f-select:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59,130,246,.14);
+}
+
+body.adm .f-select-sm {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  color: #0f172a;
+  font-family: 'Inter', sans-serif;
+  padding: .3rem .6rem;
+  font-size: .79rem;
+}
+
+body.adm .f-select-sm:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59,130,246,.14);
+}
+
+
+/* ============================================================
+   MODAL
+   ============================================================ */
+body.adm .modal-backdrop {
+  background: rgba(15,23,42,.72);
+}
+
+body.adm .modal {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 25px 60px rgba(0,0,0,.18);
+}
+
+body.adm .modal-title {
+  font-family: 'Inter', sans-serif;
+  color: #0f172a;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+
+/* ============================================================
+   DROPDOWN
+   ============================================================ */
+body.adm .dropdown {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.1), 0 4px 8px rgba(0,0,0,.06);
+}
+
+body.adm .dropdown a,
+body.adm .dropdown button {
+  font-family: 'Inter', sans-serif;
+  color: #374151;
+  font-size: .82rem;
+}
+
+body.adm .dropdown a:hover,
+body.adm .dropdown button:hover {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+
+/* ============================================================
+   USER PILL (language switcher etc.)
+   ============================================================ */
+body.adm .user-pill {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: .35rem .75rem;
+  transition: background .14s, border-color .14s;
+}
+
+body.adm .user-pill:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+body.adm .user-pill-name {
+  font-family: 'Inter', sans-serif;
+  color: #374151;
+  font-size: .78rem;
+}
+
+
+/* ============================================================
+   ATTENTION CARDS
+   ============================================================ */
+body.adm .att-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-family: 'Inter', sans-serif;
+  box-shadow: 0 1px 2px rgba(0,0,0,.04);
+}
+
+body.adm .att-card.warn {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+body.adm .att-card.danger {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+body.adm a.att-card:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 2px 8px rgba(37,99,235,.12);
+}
+
+body.adm .att-num {
+  font-family: 'Inter', sans-serif;
+  color: #0f172a;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+body.adm .att-lbl {
+  font-family: 'Inter', sans-serif;
+  color: #64748b;
+  font-size: .73rem;
+}
+
+body.adm .att-clear {
+  font-family: 'Inter', sans-serif;
+  color: #64748b;
+  font-size: .83rem;
+}
+
+body.adm .att-clear i {
+  color: #10b981;
+}
+
+
+/* ============================================================
+   RANK LIST
+   ============================================================ */
+body.adm .rank-title {
+  font-family: 'Inter', sans-serif;
+  color: #0f172a;
+  font-size: .84rem;
+  font-weight: 600;
+}
+
+body.adm .rank-sub {
+  font-family: 'Inter', sans-serif;
+  color: #64748b;
+  font-size: .72rem;
+}
+
+body.adm .rank-pos {
+  font-family: 'Inter', sans-serif;
+  color: #94a3b8;
+}
+
+body.adm .rank-val {
+  font-family: 'Inter', sans-serif;
+  color: #64748b;
+  font-size: .77rem;
+}
+
+body.adm .rank-bar span {
+  background: linear-gradient(90deg, #2563eb, #60a5fa);
+}
+
+body.adm .rank-img {
+  border: 1px solid #e2e8f0;
+}
+
+
+/* ============================================================
+   RANGE PILLS (Reports page)
+   ============================================================ */
+body.adm .range-pills {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: .2rem;
+}
+
+body.adm .range-pill {
+  font-family: 'Inter', sans-serif;
+  color: #64748b;
+  font-size: .76rem;
+  border-radius: 8px;
+}
+
+body.adm .range-pill:hover {
+  color: #0f172a;
+  background: rgba(0,0,0,.04);
+}
+
+body.adm .range-pill.active {
+  background: #2563eb;
+  color: #fff;
+  font-weight: 700;
+}
+
+
+/* ============================================================
+   PAGER
+   ============================================================ */
+body.adm .pager a,
+body.adm .pager span {
+  font-family: 'Inter', sans-serif;
+  border-color: #e2e8f0;
+  color: #64748b;
+  border-radius: 8px;
+  font-size: .79rem;
+}
+
+body.adm .pager a:hover {
+  border-color: #2563eb;
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+body.adm .pager .cur {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+  font-weight: 600;
+}
+
+
+/* ============================================================
+   REVIEW MODULE
+   ============================================================ */
+body.adm .review-card,
+body.adm .review-focus {
+  background: #fff;
+  border-color: #e2e8f0;
+}
+
+body.adm .review-chip {
+  background: #fff;
+  border-color: #e2e8f0;
+  border-radius: 10px;
+}
+
+body.adm .review-chip:hover {
+  border-color: #3b82f6;
+  background: #f0f9ff;
+}
+
+body.adm .review-chip.is-active {
+  border-color: #2563eb;
+  background: #eff6ff;
+  box-shadow: 0 0 0 1px #2563eb;
+}
+
+body.adm .review-chip-qari { color: #3b82f6; }
+body.adm .review-chip-title { color: #0f172a; }
+
+body.adm .review-checklist {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+body.adm .review-checklist label {
+  font-family: 'Inter', sans-serif;
+  color: #374151;
+}
+
+body.adm .review-checklist input {
+  accent-color: #2563eb;
+}
+
+body.adm .review-group-label { color: #2563eb; }
+
+body.adm .review-group-count {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #94a3b8;
+}
+
+body.adm .review-group-toggle button {
+  font-family: 'Inter', sans-serif;
+  background: #f8fafc;
+  color: #64748b;
+}
+
+body.adm .review-group-toggle button.is-active {
+  background: #2563eb;
+  color: #fff;
+}
+
+body.adm .review-strip-head {
+  font-family: 'Inter', sans-serif;
+  color: #94a3b8;
+}
+
+body.adm .rejection-banner {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+body.adm .review-history-panel {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+body.adm .review-meta-row {
+  font-family: 'Inter', sans-serif;
+  color: #64748b;
+}
+
+
+/* ============================================================
+   CARD-SELECT (Upload form)
+   ============================================================ */
+body.adm .card-opt-inner {
+  background: #fff;
+  border-color: #e2e8f0;
+  color: #374151;
+  font-family: 'Inter', sans-serif;
+}
+
+body.adm .card-opt:hover .card-opt-inner {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+body.adm .card-opt input:checked + .card-opt-inner,
+body.adm .card-opt-inner.card-opt-active {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #1e40af;
+  box-shadow: 0 0 0 1px #2563eb inset;
+}
+
+body.adm .card-opt-check { color: #2563eb; }
+
+
+/* ============================================================
+   MINI STATS / HEALTH ROWS
+   ============================================================ */
+body.adm .ms-val {
+  font-family: 'Inter', sans-serif;
+  color: #0f172a;
+}
+
+body.adm .ms-lbl {
+  font-family: 'Inter', sans-serif;
+  color: #64748b;
+}
+
+body.adm .health-row .h-lbl {
+  font-family: 'Inter', sans-serif;
+  color: #64748b;
+}
+
+body.adm .health-row .h-val {
+  font-family: 'Inter', sans-serif;
+  color: #0f172a;
+}
+
+
+/* ============================================================
+   SECTION TITLE
+   ============================================================ */
+body.adm .sec-title {
+  font-family: 'Inter', sans-serif;
+  color: #0f172a;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -.01em;
+}
+
+body.adm .sec-title::after {
+  background: linear-gradient(to right, #e2e8f0, transparent);
+}
+
+
+/* ============================================================
+   LINKS
+   ============================================================ */
+body.adm a {
+  color: #2563eb;
+  transition: color .14s;
+}
+
+body.adm a:hover {
+  color: #1d4ed8;
+}
+
+/* Override the gold-coloured qari links in tables */
+body.adm [style*="color:var(--gold)"],
+body.adm .gold {
+  color: #2563eb !important;
+}
+
+
+/* ============================================================
+   STAT CARDS (older .stat-card usage)
+   ============================================================ */
+body.adm .stat-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.04);
+}
+
+body.adm .stat-icon {
+  background: #eff6ff;
+  border-color: #dbeafe;
+  color: #2563eb;
+}
+
+
+/* ============================================================
+   CARD (generic .card)
+   ============================================================ */
+body.adm .card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+
+/* ============================================================
+   QURAN VERSE
+   ============================================================ */
+body.adm .quran-verse {
+  background: #f8fafc;
+  border-left-color: #3b82f6;
+  color: #0f172a;
+}
+
+
+/* ============================================================
+   TIPPED TOPBAR (notification bell visual)
+   ============================================================ */
+.adm-notif-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #64748b;
+  font-size: .88rem;
+  cursor: pointer;
+  transition: all .14s;
+}
+
+.adm-notif-btn:hover {
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+.adm-notif-dot {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 2px solid #fff;
+}
+
+/* Divider between nav sections */
+.adm-nav-divider {
+  height: 1px;
+  background: rgba(255,255,255,.06);
+  margin: .45rem .8rem;
+}
+
+
+/* ============================================================
+   RESPONSIVE OVERRIDES
+   ============================================================ */
+@media(max-width: 1024px) {
+  body.adm .admin-sidebar {
+    box-shadow: 4px 0 20px rgba(0,0,0,.22);
+  }
+
+  body.adm .admin-main {
+    margin-inline-start: 0;
+  }
+}
+
+@media(max-width: 768px) {
+  body.adm .admin-topbar {
+    padding: .85rem 1.1rem;
+  }
+
+  body.adm .admin-body {
+    padding: 1.1rem;
+  }
+}
+
+@media(max-width: 640px) {
+  body.adm .kpi-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: .75rem;
+  }
+
+  body.adm .kpi-val {
+    font-size: 1.4rem;
+  }
+}
