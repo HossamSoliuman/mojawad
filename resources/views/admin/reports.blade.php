@@ -180,18 +180,7 @@
   <div class="panel">
     <div class="panel-hd"><i class="fas fa-server gold"></i> {{ __('Library health') }}</div>
     <div class="panel-bd">
-      @php($totalHosted = max(1, $hosting['archive'] + $hosting['local']))
-      <div class="health-row">
-        <span class="h-lbl"><i class="fas fa-cloud"></i> {{ __('On Archive.org') }}</span>
-        <div class="rank-bar" style="flex:1"><span style="width:{{ round($hosting['archive'] / $totalHosted * 100) }}%"></span></div>
-        <span class="h-val">{{ number_format($hosting['archive']) }}</span>
-      </div>
-      <div class="health-row">
-        <span class="h-lbl"><i class="fas fa-hard-drive"></i> {{ __('Hosted locally') }}</span>
-        <div class="rank-bar" style="flex:1"><span style="width:{{ round($hosting['local'] / $totalHosted * 100) }}%"></span></div>
-        <span class="h-val">{{ number_format($hosting['local']) }}</span>
-      </div>
-      <div class="mini-stats" style="margin-top:1.2rem">
+      <div class="mini-stats">
         <div class="mini-stat"><span class="ms-val" style="color:#4ade80">{{ number_format($statuses['active'] ?? 0) }}</span><span class="ms-lbl">{{ __('Active') }}</span></div>
         <div class="mini-stat"><span class="ms-val" style="color:#fbbf24">{{ number_format($statuses['pending'] ?? 0) }}</span><span class="ms-lbl">{{ __('Pending') }}</span></div>
         <div class="mini-stat"><span class="ms-val" style="color:var(--text2)">{{ number_format($statuses['inactive'] ?? 0) }}</span><span class="ms-lbl">{{ __('Inactive') }}</span></div>

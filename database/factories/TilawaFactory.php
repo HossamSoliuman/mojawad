@@ -36,7 +36,6 @@ class TilawaFactory extends Factory
             'is_featured' => false,
             'status' => 'pending',
             'review_status' => 'pending',
-            'upload_status' => 'done',
         ];
     }
 

@@ -85,8 +85,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
         Route::delete('/qaris/{qari}', [App\Http\Controllers\Admin\QariController::class, 'destroy'])->name('qaris.destroy')->middleware('can:delete,qari');
 
         Route::get('/tilawat', [App\Http\Controllers\Admin\TilawaController::class, 'index'])->name('tilawat.index');
-        Route::get('/tilawat/{tilawa}/uploading', [App\Http\Controllers\Admin\TilawaController::class, 'uploading'])->name('tilawat.uploading')->middleware('can:view,tilawa');
-        Route::get('/tilawat/{tilawa}/upload-status', [App\Http\Controllers\Admin\TilawaController::class, 'uploadStatus'])->name('tilawat.upload-status')->middleware('can:view,tilawa');
         Route::get('/tilawat/{tilawa}/edit', [App\Http\Controllers\Admin\TilawaController::class, 'edit'])->name('tilawat.edit')->middleware('can:update,tilawa');
         Route::put('/tilawat/{tilawa}/quick', [App\Http\Controllers\Admin\TilawaController::class, 'quickUpdate'])->name('tilawat.quick-update')->middleware('role:admin');
         Route::put('/tilawat/{tilawa}', [App\Http\Controllers\Admin\TilawaController::class, 'update'])->name('tilawat.update')->middleware('can:update,tilawa');

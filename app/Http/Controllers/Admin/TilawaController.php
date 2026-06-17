@@ -109,14 +109,12 @@ class TilawaController extends Controller
             'title_en' => null,
             'slug' => $slug,
             'audio_path' => $audioPath,
-            'archive_url' => null,
             'duration' => AudioDurationService::getSeconds($audioPath),
             'cover_image' => null,
             'status' => 'pending',
             'review_status' => 'pending',
             'is_featured' => false,
             'uploaded_by' => Auth::id(),
-            'upload_status' => 'done',
         ]);
 
         $tilawa->logReview('submitted');
@@ -127,20 +125,6 @@ class TilawaController extends Controller
             'success' => true,
             'id' => $tilawa->id,
             'title' => $tilawa->title_ar,
-        ]);
-    }
-
-    public function uploading(Tilawa $tilawa)
-    {
-        return view('admin.tilawat.uploading', compact('tilawa'));
-    }
-
-    public function uploadStatus(Tilawa $tilawa): JsonResponse
-    {
-        return response()->json([
-            'status' => $tilawa->upload_status,
-            'error' => $tilawa->upload_error,
-            'archive_url' => $tilawa->archive_url,
         ]);
     }
 
@@ -187,8 +171,6 @@ class TilawaController extends Controller
             $newAudioPath = $this->uploadService->moveFromTmp($request->audio_tmp, 'tilawat');
             $updates['audio_path'] = $newAudioPath;
             $updates['duration'] = AudioDurationService::getSeconds($newAudioPath);
-            $updates['upload_status'] = 'done';
-            $updates['upload_error'] = null;
         }
 
         if ($request->filled('cover_image_tmp')) {

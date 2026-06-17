@@ -28,9 +28,6 @@ class TilawaController extends Controller
         abort_if($tilawa->status !== 'active', 403);
         DownloadLog::create(['user_id' => auth()->id(), 'tilawa_id' => $tilawa->id, 'ip_address' => $request->ip()]);
         $tilawa->increment('downloads_count');
-        if ($tilawa->archive_url) {
-            return redirect()->away($tilawa->archive_url);
-        }
 
         return Storage::disk('public')->download($tilawa->audio_path, Str::slug($tilawa->title).'.mp3');
     }

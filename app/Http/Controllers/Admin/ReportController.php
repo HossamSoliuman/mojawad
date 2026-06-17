@@ -95,11 +95,6 @@ class ReportController extends Controller
             ->get()
             ->filter(fn ($row) => $row->uploader !== null);
 
-        $hosting = [
-            'archive' => Tilawa::where('migrated_to_archive', true)->orWhereNotNull('archive_url')->count(),
-            'local' => Tilawa::where('migrated_to_archive', false)->whereNull('archive_url')->count(),
-        ];
-
         $statuses = Tilawa::query()
             ->selectRaw('status, COUNT(*) as total')
             ->groupBy('status')
@@ -107,7 +102,7 @@ class ReportController extends Controller
 
         return view('admin.reports', compact(
             'range', 'series', 'topDownloaded', 'topLiked', 'topQaris',
-            'reviewStats', 'reviewers', 'creators', 'hosting', 'statuses'
+            'reviewStats', 'reviewers', 'creators', 'statuses'
         ));
     }
 

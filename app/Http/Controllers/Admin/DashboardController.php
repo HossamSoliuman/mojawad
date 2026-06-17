@@ -46,9 +46,6 @@ class DashboardController extends Controller
             'pending_review' => Tilawa::pendingReview()->count(),
             'rejected' => Tilawa::where('review_status', 'rejected')->count(),
             'pending_qaris' => Qari::where('status', 'pending')->count(),
-            'stuck_uploads' => Tilawa::whereIn('upload_status', ['pending', 'uploading', 'failed'])
-                ->where('created_at', '<', now()->subHour())->count(),
-            'local_audio' => Tilawa::whereNull('archive_url')->whereNotNull('audio_path')->count(),
         ];
 
         $from = now()->subDays(29)->startOfDay();

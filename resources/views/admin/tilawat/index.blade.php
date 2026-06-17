@@ -10,7 +10,7 @@
 @section('content')
 
 @if(request('uploaded'))
-<div class="alert alert-success" style="margin-bottom:1.4rem"><i class="fas fa-check-circle"></i> {{ __('Tilawa created and uploaded to Archive.org successfully.') }}</div>
+<div class="alert alert-success" style="margin-bottom:1.4rem"><i class="fas fa-check-circle"></i> {{ __('Tilawa created successfully.') }}</div>
 @endif
 
 <form method="GET" class="filter-bar">
@@ -106,16 +106,10 @@
         </td>
         <td>
           <div style="display:flex;gap:.18rem;align-items:center">
-            @if(in_array($t->upload_status, ['pending','uploading']))
-              <a href="{{ route('admin.tilawat.uploading', $t) }}" class="btn-icon" title="{{ __('Upload in progress') }}" style="color:#3b82f6">
-                <i class="fas fa-cloud-arrow-up"></i>
-              </a>
-            @else
-              <button class="btn-icon" title="{{ __('Play') }}"
-                onclick="playTilawa({{ $t->id }},'{{ $t->audio_url }}',{{ json_encode($t->title) }},{{ json_encode($t->qari->name) }},'{{ $t->cover_url }}',{{ $t->duration }})">
-                <i class="fas fa-play"></i>
-              </button>
-            @endif
+            <button class="btn-icon" title="{{ __('Play') }}"
+              onclick="playTilawa({{ $t->id }},'{{ $t->audio_url }}',{{ json_encode($t->title) }},{{ json_encode($t->qari->name) }},'{{ $t->cover_url }}',{{ $t->duration }})">
+              <i class="fas fa-play"></i>
+            </button>
             @if($t->review_status === 'rejected')
             <a href="{{ route('admin.tilawat.edit',$t) }}" class="btn btn-primary btn-xs" title="{{ __('Fix & Resubmit') }}"><i class="fas fa-paper-plane"></i> {{ __('Fix') }}</a>
             @else

@@ -94,18 +94,6 @@ $deltaPct = function (int $current, int $previous): ?float {
         <span class="att-lbl"><i class="fas fa-microphone-lines"></i> {{ __('Pending qaris') }}</span>
       </a>
       @endif
-      @if($attention['stuck_uploads'] > 0)
-      <a href="{{ route('admin.tilawat.index') }}" class="att-card danger">
-        <span class="att-num">{{ number_format($attention['stuck_uploads']) }}</span>
-        <span class="att-lbl"><i class="fas fa-cloud-arrow-up"></i> {{ __('Stuck uploads') }}</span>
-      </a>
-      @endif
-      @if($attention['local_audio'] > 0)
-      <div class="att-card">
-        <span class="att-num">{{ number_format($attention['local_audio']) }}</span>
-        <span class="att-lbl"><i class="fas fa-hard-drive"></i> {{ __('Hosted locally (not on Archive.org)') }}</span>
-      </div>
-      @endif
     </div>
     @endif
   </div>
