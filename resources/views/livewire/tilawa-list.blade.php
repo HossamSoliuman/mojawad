@@ -38,15 +38,17 @@
   </div>
 
   {{-- Skeleton while filtering / sorting --}}
-  <div wire:loading.delay wire:target="search, sort, surah" style="display:flex;flex-direction:column;gap:.45rem">
-    @for($i = 0; $i < 6; $i++)
-    <div class="skel-row">
-      <span class="skel skel-num"></span>
-      <span class="skel skel-cover"></span>
-      <span class="skel skel-line" style="flex:1"></span>
-      <span class="skel skel-line" style="width:52px"></span>
+  <div wire:loading.delay wire:target="search, sort, surah" style="width:100%">
+    <div style="display:flex;flex-direction:column;gap:.45rem">
+      @for($i = 0; $i < 6; $i++)
+      <div class="skel-row">
+        <span class="skel skel-num"></span>
+        <span class="skel skel-cover"></span>
+        <span class="skel skel-line" style="flex:1"></span>
+        <span class="skel skel-line" style="width:52px"></span>
+      </div>
+      @endfor
     </div>
-    @endfor
   </div>
 
   <div wire:loading.remove wire:target="search, sort, surah">
