@@ -100,9 +100,13 @@
             {{-- USER --}}
             @auth
                 <div class="ni-menu" style="position:relative" @click.outside="user=false">
-                    <button type="button" class="ni-avatar-btn" @click="user=!user"
+                    <a href="{{ route('profile') }}" wire:navigate class="ni-avatar-btn"
                         title="{{ auth()->user()->name }}">
                         <img src="{{ auth()->user()->avatar_url }}" class="avatar" width="30" height="30" alt="">
+                    </a>
+                    <button type="button" class="ni-menu-caret" @click="user=!user"
+                        aria-label="{{ __('Menu') }}">
+                        <i class="fas fa-chevron-down" style="font-size:11px"></i>
                     </button>
                     <div class="dropdown" x-show="user" x-transition style="display:none">
                         <div class="ni-user-hd">{{ Str::limit(auth()->user()->name, 18) }}</div>
@@ -110,8 +114,6 @@
                             <a href="{{ route('admin.dashboard') }}"><i class="fas fa-gauge"
                                     style="color:var(--gold);width:15px"></i> {{ __('Dashboard') }}</a>
                         @endif
-                        <a href="{{ route('profile') }}" wire:navigate><i class="fas fa-user"
-                                style="width:15px"></i> {{ __('Profile') }}</a>
                         <form method="POST" action="{{ route('logout') }}">@csrf
                             <button type="submit"><i class="fas fa-arrow-right-from-bracket"
                                     style="color:var(--red);width:15px"></i> {{ __('Logout') }}</button>
@@ -963,6 +965,89 @@
                 },
                 dismiss(id) {
                     window._dismissWatch(id);
+                },
+            }));
+
+            // ── Hero "Shorts" — TikTok-style overlay ──────────────────────────
+            // Autoplays one short (muted) when the site is opened. A different
+            // short is shown on each fresh browser session: ids already shown are
+            // remembered in localStorage and skipped until the pool is exhausted.
+            Alpine.data('heroShorts', (items) => ({
+                items: items || [],
+                open: false,
+                muted: true,
+                current: null,
+                idx: 0,
+                seenKey: 'mojawad_shorts_seen',
+                sessionKey: 'mojawad_short_shown',
+                init() {
+                    if (!this.items.length) return;
+                    // Only auto-open once per browser session (tab), so navigating
+                    // around the SPA doesn't keep re-triggering it.
+                    try {
+                        if (sessionStorage.getItem(this.sessionKey)) return;
+                    } catch (e) {}
+                    this.idx = this.pickStart();
+                    this.openOverlay();
+                    try { sessionStorage.setItem(this.sessionKey, '1'); } catch (e) {}
+                },
+                _seen() {
+                    try { return new Set(JSON.parse(localStorage.getItem(this.seenKey) || '[]')); } catch (e) { return new Set(); }
+                },
+                _markSeen(id) {
+                    const seen = this._seen();
+                    seen.add(id);
+                    try { localStorage.setItem(this.seenKey, JSON.stringify([...seen])); } catch (e) {}
+                },
+                pickStart() {
+                    const seen = this._seen();
+                    let start = this.items.findIndex((i) => !seen.has(i.id));
+                    if (start < 0) {
+                        // Whole pool already seen → start a fresh rotation.
+                        try { localStorage.removeItem(this.seenKey); } catch (e) {}
+                        start = 0;
+                    }
+                    return start;
+                },
+                el() {
+                    return this.current && this.current.type === 'video' ? this.$refs.video : this.$refs.audio;
+                },
+                openOverlay() {
+                    // Don't let the live radio / player keep playing behind the short.
+                    if (window.globalAudio && !window.globalAudio.paused) window.globalAudio.pause();
+                    if (window.quranRadioAudio && !window.quranRadioAudio.paused) window.quranRadioAudio.pause();
+                    this.open = true;
+                    document.body.style.overflow = 'hidden';
+                    this.$nextTick(() => this.show());
+                },
+                show() {
+                    this.current = this.items[this.idx];
+                    this._markSeen(this.current.id);
+                    this.$nextTick(() => {
+                        const el = this.el();
+                        if (!el) return;
+                        el.muted = this.muted;
+                        try { el.currentTime = 0; } catch (e) {}
+                        el.play().catch(() => {});
+                    });
+                },
+                toggleMute() {
+                    this.muted = !this.muted;
+                    const el = this.el();
+                    if (el) {
+                        el.muted = this.muted;
+                        if (!this.muted) el.play().catch(() => {});
+                    }
+                },
+                next() {
+                    this.idx = (this.idx + 1) % this.items.length;
+                    [this.$refs.video, this.$refs.audio].forEach((e) => { if (e) e.pause(); });
+                    this.show();
+                },
+                close() {
+                    this.open = false;
+                    document.body.style.overflow = '';
+                    [this.$refs.video, this.$refs.audio].forEach((e) => { if (e) e.pause(); });
                 },
             }));
         });

@@ -14,6 +14,7 @@ class TmpUploadController extends Controller
 {
     private array $typeRules = [
         'audio' => ['mimes:mp3,mpeg,ogg,wav', 'max:204800'],
+        'media' => ['mimes:mp3,mpeg,ogg,wav,mp4,webm,mov', 'max:204800'],
         'cover' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
         'image' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:20480'],
     ];

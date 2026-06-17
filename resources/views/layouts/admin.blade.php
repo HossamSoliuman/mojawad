@@ -61,6 +61,9 @@
       <a href="{{ route('admin.qaris.index') }}" class="s-link {{ request()->routeIs('admin.qaris.*') ? 'active':'' }}">
         <i class="fas fa-microphone-lines"></i> <span>{{ __('Qaris') }}</span>
       </a>
+      <a href="{{ route('admin.shorts.index') }}" class="s-link {{ request()->routeIs('admin.shorts.*') ? 'active':'' }}">
+        <i class="fas fa-clapperboard"></i> <span>{{ __('Shorts') }}</span>
+      </a>
       <a href="{{ route('admin.tilawat.index') }}" class="s-link {{ request()->routeIs('admin.tilawat.*') ? 'active':'' }}">
         <i class="fas fa-music"></i>
         <span>{{ __('Tilawat') }}</span>

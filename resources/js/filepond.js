@@ -41,11 +41,13 @@ function createPond(inputEl, { type = 'audio', required = false, tokenInputName 
 
     activeTokens.set(pondId, null);
 
-    const maxSize = type === 'audio' ? '200MB' : '20MB';
+    const maxSize = (type === 'audio' || type === 'media') ? '200MB' : '20MB';
 
-    const acceptedTypes = type === 'audio'
-        ? ['audio/mpeg', 'audio/mp3', 'audio/ogg', 'audio/wav']
-        : ['image/jpeg', 'image/png', 'image/webp'];
+    const acceptedTypesByType = {
+        audio: ['audio/mpeg', 'audio/mp3', 'audio/ogg', 'audio/wav'],
+        media: ['audio/mpeg', 'audio/mp3', 'audio/ogg', 'audio/wav', 'video/mp4', 'video/webm', 'video/quicktime'],
+    };
+    const acceptedTypes = acceptedTypesByType[type] ?? ['image/jpeg', 'image/png', 'image/webp'];
 
     const pond = FilePondCreate(inputEl, {
         allowMultiple: false,

@@ -2,6 +2,42 @@
 @section('title','Home')
 @section('content')
 
+@if(!empty($hero_shorts))
+{{-- ── Hero "Shorts" — TikTok-style autoplay overlay shown on each fresh visit ── --}}
+<div class="shorts-overlay" x-data="heroShorts(@js($hero_shorts))" x-show="open" x-cloak
+  @keydown.escape.window="close()" style="display:none">
+  <div class="shorts-stage" @click="toggleMute()">
+    <button class="shorts-close" @click.stop="close()" aria-label="{{ __('Close') }}"><i class="fas fa-xmark"></i></button>
+
+    <video x-ref="video" class="shorts-media" x-show="current && current.type === 'video'"
+      :src="current ? current.src : ''" :poster="current ? current.poster : ''" playsinline loop></video>
+
+    <div class="shorts-audio" x-show="current && current.type === 'audio'"
+      :style="current && current.poster ? `background-image:url('${current.poster}')` : ''">
+      <audio x-ref="audio" :src="current ? current.src : ''" loop></audio>
+      <div class="shorts-audio-eq" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+    </div>
+
+    <div class="shorts-mute" @click.stop="toggleMute()" :title="muted ? '{{ __('Unmute') }}' : '{{ __('Mute') }}'">
+      <i class="fas" :class="muted ? 'fa-volume-xmark' : 'fa-volume-high'"></i>
+    </div>
+
+    <div class="shorts-tap-hint" x-show="muted" x-transition.opacity>
+      <i class="fas fa-volume-high"></i> {{ __('Tap to unmute') }}
+    </div>
+
+    <div class="shorts-info">
+      <span class="shorts-badge"><i class="fas fa-clapperboard"></i> {{ __('Short') }}</span>
+      <div class="shorts-title" x-text="current ? current.title : ''"></div>
+    </div>
+
+    <button class="shorts-next" x-show="items.length > 1" @click.stop="next()" aria-label="{{ __('Next') }}">
+      <i class="fas fa-forward-step"></i>
+    </button>
+  </div>
+</div>
+@endif
+
 <section class="hero" x-data="quranRadio()">
   <div class="hero-grid">
     <div class="hero-live z1">

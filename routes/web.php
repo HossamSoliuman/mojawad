@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ReviewController;
+use App\Http\Controllers\Admin\ShortController;
 use App\Http\Controllers\Admin\TmpUploadController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Api\LikeController;
@@ -83,6 +84,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
         Route::get('/qaris/{qari}/edit', [App\Http\Controllers\Admin\QariController::class, 'edit'])->name('qaris.edit')->middleware('can:update,qari');
         Route::put('/qaris/{qari}', [App\Http\Controllers\Admin\QariController::class, 'update'])->name('qaris.update')->middleware('can:update,qari');
         Route::delete('/qaris/{qari}', [App\Http\Controllers\Admin\QariController::class, 'destroy'])->name('qaris.destroy')->middleware('can:delete,qari');
+
+        Route::get('/shorts', [ShortController::class, 'index'])->name('shorts.index');
+        Route::get('/shorts/create', [ShortController::class, 'create'])->name('shorts.create');
+        Route::post('/shorts', [ShortController::class, 'store'])->name('shorts.store');
+        Route::get('/shorts/{short}/edit', [ShortController::class, 'edit'])->name('shorts.edit')->middleware('can:update,short');
+        Route::put('/shorts/{short}', [ShortController::class, 'update'])->name('shorts.update')->middleware('can:update,short');
+        Route::delete('/shorts/{short}', [ShortController::class, 'destroy'])->name('shorts.destroy')->middleware('can:delete,short');
 
         Route::get('/tilawat', [App\Http\Controllers\Admin\TilawaController::class, 'index'])->name('tilawat.index');
         Route::get('/tilawat/{tilawa}/edit', [App\Http\Controllers\Admin\TilawaController::class, 'edit'])->name('tilawat.edit')->middleware('can:update,tilawa');
