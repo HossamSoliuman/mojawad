@@ -49,7 +49,7 @@
 <div class="wrap z1" style="padding-bottom:3rem">
   @if($qari->biography)
   <div class="card" style="padding:1.5rem;margin-bottom:2.1rem;max-width:680px">
-    <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.09em;color:var(--text2);margin-bottom:.65rem;font-family:'Cinzel',serif">
+    <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.09em;color:var(--text2);margin-bottom:.65rem;font-family:var(--font-display)">
       {{ __('Biography') }}
     </div>
     <div style="line-height:1.8;color:var(--text2)">{!! $qari->biography !!}</div>

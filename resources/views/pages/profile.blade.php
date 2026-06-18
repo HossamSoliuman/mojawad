@@ -31,19 +31,19 @@
   {{-- Stat tiles --}}
   <div class="profile-stats" style="margin-bottom:1.4rem">
     <div class="card" style="padding:1.25rem;text-align:center">
-      <div style="font-family:'Cinzel',serif;font-size:1.45rem;font-weight:700;color:var(--gold);line-height:1.2">{{ $listeningTime }}</div>
+      <div style="font-family:var(--font-display);font-size:1.45rem;font-weight:700;color:var(--gold);line-height:1.2">{{ $listeningTime }}</div>
       <div style="font-size:.76rem;color:var(--text2);margin-top:.3rem">{{ __('Total listening time') }}</div>
     </div>
     <div class="card" style="padding:1.25rem;text-align:center">
-      <div style="font-family:'Cinzel',serif;font-size:1.45rem;font-weight:700;color:var(--gold);line-height:1.2">{{ $weekTime }}</div>
+      <div style="font-family:var(--font-display);font-size:1.45rem;font-weight:700;color:var(--gold);line-height:1.2">{{ $weekTime }}</div>
       <div style="font-size:.76rem;color:var(--text2);margin-top:.3rem">{{ __('This week') }}</div>
     </div>
     <div class="card" style="padding:1.25rem;text-align:center">
-      <div style="font-family:'Cinzel',serif;font-size:1.7rem;font-weight:700;color:var(--gold)">{{ number_format($streak) }}</div>
+      <div style="font-family:var(--font-display);font-size:1.7rem;font-weight:700;color:var(--gold)">{{ number_format($streak) }}</div>
       <div style="font-size:.76rem;color:var(--text2);margin-top:.3rem">{{ __('Day streak') }}</div>
     </div>
     <div class="card" style="padding:1.25rem;text-align:center">
-      <div style="font-family:'Cinzel',serif;font-size:1.7rem;font-weight:700;color:var(--gold)">{{ number_format($totals['completed']) }}</div>
+      <div style="font-family:var(--font-display);font-size:1.7rem;font-weight:700;color:var(--gold)">{{ number_format($totals['completed']) }}</div>
       <div style="font-size:.76rem;color:var(--text2);margin-top:.3rem">{{ __('Completed') }}</div>
     </div>
   </div>
@@ -51,15 +51,15 @@
   {{-- Quick links --}}
   <div class="profile-links" style="margin-bottom:1.4rem">
     <a href="{{ route('likes') }}" wire:navigate class="card" style="padding:1rem;text-align:center;color:inherit">
-      <div style="font-family:'Cinzel',serif;font-size:1.35rem;font-weight:700;color:var(--gold)">{{ number_format($totals['liked']) }}</div>
+      <div style="font-family:var(--font-display);font-size:1.35rem;font-weight:700;color:var(--gold)">{{ number_format($totals['liked']) }}</div>
       <div style="font-size:.74rem;color:var(--text2)">{{ __('Liked') }}</div>
     </a>
     <a href="{{ route('saved') }}" wire:navigate class="card" style="padding:1rem;text-align:center;color:inherit">
-      <div style="font-family:'Cinzel',serif;font-size:1.35rem;font-weight:700;color:var(--gold)">{{ number_format($totals['saved']) }}</div>
+      <div style="font-family:var(--font-display);font-size:1.35rem;font-weight:700;color:var(--gold)">{{ number_format($totals['saved']) }}</div>
       <div style="font-size:.74rem;color:var(--text2)">{{ __('Saved') }}</div>
     </a>
     <div class="card" style="padding:1rem;text-align:center">
-      <div style="font-family:'Cinzel',serif;font-size:1.35rem;font-weight:700;color:var(--gold)">{{ number_format($totals['downloaded']) }}</div>
+      <div style="font-family:var(--font-display);font-size:1.35rem;font-weight:700;color:var(--gold)">{{ number_format($totals['downloaded']) }}</div>
       <div style="font-size:.74rem;color:var(--text2)">{{ __('Downloads') }}</div>
     </div>
   </div>

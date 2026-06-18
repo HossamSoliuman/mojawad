@@ -79,7 +79,7 @@
 
   @if($tilawa->description)
   <div class="card" style="padding:1.5rem;margin-bottom:2.1rem">
-    <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.09em;color:var(--text2);margin-bottom:.65rem;font-family:'Cinzel',serif">
+    <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.09em;color:var(--text2);margin-bottom:.65rem;font-family:var(--font-display)">
       {{ __('About') }}
     </div>
     <p style="line-height:1.8;color:var(--text2)">{{ $tilawa->description }}</p>

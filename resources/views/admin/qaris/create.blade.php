@@ -1,7 +1,7 @@
 @extends('layouts.admin')
-@section('title','Add Qari')
-@section('page-title','Add New Qari')
-@section('breadcrumb')<a href="{{ route('admin.dashboard') }}">Dashboard</a> › <a href="{{ route('admin.qaris.index') }}">Qaris</a> › Create @endsection
+@section('title', __('Add Qari'))
+@section('page-title', __('Add New Qari'))
+@section('breadcrumb')<a href="{{ route('admin.dashboard') }}">{{ __('Dashboard') }}</a> › <a href="{{ route('admin.qaris.index') }}">{{ __('Qaris') }}</a> › {{ __('Create') }} @endsection
 @section('content')
 
 <div style="max-width:660px">

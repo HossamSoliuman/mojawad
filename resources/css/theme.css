@@ -335,7 +335,7 @@ h5 {
   text-transform: uppercase;
   letter-spacing: .09em;
   color: var(--text2);
-  font-family: 'Cinzel', serif
+  font-family: var(--font-display)
 }
 
 .form-control {
@@ -1328,7 +1328,10 @@ textarea.form-control {
 .sf-name {
   font-size: .8rem;
   font-weight: 600;
-  color: var(--text)
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sf-role {
@@ -1778,7 +1781,7 @@ textarea.form-control {
   color: var(--text3);
   text-transform: uppercase;
   letter-spacing: .1em;
-  font-family: 'Cinzel', serif
+  font-family: var(--font-display)
 }
 
 .search-item {
@@ -2530,6 +2533,17 @@ button.card-opt {
   text-overflow: ellipsis;
 }
 
+/* Focus header title — clamp long Arabic titles instead of growing unbounded */
+.review-focus-title {
+  font-weight: 700;
+  font-size: 1.05rem;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .review-card-head {
   display: flex;
   gap: .65rem;
@@ -2629,13 +2643,37 @@ button.card-opt {
     border-radius: 12px;
   }
 
-  /* On mobile, surface the actions before the verify checklist */
+  /* On mobile, keep the verify checklist above and pin the actions to the
+     bottom of the viewport so reviewers can act without scrolling. */
   .review-focus-side {
-    flex-direction: column-reverse;
+    flex-direction: column;
   }
 
+  /* Sticky action bar: Approve / Reject stay reachable one-handed */
   .review-actions {
-    margin-top: 0;
+    position: sticky;
+    bottom: 0;
+    z-index: 30;
+    margin: 0 -1rem -1rem;
+    padding: .7rem 1rem calc(.7rem + env(safe-area-inset-bottom));
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -6px 18px rgba(0, 0, 0, .28);
+  }
+
+  /* Comfortable tap targets (≥44px) for the primary review actions */
+  .review-actions .btn,
+  .review-group-toggle button {
+    min-height: 44px;
+  }
+
+  .review-checklist label {
+    min-height: 40px;
+  }
+
+  .review-checklist input {
+    width: 18px;
+    height: 18px;
   }
 
   .review-strip-head {
@@ -2651,9 +2689,16 @@ button.card-opt {
     justify-content: center;
   }
 
+  /* Roomier chip rail with comfortable touch-scroll + tap targets */
+  .review-strip {
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .review-chip {
     width: 78vw;
     max-width: 260px;
+    padding: .65rem;
   }
 
   /* Toast: span the top instead of a fixed narrow box */

@@ -151,14 +151,14 @@
                                     style="color:var(--gold);width:15px"></i> {{ __('Dashboard') }}</a>
                         @endif
                         <form method="POST" action="{{ route('logout') }}">@csrf
-                            <button type="submit"><i class="fas fa-arrow-right-from-bracket"
+                            <button type="submit"><i class="fas fa-arrow-right-from-bracket flip-rtl"
                                     style="color:var(--red);width:15px"></i> {{ __('Logout') }}</button>
                         </form>
                     </div>
                 </div>
             @else
                 <a href="{{ route('login') }}" class="ni-icon-btn" title="{{ __('Login') }}"
-                    aria-label="{{ __('Login') }}"><i class="fas fa-arrow-right-to-bracket"></i></a>
+                    aria-label="{{ __('Login') }}"><i class="fas fa-arrow-right-to-bracket flip-rtl"></i></a>
                 <a href="{{ route('register') }}" class="ni-join">{{ __('Join') }}</a>
             @endauth
         </div>

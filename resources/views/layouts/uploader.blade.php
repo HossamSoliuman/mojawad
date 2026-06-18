@@ -29,11 +29,11 @@
       </div>
       <div class="up-user">
         <img src="{{ auth()->user()->avatar_url }}" class="avatar" width="30" height="30" alt="">
-        <span class="up-user-name">{{ Str::limit(auth()->user()->name, 14) }}</span>
+        <span class="up-user-name">{{ auth()->user()->name }}</span>
       </div>
       <form method="POST" action="{{ route('logout') }}">@csrf
         <button type="submit" class="btn-icon" style="color:var(--red)" title="{{ __('Logout') }}">
-          <i class="fas fa-arrow-right-from-bracket"></i>
+          <i class="fas fa-arrow-right-from-bracket flip-rtl"></i>
         </button>
       </form>
     </div>

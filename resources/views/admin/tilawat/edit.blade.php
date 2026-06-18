@@ -1,7 +1,7 @@
 @extends('layouts.admin')
-@section('title','Edit Tilawa')
-@section('page-title','Edit Tilawa')
-@section('breadcrumb')<a href="{{ route('admin.dashboard') }}">Dashboard</a> › <a href="{{ route('admin.tilawat.index') }}">Tilawat</a> › Edit @endsection
+@section('title', __('Edit Tilawa'))
+@section('page-title', __('Edit Tilawa'))
+@section('breadcrumb')<a href="{{ route('admin.dashboard') }}">{{ __('Dashboard') }}</a> › <a href="{{ route('admin.tilawat.index') }}">{{ __('Tilawat') }}</a> › {{ __('Edit') }} @endsection
 @section('content')
 
 <div style="max-width:700px">
@@ -66,7 +66,7 @@
       </div>
       <div class="form-group">
         <label class="form-label"><i class="fas fa-location-dot"></i> {{ __('Recorded Place') }}</label>
-        <input type="text" name="recorded_place" class="form-control" value="{{ old('recorded_place',$tilawa->recorded_place) }}" placeholder="Makkah, Saudi Arabia">
+        <input type="text" name="recorded_place" class="form-control" value="{{ old('recorded_place',$tilawa->recorded_place) }}" placeholder="{{ __('Makkah, Saudi Arabia') }}">
       </div>
     </div>
 

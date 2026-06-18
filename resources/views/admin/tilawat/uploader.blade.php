@@ -70,8 +70,8 @@
 <style>
 .up-shell{max-width:760px;margin:0 auto;padding:0 1rem 6rem}
 .up-topbar{display:flex;align-items:center;justify-content:space-between;padding:1.1rem 0;margin-bottom:.5rem}
-.up-user{display:flex;align-items:center;gap:.45rem}
-.up-user-name{font-size:.82rem;color:var(--text2)}
+.up-user{display:flex;align-items:center;gap:.45rem;min-width:0}
+.up-user-name{font-size:.82rem;color:var(--text2);max-width:9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .up-head{text-align:center;margin:1rem 0 2rem}
 .up-head h1{font-size:1.75rem;color:var(--text1);margin:0 0 .35rem;font-weight:700}
 .up-head p{color:var(--text2);font-size:.92rem;margin:0}
@@ -89,19 +89,21 @@
 .qari-opt{display:flex;align-items:center;gap:.65rem;padding:.5rem .65rem;border:1.5px solid var(--border);border-radius:11px;background:var(--bg);cursor:pointer;transition:.15s;text-align:start}
 .qari-opt:hover{border-color:var(--gold);transform:translateY(-1px)}
 .qari-opt img{width:42px;height:42px;border-radius:50%;object-fit:cover;flex-shrink:0}
-.qari-opt span{font-size:.88rem;color:var(--text1);font-weight:500;line-height:1.25}
+.qari-opt span{font-size:.88rem;color:var(--text1);font-weight:500;line-height:1.25;min-width:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .qari-empty{grid-column:1/-1;text-align:center;color:var(--text2);font-size:.85rem;padding:1rem}
 
 /* Qari card */
 .qari-card{display:flex;align-items:center;gap:.9rem;padding:.85rem 1rem;border:1.5px solid var(--gold);border-radius:13px;background:rgba(var(--gold-rgb),.06)}
 .qari-card img{width:54px;height:54px;border-radius:50%;object-fit:cover;flex-shrink:0}
 .qari-card-info{flex:1;min-width:0}
-.qari-card-name{font-size:1.05rem;font-weight:700;color:var(--text1)}
-.qari-card-sub{font-size:.76rem;color:var(--text2);margin-top:.15rem}
+.qari-card-name{font-size:1.05rem;font-weight:700;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qari-card-sub{font-size:.76rem;color:var(--text2);margin-top:.15rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .qari-card-sub i{color:var(--gold)}
+.qari-card #qariChangeBtn{flex-shrink:0}
 
 /* Mode cards */
 .mode-cards{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+@media(max-width:480px){.mode-cards{grid-template-columns:1fr}}
 .mode-card{display:flex;align-items:center;gap:.8rem;padding:1rem 1.1rem;border:1.5px solid var(--border);border-radius:13px;background:var(--bg);cursor:pointer;transition:.15s;text-align:start;font-family:inherit}
 .mode-card:hover{border-color:var(--gold)}
 .mode-card.active{border-color:var(--gold);background:rgba(var(--gold-rgb),.08)}
@@ -187,8 +189,8 @@
     const list = f ? QARIS.filter(q => q.name.toLowerCase().includes(f)) : QARIS;
     if(!list.length){ results.innerHTML = `<div class="qari-empty">${escapeHtml(CFG.t.noQari)}</div>`; return; }
     results.innerHTML = list.map(q =>
-      `<button type="button" class="qari-opt" data-id="${q.id}">
-         <img src="${q.image}" alt=""><span>${q.name}</span>
+      `<button type="button" class="qari-opt" data-id="${q.id}" title="${escapeAttr(q.name)}">
+         <img src="${q.image}" alt=""><span>${escapeHtml(q.name)}</span>
        </button>`).join('');
   }
 
@@ -199,7 +201,7 @@
   searchInput.addEventListener('input', () => renderResults(searchInput.value));
 
   function showCard(q){
-    cardImg.src = q.image; cardName.textContent = q.name;
+    cardImg.src = q.image; cardName.textContent = q.name; cardName.title = q.name;
     searchWrap.style.display = 'none'; cardWrap.style.display = 'block';
     updateLock();
   }

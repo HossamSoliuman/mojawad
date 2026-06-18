@@ -22,7 +22,7 @@
                     <div class="review-card-head">
                         <img class="rc-cover" src="{{ $active->cover_url }}" alt="">
                         <div style="min-width:0;flex:1">
-                            <div style="font-weight:700;font-size:1.05rem;line-height:1.25" dir="rtl">{{ $active->title_ar }}</div>
+                            <div class="review-focus-title" dir="rtl" title="{{ $active->title_ar }}">{{ $active->title_ar }}</div>
                             @if($active->title_en)
                                 <div style="font-size:.82rem;color:var(--text2)">{{ $active->title_en }}</div>
                             @endif
