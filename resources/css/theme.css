@@ -4043,3 +4043,50 @@ textarea:focus-visible,
   font-size: .74rem;
   color: var(--gold);
 }
+
+/* ── Profile page ── */
+.profile-id {
+  display: flex;
+  align-items: center;
+  gap: 1.4rem;
+}
+
+.profile-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+.profile-links {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.profile-charts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.4rem;
+}
+
+@media(max-width:640px) {
+  .profile-id {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+
+  .profile-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .profile-charts {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media(max-width:380px) {
+  .profile-links {
+    grid-template-columns: 1fr;
+  }
+}

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\ListenEvent;
 use App\Models\Tilawa;
 use App\Models\WatchHistory;
 use Illuminate\Http\JsonResponse;
@@ -42,10 +43,13 @@ class WatchHistoryController extends Controller
             'position' => ['required', 'integer', 'min:0'],
             'duration' => ['nullable', 'integer', 'min:0'],
             'completed' => ['boolean'],
+            'seconds' => ['nullable', 'integer'],
         ]);
 
+        $tilawa = Tilawa::select('id', 'qari_id')->find($validated['id']);
+
         WatchHistory::updateOrCreate(
-            ['user_id' => auth()->id(), 'tilawa_id' => $validated['id']],
+            ['user_id' => auth()->id(), 'tilawa_id' => $tilawa->id],
             [
                 'position' => $validated['position'],
                 'duration' => $validated['duration'] ?? 0,
@@ -53,6 +57,18 @@ class WatchHistoryController extends Controller
                 'last_watched_at' => now(),
             ],
         );
+
+        $seconds = max(0, min(60, (int) ($validated['seconds'] ?? 0)));
+
+        if ($seconds > 0) {
+            ListenEvent::create([
+                'user_id' => auth()->id(),
+                'tilawa_id' => $tilawa->id,
+                'qari_id' => $tilawa->qari_id,
+                'seconds' => $seconds,
+                'listened_at' => now(),
+            ]);
+        }
 
         return response()->json(['ok' => true]);
     }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Livewire\WatchHistoryList;
+use App\Models\ListenEvent;
 use App\Models\Tilawa;
 use App\Models\User;
 use App\Models\WatchHistory;
@@ -8,6 +9,32 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
+
+it('records a listen event with clamped seconds and denormalized qari', function () {
+    $user = User::factory()->create();
+    $tilawa = Tilawa::factory()->approved()->create();
+
+    $this->actingAs($user)
+        ->postJson(route('api.history.store'), ['id' => $tilawa->id, 'position' => 30, 'duration' => 300, 'seconds' => 500])
+        ->assertOk();
+
+    $event = ListenEvent::where('user_id', $user->id)->first();
+    expect($event)->not->toBeNull()
+        ->and($event->seconds)->toBe(60) // clamped to 60
+        ->and($event->tilawa_id)->toBe($tilawa->id)
+        ->and($event->qari_id)->toBe($tilawa->qari_id);
+});
+
+it('does not record a listen event when seconds is zero or absent', function () {
+    $user = User::factory()->create();
+    $tilawa = Tilawa::factory()->approved()->create();
+
+    $this->actingAs($user)
+        ->postJson(route('api.history.store'), ['id' => $tilawa->id, 'position' => 30, 'duration' => 300])
+        ->assertOk();
+
+    expect(ListenEvent::where('user_id', $user->id)->count())->toBe(0);
+});
 
 it('stores and upserts a watch record', function () {
     $user = User::factory()->create();

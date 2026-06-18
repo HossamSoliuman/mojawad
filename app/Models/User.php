@@ -40,6 +40,11 @@ class User extends Authenticatable
         return $this->hasMany(WatchHistory::class);
     }
 
+    public function listenEvents()
+    {
+        return $this->hasMany(ListenEvent::class);
+    }
+
     public function followedQaris()
     {
         return $this->belongsToMany(Qari::class, 'follows')->withTimestamps();

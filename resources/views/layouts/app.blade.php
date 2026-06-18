@@ -813,6 +813,12 @@
             }
 
             if (!forced && !completed && now - _lastHistorySave < 15000) return;
+
+            // Wall-clock listened since the last POST, capturing the heartbeat
+            // delta. Clamped 0..60 server-side so seeks/idle jumps can't inflate it.
+            const seconds = _lastHistorySave
+                ? Math.min(60, Math.round((now - _lastHistorySave) / 1000))
+                : 0;
             _lastHistorySave = now;
 
             // keepalive lets the request finish even if the page is unloading,
@@ -822,7 +828,7 @@
                 method: 'POST',
                 keepalive: true,
                 headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json', 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: entry.id, position, duration, completed: entry.completed })
+                body: JSON.stringify({ id: entry.id, position, duration, completed: entry.completed, seconds })
             }).catch(() => {});
         };
 
