@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\ShortController;
+use App\Http\Controllers\Admin\StudioController;
 use App\Http\Controllers\Admin\TmpUploadController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Api\FollowController;
@@ -114,6 +115,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
         Route::get('/shorts/{short}/edit', [ShortController::class, 'edit'])->name('shorts.edit')->middleware('can:update,short');
         Route::put('/shorts/{short}', [ShortController::class, 'update'])->name('shorts.update')->middleware('can:update,short');
         Route::delete('/shorts/{short}', [ShortController::class, 'destroy'])->name('shorts.destroy')->middleware('can:delete,short');
+
+        Route::get('/studio', [StudioController::class, 'index'])->name('studio.index');
+        Route::post('/studio/import', [StudioController::class, 'store'])->name('studio.import');
+        Route::post('/studio/import-file', [StudioController::class, 'storeFile'])->name('studio.import-file');
+        Route::post('/studio/{source}/retry', [StudioController::class, 'retry'])->name('studio.retry')->middleware('can:update,source');
+        Route::delete('/studio/{source}', [StudioController::class, 'destroy'])->name('studio.destroy')->middleware('can:delete,source');
 
         Route::get('/tilawat', [App\Http\Controllers\Admin\TilawaController::class, 'index'])->name('tilawat.index');
         Route::get('/tilawat/{tilawa}/edit', [App\Http\Controllers\Admin\TilawaController::class, 'edit'])->name('tilawat.edit')->middleware('can:update,tilawa');

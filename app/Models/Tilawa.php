@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Tilawa extends Model
 {
@@ -35,6 +36,11 @@ class Tilawa extends Model
     public function reviews(): HasMany
     {
         return $this->hasMany(TilawaReview::class)->latest();
+    }
+
+    public function source(): HasOne
+    {
+        return $this->hasOne(TilawatSource::class);
     }
 
     public function scopePendingReview(Builder $query): Builder
