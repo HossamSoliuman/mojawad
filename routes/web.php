@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\ClipController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ReviewController;
@@ -121,6 +122,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
         Route::post('/studio/import-file', [StudioController::class, 'storeFile'])->name('studio.import-file');
         Route::post('/studio/{source}/retry', [StudioController::class, 'retry'])->name('studio.retry')->middleware('can:update,source');
         Route::delete('/studio/{source}', [StudioController::class, 'destroy'])->name('studio.destroy')->middleware('can:delete,source');
+
+        Route::get('/clips', [ClipController::class, 'index'])->name('clips.index');
+        Route::get('/clips/search', [ClipController::class, 'search'])->name('clips.search');
+        Route::post('/clips', [ClipController::class, 'store'])->name('clips.store');
+        Route::get('/clips/{clip}/download', [ClipController::class, 'download'])->name('clips.download')->middleware('can:view,clip');
+        Route::post('/clips/{clip}/retry', [ClipController::class, 'retry'])->name('clips.retry')->middleware('can:update,clip');
+        Route::patch('/clips/{clip}/tiktok', [ClipController::class, 'tiktok'])->name('clips.tiktok')->middleware('can:update,clip');
+        Route::delete('/clips/{clip}', [ClipController::class, 'destroy'])->name('clips.destroy')->middleware('can:delete,clip');
 
         Route::get('/tilawat', [App\Http\Controllers\Admin\TilawaController::class, 'index'])->name('tilawat.index');
         Route::get('/tilawat/{tilawa}/edit', [App\Http\Controllers\Admin\TilawaController::class, 'edit'])->name('tilawat.edit')->middleware('can:update,tilawa');

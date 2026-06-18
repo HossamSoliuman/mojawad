@@ -43,6 +43,11 @@ class Tilawa extends Model
         return $this->hasOne(TilawatSource::class);
     }
 
+    public function clips(): HasMany
+    {
+        return $this->hasMany(VideoClip::class);
+    }
+
     public function scopePendingReview(Builder $query): Builder
     {
         return $query->where('review_status', 'pending');

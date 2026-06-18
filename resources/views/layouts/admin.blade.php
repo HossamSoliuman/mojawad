@@ -67,6 +67,9 @@
       <a href="{{ route('admin.studio.index') }}" class="s-link {{ request()->routeIs('admin.studio.*') ? 'active':'' }}">
         <i class="fab fa-youtube"></i> <span>{{ __('Studio') }}</span>
       </a>
+      <a href="{{ route('admin.clips.index') }}" class="s-link {{ request()->routeIs('admin.clips.*') ? 'active':'' }}">
+        <i class="fas fa-film"></i> <span>{{ __('Short videos') }}</span>
+      </a>
       <a href="{{ route('admin.tilawat.index') }}" class="s-link {{ request()->routeIs('admin.tilawat.*') ? 'active':'' }}">
         <i class="fas fa-music"></i>
         <span>{{ __('Tilawat') }}</span>
