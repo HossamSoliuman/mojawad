@@ -33,6 +33,9 @@
         <span class="badge badge-muted">
           <i class="fas fa-heart"></i> <span data-like-count="{{ $tilawa->id }}">{{ number_format($tilawa->likes_count) }}</span>
         </span>
+        <span class="badge badge-muted">
+          <i class="fas fa-play"></i> <span data-play-count="{{ $tilawa->id }}">{{ number_format($tilawa->plays_count) }}</span>
+        </span>
         <span class="badge badge-muted"><i class="fas fa-download"></i> {{ number_format($tilawa->downloads_count) }}</span>
         @if($tilawa->recorded_at)
         <span class="badge badge-muted"><i class="fas fa-calendar"></i> {{ $tilawa->recorded_at->format('Y') }}</span>
@@ -55,11 +58,19 @@
           <span id="likeBtnText">{{ __('Like') }}</span>
         </button>
 
+        <button type="button" class="btn btn-ghost btn-sm show-save-btn" id="saveBtn"
+          data-save-btn="{{ $tilawa->id }}"
+          data-saved-text="{{ __('Saved') }}" data-save-text="{{ __('Save') }}"
+          onclick="toggleSave({{ $tilawa->id }})">
+          <i class="fas fa-bookmark"></i>
+          <span id="saveBtnText">{{ __('Save') }}</span>
+        </button>
+
         <a href="{{ route('tilawa.download',$tilawa) }}" class="btn btn-ghost btn-sm">
           <i class="fas fa-download"></i> {{ __('Download') }}
         </a>
 
-        <button type="button" class="btn btn-ghost btn-sm" onclick="shareTilawa()">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="window.shareTilawa()">
           <i class="fas fa-share-nodes"></i> {{ __('Share') }}
         </button>
       </div>
@@ -123,30 +134,38 @@ function paintShowLikeBtn() {
 window._likedIdsReady.then(paintShowLikeBtn);
 paintShowLikeBtn();
 
-function shareTilawa() {
-  const data = { title: document.title, url: location.href };
-  if (navigator.share) {
-    navigator.share(data).catch(() => {});
-    return;
-  }
-  navigator.clipboard.writeText(data.url).then(() => {
-    const toast = document.createElement('div');
-    toast.className = 'copy-toast';
-    toast.textContent = @json(__('Link copied to clipboard'));
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 2200);
-  }).catch(() => {});
+function toggleSave(id) {
+  const btn = document.getElementById('saveBtn');
+  if (btn) btn.disabled = true;
+  Promise.resolve(window.toggleTilawaSave(id)).finally(() => { if (btn) btn.disabled = false; });
 }
 
+function paintShowSaveBtn() {
+  const btn = document.getElementById('saveBtn');
+  if (!btn) return;
+  const saved = window.isTilawaSaved(btn.dataset.saveBtn);
+  btn.classList.toggle('btn-primary', saved);
+  btn.classList.toggle('btn-ghost', !saved);
+  const txt = document.getElementById('saveBtnText');
+  if (txt) txt.textContent = saved ? btn.dataset.savedText : btn.dataset.saveText;
+}
+window._savedIdsReady.then(paintShowSaveBtn);
+paintShowSaveBtn();
+
 // One persistent listener (survives wire:navigate) that targets the current
-// track-page button via its data attributes, so it never goes stale.
+// track-page buttons via their data attributes, so they never go stale.
 if (!window._showLikeSync) {
   window._showLikeSync = true;
-  document.addEventListener('livewire:navigated', paintShowLikeBtn);
+  document.addEventListener('livewire:navigated', () => { paintShowLikeBtn(); paintShowSaveBtn(); });
   window.addEventListener('tilawa-like-changed', (e) => {
     const btn = document.getElementById('likeBtn');
     if (!btn || Number(btn.dataset.likeBtn) !== Number(e.detail.id)) return;
     paintShowLikeBtn();
+  });
+  window.addEventListener('tilawa-save-changed', (e) => {
+    const btn = document.getElementById('saveBtn');
+    if (!btn || Number(btn.dataset.saveBtn) !== Number(e.detail.id)) return;
+    paintShowSaveBtn();
   });
 }
 </script>

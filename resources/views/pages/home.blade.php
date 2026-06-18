@@ -91,6 +91,35 @@
   </div>
 </section>
 
+@if($followed_new->isNotEmpty())
+<section class="section">
+  <div class="sec-title"><i class="fas fa-user-check gold"></i> {{ __('New from reciters you follow') }}</div>
+  <div class="grid-tilawat" data-queue>
+    @foreach($followed_new as $t)
+    <div class="t-card" data-track-id="{{ $t->id }}">
+      <div class="t-card-img">
+        <img src="{{ $t->cover_url }}" alt="{{ $t->title }}" loading="lazy">
+        <button class="t-play-btn" data-track="{{ json_encode($t->playerPayload()) }}">
+          <i class="fas fa-play"></i>
+        </button>
+      </div>
+      <div class="t-card-body">
+        <a href="{{ route('tilawa.show',$t) }}" wire:navigate><div class="t-card-title">{{ $t->title }}</div></a>
+        <a href="{{ route('qaris.show',$t->qari) }}" wire:navigate class="t-card-qari">{{ $t->qari->name }}</a>
+        <div class="t-card-meta">
+          <span><i class="fas fa-clock"></i> {{ $t->formatted_duration }}</span>
+          <button type="button" class="row-like" data-like-btn="{{ $t->id }}"
+            onclick="window.toggleTilawaLike({{ $t->id }})" title="{{ __('Like') }}">
+            <i class="fas fa-heart"></i> <span data-like-count="{{ $t->id }}">{{ number_format($t->likes_count) }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    @endforeach
+  </div>
+</section>
+@endif
+
 @if($featured_tilawat->isNotEmpty())
 <section class="section">
   <div class="sec-title"><i class="fas fa-star gold"></i> {{ __('Featured Tilawat') }}</div>
@@ -120,6 +149,36 @@
 </section>
 @endif
 
+@if($trending_tilawat->isNotEmpty())
+<section class="section" style="padding-top:0">
+  <div class="sec-title"><i class="fas fa-arrow-trend-up gold"></i> {{ __('Trending this week') }}</div>
+  <div class="grid-tilawat" data-queue>
+    @foreach($trending_tilawat as $t)
+    <div class="t-card" data-track-id="{{ $t->id }}">
+      <div class="t-card-img">
+        <img src="{{ $t->cover_url }}" alt="{{ $t->title }}" loading="lazy">
+        <button class="t-play-btn" data-track="{{ json_encode($t->playerPayload()) }}">
+          <i class="fas fa-play"></i>
+        </button>
+        <span class="trending-rank">{{ $loop->iteration }}</span>
+      </div>
+      <div class="t-card-body">
+        <a href="{{ route('tilawa.show',$t) }}" wire:navigate><div class="t-card-title">{{ $t->title }}</div></a>
+        <a href="{{ route('qaris.show',$t->qari) }}" wire:navigate class="t-card-qari">{{ $t->qari->name }}</a>
+        <div class="t-card-meta">
+          <span><i class="fas fa-play"></i> <span data-play-count="{{ $t->id }}">{{ number_format($t->plays_count) }}</span></span>
+          <button type="button" class="row-like" data-like-btn="{{ $t->id }}"
+            onclick="window.toggleTilawaLike({{ $t->id }})" title="{{ __('Like') }}">
+            <i class="fas fa-heart"></i> <span data-like-count="{{ $t->id }}">{{ number_format($t->likes_count) }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    @endforeach
+  </div>
+</section>
+@endif
+
 @if($top_qaris->isNotEmpty())
 <section class="section" style="padding-top:0">
   <div class="sec-title"><i class="fas fa-microphone gold"></i> {{ __('Qaris') }}</div>
@@ -133,6 +192,42 @@
         <div class="q-count">{{ $q->tilawat_count }} {{ __('tilawat') }}</div>
       </div>
       <div class="q-play-btn"><i class="fas fa-play"></i></div>
+    </a>
+    @endforeach
+  </div>
+</section>
+@endif
+
+@if($browse_surahs->isNotEmpty())
+<section class="section" style="padding-top:0">
+  <div class="sec-title"><i class="fas fa-book-open gold"></i> {{ __('Browse by Surah') }}</div>
+  <div class="surah-rail">
+    @foreach($browse_surahs as $n)
+    <a href="{{ route('surah.show', $n) }}" wire:navigate class="surah-chip">
+      <span class="surah-chip-num">{{ $n }}</span>
+      <span class="surah-chip-name">{{ config('surahs.'.$n, $n) }}</span>
+    </a>
+    @endforeach
+  </div>
+</section>
+@endif
+
+@if($collections->isNotEmpty())
+<section class="section" style="padding-top:0">
+  <div class="sec-title" style="display:flex;align-items:center;justify-content:space-between">
+    <span><i class="fas fa-layer-group gold"></i> {{ __('Collections') }}</span>
+    <a href="{{ route('collections.index') }}" wire:navigate class="gold" style="font-size:.78rem">{{ __('View All') }}</a>
+  </div>
+  <div class="grid-collections">
+    @foreach($collections as $collection)
+    <a href="{{ route('collections.show', $collection) }}" wire:navigate class="collection-card">
+      <div class="collection-card-img">
+        <img src="{{ $collection->cover_url }}" alt="{{ $collection->title }}" loading="lazy">
+        <div class="collection-card-overlay">
+          <div class="collection-card-title">{{ $collection->title }}</div>
+          <div class="collection-card-count">{{ $collection->tilawat_count }} {{ __('tilawat') }}</div>
+        </div>
+      </div>
     </a>
     @endforeach
   </div>

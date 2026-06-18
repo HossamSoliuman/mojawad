@@ -1,0 +1,21 @@
+{
+  "name": "Mojawad — Qur'an Recitations",
+  "short_name": "Mojawad",
+  "description": "Premium Tajweed Qur'an recitations from renowned reciters.",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#07070f",
+  "theme_color": "#07070f",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

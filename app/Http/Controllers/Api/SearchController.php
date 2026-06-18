@@ -32,15 +32,21 @@ class SearchController extends Controller
                 'url' => route('qaris.show', $r->slug),
             ]);
 
+        $surahNumbers = $this->matchSurahNumbers($q);
+
         $tilawat = Tilawa::with('qari')
             ->where('status', 'active')
-            ->where(function ($query) use ($q) {
+            ->where(function ($query) use ($q, $surahNumbers) {
                 $query->where('title_ar', 'like', '%'.$q.'%')
                     ->orWhere('title_en', 'like', '%'.$q.'%')
                     ->orWhereHas('qari', function ($sub) use ($q) {
                         $sub->where('name_ar', 'like', '%'.$q.'%')
                             ->orWhere('name_en', 'like', '%'.$q.'%');
                     });
+
+                if ($surahNumbers !== []) {
+                    $query->orWhereIn('surah_number', $surahNumbers);
+                }
             })
             ->take(6)
             ->get()
@@ -53,5 +59,25 @@ class SearchController extends Controller
             ]);
 
         return response()->json(['qaris' => $qaris, 'tilawat' => $tilawat]);
+    }
+
+    /**
+     * Resolve surah numbers whose Arabic name matches the query.
+     *
+     * @return array<int, int>
+     */
+    private function matchSurahNumbers(string $q): array
+    {
+        $needle = ltrim(mb_strtolower($q), 'ال');
+
+        return collect(config('surahs', []))
+            ->filter(function (string $name) use ($q, $needle) {
+                $haystack = ltrim(mb_strtolower($name), 'ال');
+
+                return mb_strpos($name, $q) !== false || mb_strpos($haystack, $needle) !== false;
+            })
+            ->keys()
+            ->map(fn ($n) => (int) $n)
+            ->all();
     }
 }

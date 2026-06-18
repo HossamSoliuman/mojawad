@@ -40,6 +40,11 @@ class User extends Authenticatable
         return $this->hasMany(WatchHistory::class);
     }
 
+    public function followedQaris()
+    {
+        return $this->belongsToMany(Qari::class, 'follows')->withTimestamps();
+    }
+
     public function getAvatarUrlAttribute(): string
     {
         return $this->avatar ? asset('storage/'.$this->avatar) : 'https://ui-avatars.com/api/?name='.urlencode($this->name).'&background=c9a153&color=07070f&size=128';

@@ -13,7 +13,7 @@ class Tilawa extends Model
 
     protected $table = 'tilawat';
 
-    protected $fillable = ['qari_id', 'title_ar', 'title_en', 'slug', 'description_ar', 'description_en', 'recorded_at', 'recorded_place', 'surah_number', 'audio_path', 'duration', 'cover_image', 'uploaded_by', 'is_featured', 'downloads_count', 'likes_count', 'status', 'review_status', 'rejection_note', 'reviewed_by', 'reviewed_at'];
+    protected $fillable = ['qari_id', 'title_ar', 'title_en', 'slug', 'description_ar', 'description_en', 'recorded_at', 'recorded_place', 'surah_number', 'audio_path', 'duration', 'cover_image', 'uploaded_by', 'is_featured', 'downloads_count', 'plays_count', 'likes_count', 'status', 'review_status', 'rejection_note', 'reviewed_by', 'reviewed_at'];
 
     protected $casts = ['is_featured' => 'boolean', 'recorded_at' => 'date', 'reviewed_at' => 'datetime'];
 

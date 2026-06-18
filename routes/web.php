@@ -6,12 +6,17 @@ use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\ShortController;
 use App\Http\Controllers\Admin\TmpUploadController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Api\FollowController;
 use App\Http\Controllers\Api\LikeController;
+use App\Http\Controllers\Api\PlayController;
 use App\Http\Controllers\Api\SaveController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\WatchHistoryController;
+use App\Http\Controllers\CollectionController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QariController;
+use App\Http\Controllers\SurahController;
 use App\Http\Controllers\TilawaController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
@@ -24,18 +29,27 @@ Route::prefix('qaris')->name('qaris.')->group(function () {
     Route::get('/{qari:slug}', [QariController::class, 'show'])->name('show');
 });
 
+Route::get('/surah/{number}', [SurahController::class, 'show'])
+    ->whereNumber('number')->name('surah.show');
+
+Route::prefix('collections')->name('collections.')->group(function () {
+    Route::get('/', [CollectionController::class, 'index'])->name('index');
+    Route::get('/{collection:slug}', [CollectionController::class, 'show'])->name('show');
+});
+
 Route::prefix('tilawa')->name('tilawa.')->group(function () {
     Route::get('/{tilawa:slug}', [TilawaController::class, 'show'])->name('show');
     Route::get('/{tilawa:slug}/download', [TilawaController::class, 'download'])
         ->name('download')->middleware('throttle:30,1');
 });
 
-// ── Likes (guests keep theirs in localStorage until they sign in) ────────
+// ── Likes & saves (guests keep theirs in localStorage until they sign in) ─
 Route::get('/likes', fn () => view('pages.likes'))->name('likes');
+Route::get('/saved', fn () => view('pages.saved'))->name('saved');
 
 // ── Auth-required ────────────────────────────────────────────────────────
 Route::middleware('auth')->group(function () {
-    Route::get('/profile', fn () => view('pages.profile'))->name('profile');
+    Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
 });
 
 // ── AJAX API ─────────────────────────────────────────────────────────────
@@ -44,7 +58,14 @@ Route::middleware('auth')->prefix('api')->group(function () {
     Route::get('/like/{tilawa}', [LikeController::class,    'status'])->name('api.like.status');
     Route::post('/like/{tilawa}', [LikeController::class,   'toggle'])->name('api.like');
     Route::post('/likes/sync', [LikeController::class,      'sync'])->name('api.likes.sync');
+    Route::get('/follows/ids', [FollowController::class,    'ids'])->name('api.follows.ids');
+    Route::post('/follow/{qari:id}', [FollowController::class, 'toggle'])->name('api.follow');
+    Route::post('/follows/sync', [FollowController::class,   'sync'])->name('api.follows.sync');
+
+    Route::get('/saves/ids', [SaveController::class,        'ids'])->name('api.saves.ids');
+    Route::get('/save/{tilawa}', [SaveController::class,    'status'])->name('api.save.status');
     Route::post('/save/{tilawa}', [SaveController::class,   'toggle'])->name('api.save');
+    Route::post('/saves/sync', [SaveController::class,      'sync'])->name('api.saves.sync');
 
     Route::get('/history', [WatchHistoryController::class,          'index'])->name('api.history.index');
     Route::post('/history', [WatchHistoryController::class,         'store'])->name('api.history.store');
@@ -53,6 +74,8 @@ Route::middleware('auth')->prefix('api')->group(function () {
     Route::delete('/history', [WatchHistoryController::class,       'clear'])->name('api.history.clear');
 });
 Route::get('/api/search', SearchController::class)->name('api.search');
+Route::post('/api/play/{tilawa}', [PlayController::class, 'increment'])
+    ->name('api.play')->middleware('throttle:60,1');
 
 // ── Admin ────────────────────────────────────────────────────────────────
 Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
