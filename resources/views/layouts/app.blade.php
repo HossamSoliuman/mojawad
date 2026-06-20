@@ -129,16 +129,14 @@
             {{-- USER --}}
             @auth
                 <div class="ni-menu" style="position:relative" @click.outside="user=false">
-                    <a href="{{ route('profile') }}" wire:navigate class="ni-avatar-btn"
-                        title="{{ auth()->user()->name }}">
+                    <button type="button" class="ni-avatar-btn" @click="user=!user"
+                        title="{{ auth()->user()->name }}" aria-label="{{ __('Menu') }}">
                         <img src="{{ auth()->user()->avatar_url }}" class="avatar" width="30" height="30" alt="">
-                    </a>
-                    <button type="button" class="ni-menu-caret" @click="user=!user"
-                        aria-label="{{ __('Menu') }}">
-                        <i class="fas fa-chevron-down" style="font-size:11px"></i>
                     </button>
                     <div class="dropdown" x-show="user" x-transition style="display:none">
                         <div class="ni-user-hd">{{ Str::limit(auth()->user()->name, 18) }}</div>
+                        <a href="{{ route('profile') }}" wire:navigate><i class="fas fa-user"
+                                style="color:var(--gold);width:15px"></i> {{ __('Profile') }}</a>
                         @if (auth()->user()->hasAnyRole(['admin', 'creator']))
                             <a href="{{ route('admin.dashboard') }}"><i class="fas fa-gauge"
                                     style="color:var(--gold);width:15px"></i> {{ __('Dashboard') }}</a>

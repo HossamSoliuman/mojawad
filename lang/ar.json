@@ -1,4 +1,8 @@
 {
+    "Edit account": "تعديل الحساب",
+    "New Password": "كلمة المرور الجديدة",
+    "Leave blank to keep current": "اتركها فارغة للإبقاء على الحالية",
+    "Your account has been updated.": "تم تحديث حسابك.",
     "Total listening time": "إجمالي وقت الاستماع",
     "This week": "هذا الأسبوع",
     "Day streak": "أيام متتالية",
@@ -45,7 +49,7 @@
     "Create Account": "إنشاء حساب",
     "Featured Tilawat": "تلاوات مختارة",
     "tilawat": "تلاوة",
-    "Most Loved": "الأكثر حباً",
+    "Most Loved": "الأكثر إعجاباً",
     "Browse by Surah": "تصفّح حسب السورة",
     "Trending this week": "الأكثر رواجاً هذا الأسبوع",
     "New from reciters you follow": "جديد القراء الذين تتابعهم",

@@ -2220,24 +2220,6 @@ textarea.form-control {
   gap: .25rem;
 }
 
-.ni-menu-caret {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  width: 18px;
-  height: 18px;
-  border: none;
-  background: transparent;
-  color: var(--muted, currentColor);
-  cursor: pointer;
-  transition: color .18s;
-}
-
-.ni-menu-caret:hover {
-  color: var(--gold);
-}
-
 .ni-join {
   display: inline-flex;
   align-items: center;

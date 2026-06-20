@@ -19,13 +19,14 @@
 
   <div class="card profile-id" style="padding:1.85rem;margin-bottom:1.4rem">
     <img src="{{ auth()->user()->avatar_url }}" class="avatar" width="76" height="76" alt="">
-    <div>
+    <div style="flex:1;min-width:0">
       <h2 style="font-size:1.35rem;margin-bottom:.22rem">{{ auth()->user()->name }}</h2>
       <div style="color:var(--text2);font-size:.9rem">{{ auth()->user()->email }}</div>
       <div style="margin-top:.45rem">
         <span class="badge badge-gold">{{ auth()->user()->roles->first()?->name ?? 'user' }}</span>
       </div>
     </div>
+    <livewire:profile-edit />
   </div>
 
   {{-- Stat tiles --}}
