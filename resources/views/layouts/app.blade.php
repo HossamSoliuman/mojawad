@@ -125,28 +125,17 @@
             </div>
         </div>
 
-        <div class="ni-actions" :style="user ? 'overflow:visible' : ''">
+        <div class="ni-actions">
             {{-- USER --}}
             @auth
-                <div class="ni-menu" style="position:relative" @click.outside="user=false">
-                    <button type="button" class="ni-avatar-btn" @click="user=!user"
-                        title="{{ auth()->user()->name }}" aria-label="{{ __('Menu') }}">
-                        <img src="{{ auth()->user()->avatar_url }}" class="avatar" width="30" height="30" alt="">
-                    </button>
-                    <div class="dropdown" x-show="user" x-transition style="display:none">
-                        <div class="ni-user-hd">{{ Str::limit(auth()->user()->name, 18) }}</div>
-                        <a href="{{ route('profile') }}" wire:navigate><i class="fas fa-user"
-                                style="color:var(--gold);width:15px"></i> {{ __('Profile') }}</a>
-                        @if (auth()->user()->hasAnyRole(['admin', 'creator']))
-                            <a href="{{ route('admin.dashboard') }}"><i class="fas fa-gauge"
-                                    style="color:var(--gold);width:15px"></i> {{ __('Dashboard') }}</a>
-                        @endif
-                        <form method="POST" action="{{ route('logout') }}">@csrf
-                            <button type="submit"><i class="fas fa-arrow-right-from-bracket flip-rtl"
-                                    style="color:var(--red);width:15px"></i> {{ __('Logout') }}</button>
-                        </form>
-                    </div>
-                </div>
+                @if (auth()->user()->hasAnyRole(['admin', 'creator']))
+                    <a href="{{ route('admin.dashboard') }}" class="ni-icon-btn" title="{{ __('Dashboard') }}"
+                        aria-label="{{ __('Dashboard') }}"><i class="fas fa-gauge"></i></a>
+                @endif
+                <a href="{{ route('profile') }}" wire:navigate class="ni-avatar-btn"
+                    title="{{ auth()->user()->name }}">
+                    <img src="{{ auth()->user()->avatar_url }}" class="avatar" width="30" height="30" alt="">
+                </a>
             @else
                 <a href="{{ route('login') }}" class="ni-icon-btn" title="{{ __('Login') }}"
                     aria-label="{{ __('Login') }}"><i class="fas fa-arrow-right-to-bracket flip-rtl"></i></a>
@@ -260,6 +249,9 @@
                         x-show="queue.length > 1" aria-label="{{ __('Up next') }}"><i class="fas fa-list-ol"></i></button>
                     <button class="p-btn" :class="sleepActive && 'liked'" @click="toggleSleep()"
                         aria-label="{{ __('Sleep timer') }}"><i class="fas fa-moon"></i></button>
+                    <a class="p-btn" :href="downloadUrl" x-show="downloadUrl" download
+                        title="{{ __('Download') }}" aria-label="{{ __('Download') }}"
+                        style="text-decoration:none"><i class="fas fa-download"></i></a>
                 </div>
                 <div class="more-vol">
                     <button class="p-btn" @click="muted = !muted" aria-label="{{ __('Mute') }}">
@@ -993,6 +985,7 @@
                 qIdx: -1,
                 currentId: null,
                 currentTrack: null,
+                downloadUrl: '',
                 liked: false,
                 likePop: false,
                 likeLoading: false,
@@ -1165,9 +1158,12 @@
                     this.currentTrack = d;
                     this.fetchLikeStatus();
                     const dl = d.download || d.downloadUrl;
+                    this.downloadUrl = dl || '';
                     if (dl) {
                         document.getElementById('pDownload').href = dl;
                         document.getElementById('pDownload').style.display = 'inline-block';
+                    } else {
+                        document.getElementById('pDownload').style.display = 'none';
                     }
                     document.getElementById('playerBar').classList.remove('hidden');
 
