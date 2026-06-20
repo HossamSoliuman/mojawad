@@ -20,7 +20,7 @@ class VideoClipFactory extends Factory
         return [
             'tilawa_id' => Tilawa::factory(),
             'created_by' => User::factory(),
-            'template' => 'dark-waveform',
+            'template' => 'cover-blur',
             'clip_start' => fake()->numberBetween(0, 120),
             'clip_duration' => fake()->randomElement([15, 30, 60]),
             'overlay_path' => 'clips/overlays/'.fake()->uuid().'.png',

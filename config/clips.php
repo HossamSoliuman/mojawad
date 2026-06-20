@@ -54,17 +54,17 @@ return [
     | Templates
     |--------------------------------------------------------------------------
     |
-    | Available background styles. The key is stored on the clip and selects the
-    | matching preview partial and ffmpeg background layer.
+    | The clip background is always the tilawa's (blurred) cover image. The
+    | waveform background was removed; this single template is kept so the
+    | stored value and validation stay explicit.
     |
     */
 
     'templates' => [
-        'dark-waveform',
         'cover-blur',
     ],
 
-    'default_template' => 'dark-waveform',
+    'default_template' => 'cover-blur',
 
     /*
     |--------------------------------------------------------------------------

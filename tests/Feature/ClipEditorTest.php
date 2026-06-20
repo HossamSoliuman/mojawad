@@ -1,6 +1,7 @@
 <?php
 
 use App\Jobs\RenderVideoClip;
+use App\Models\Qari;
 use App\Models\Tilawa;
 use App\Models\User;
 use App\Models\VideoClip;
@@ -30,6 +31,30 @@ it('blocks regular users from the clips page', function () {
     $this->actingAs($user)->get(route('admin.clips.index'))->assertForbidden();
 });
 
+it('suggests the latest active tilawat when the picker opens with no query', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+    Tilawa::factory()->approved()->count(3)->create();
+    Tilawa::factory()->create(); // pending — must be excluded
+
+    $this->actingAs($creator)
+        ->getJson(route('admin.clips.search'))
+        ->assertOk()
+        ->assertJsonCount(3, 'tilawat')
+        ->assertJsonStructure(['tilawat' => [['id', 'title', 'qari', 'surah', 'cover', 'audio', 'duration']]]);
+});
+
+it('filters tilawat by title when searching', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+    $match = Tilawa::factory()->approved()->create(['title_ar' => 'سورة الكهف', 'title_en' => 'Al-Kahf']);
+    Tilawa::factory()->approved()->create(['title_ar' => 'سورة يس', 'title_en' => 'Yaseen']);
+
+    $this->actingAs($creator)
+        ->getJson(route('admin.clips.search', ['q' => 'Kahf']))
+        ->assertOk()
+        ->assertJsonCount(1, 'tilawat')
+        ->assertJsonPath('tilawat.0.id', $match->id);
+});
+
 it('creates a clip, stores the overlay and dispatches the render job', function () use ($pngDataUrl) {
     Bus::fake();
     $creator = User::factory()->create()->assignRole('creator');
@@ -38,7 +63,7 @@ it('creates a clip, stores the overlay and dispatches the render job', function 
     $this->actingAs($creator)
         ->post(route('admin.clips.store'), [
             'tilawa_id' => $tilawa->id,
-            'template' => 'dark-waveform',
+            'template' => 'cover-blur',
             'clip_start' => 30,
             'clip_duration' => 30,
             'caption_ar' => 'وصف المقطع',
@@ -65,7 +90,7 @@ it('rejects a clip longer than the cap', function () use ($pngDataUrl) {
     $this->actingAs($creator)
         ->post(route('admin.clips.store'), [
             'tilawa_id' => $tilawa->id,
-            'template' => 'dark-waveform',
+            'template' => 'cover-blur',
             'clip_start' => 0,
             'clip_duration' => 999,
             'overlay' => $pngDataUrl,
@@ -106,7 +131,7 @@ it('renders a clip end to end when ffmpeg succeeds', function () {
 
     $clip = VideoClip::factory()->create([
         'tilawa_id' => $tilawa->id,
-        'template' => 'dark-waveform',
+        'template' => 'cover-blur',
         'clip_duration' => 30,
         'status' => 'pending',
     ]);
@@ -122,6 +147,47 @@ it('renders a clip end to end when ffmpeg succeeds', function () {
 
     Storage::disk('public')->assertExists($clip->output_path);
     Process::assertRanTimes(fn () => true, 2);
+
+    Process::assertNotRan(function ($process) {
+        $cmd = implode(' ', array_map('strval', (array) $process->command));
+
+        return str_contains($cmd, 'showwaves');
+    });
+});
+
+it('renders the blurred cover from the qari image when the tilawa has no own cover', function () {
+    Process::fake(function ($process) {
+        $cmd = (array) $process->command;
+        $output = end($cmd);
+        if (is_string($output) && $output !== '') {
+            @file_put_contents($output, 'binary');
+        }
+
+        return Process::result(output: '', errorOutput: '', exitCode: 0);
+    });
+
+    $qari = Qari::factory()->create(['image' => 'qari-images/reciter.jpg']);
+    Storage::disk('public')->put($qari->image, 'cover-bytes');
+    $tilawa = Tilawa::factory()->approved()->create(['qari_id' => $qari->id, 'cover_image' => null]);
+    Storage::disk('public')->put($tilawa->audio_path, 'audio-bytes');
+
+    $clip = VideoClip::factory()->create([
+        'tilawa_id' => $tilawa->id,
+        'template' => 'cover-blur',
+        'clip_duration' => 30,
+        'status' => 'pending',
+    ]);
+    Storage::disk('public')->put($clip->overlay_path, 'png-bytes');
+
+    (new RenderVideoClip($clip->id))->handle();
+
+    expect($clip->fresh()->status)->toBe('completed');
+
+    Process::assertRan(function ($process) {
+        $cmd = implode(' ', array_map('strval', (array) $process->command));
+
+        return str_contains($cmd, 'boxblur') && ! str_contains($cmd, 'showwaves');
+    });
 });
 
 it('marks the clip failed when the source audio is missing', function () {

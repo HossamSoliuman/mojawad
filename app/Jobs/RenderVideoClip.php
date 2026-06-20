@@ -22,7 +22,7 @@ class RenderVideoClip implements ShouldQueue
 
     public function handle(): void
     {
-        $clip = VideoClip::with('tilawa')->find($this->clipId);
+        $clip = VideoClip::with('tilawa.qari')->find($this->clipId);
 
         if ($clip === null || $clip->status === 'completed') {
             return;
@@ -84,7 +84,7 @@ class RenderVideoClip implements ShouldQueue
     }
 
     /**
-     * Compose the dark background (+ optional waveform / blurred cover) with the
+     * Compose the blurred cover background (or a solid dark fallback) with the
      * browser-captured overlay PNG and the trimmed, loudness-normalised audio.
      *
      * @return list<string>
@@ -101,7 +101,7 @@ class RenderVideoClip implements ShouldQueue
         $hasOverlay = $overlayPath !== null && is_file($overlayPath);
 
         $coverPath = $this->resolveCoverPath($tilawa);
-        $useCover = $clip->template === 'cover-blur' && $coverPath !== null;
+        $useCover = $coverPath !== null;
 
         $args = [
             config('youtube.ffmpeg_path'),
@@ -129,9 +129,7 @@ class RenderVideoClip implements ShouldQueue
             $filters[] = "color=c=black@0.5:s={$width}x{$height}:d={$duration}[scrim]";
             $filters[] = '[cover][scrim]overlay=0:0[bg]';
         } else {
-            $filters[] = "color=c=0x0b0f14:s={$width}x{$height}:d={$duration}[base]";
-            $filters[] = "[0:a]showwaves=s={$width}x500:mode=cline:rate={$fps}:colors=0x34d399|0x6ee7b7,format=rgba[wave]";
-            $filters[] = '[base][wave]overlay=(W-w)/2:(H-h)/2[bg]';
+            $filters[] = "color=c=0x0b0f14:s={$width}x{$height}:d={$duration}[bg]";
         }
 
         if ($hasOverlay) {
@@ -174,15 +172,37 @@ class RenderVideoClip implements ShouldQueue
         ];
     }
 
+    /**
+     * Resolve a local image for the "cover-blur" background, mirroring the
+     * fallback chain of Tilawa::cover_url (own cover → qari image → default
+     * cover) so the rendered video matches the editor preview. Most tilawat
+     * have no own cover_image and rely on the qari image, so checking only
+     * cover_image left the render falling back to the waveform. Returns null
+     * only when no usable local image exists.
+     */
     private function resolveCoverPath(Tilawa $tilawa): ?string
     {
-        if (! $tilawa->cover_image) {
-            return null;
+        $disk = Storage::disk(config('clips.disk'));
+
+        $candidates = [];
+
+        if ($tilawa->cover_image) {
+            $candidates[] = public_path('storage/'.$tilawa->cover_image);
         }
 
-        $path = public_path('storage/'.$tilawa->cover_image);
+        if ($tilawa->qari?->image) {
+            $candidates[] = $disk->path($tilawa->qari->image);
+        }
 
-        return is_file($path) ? $path : null;
+        $candidates[] = public_path('images/default-cover.jpg');
+
+        foreach ($candidates as $path) {
+            if (is_file($path)) {
+                return $path;
+            }
+        }
+
+        return null;
     }
 
     public function failed(Throwable $exception): void

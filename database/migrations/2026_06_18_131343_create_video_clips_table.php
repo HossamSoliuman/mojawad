@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('tilawa_id')->nullable()->constrained('tilawat')->nullOnDelete();
             $table->foreignId('created_by')->constrained('users')->onDelete('cascade');
-            $table->string('template')->default('dark-waveform');
+            $table->string('template')->default('cover-blur');
             $table->unsignedInteger('clip_start')->default(0);
             $table->unsignedInteger('clip_duration')->default(30);
             $table->string('overlay_path')->nullable();

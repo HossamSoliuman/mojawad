@@ -30,27 +30,28 @@ class ClipController extends Controller
 
     /**
      * Searchable tilawa picker for the editor — returns the fields the preview
-     * and scrubber need (audio + duration), which the public search omits.
+     * and scrubber need (audio + duration), which the public search omits. With
+     * a short/empty query it returns the most recent tilawat so the picker can
+     * surface suggestions the moment it is focused.
      */
     public function search(Request $request): JsonResponse
     {
         $q = trim((string) $request->get('q', ''));
 
-        if (mb_strlen($q) < 2) {
-            return response()->json(['tilawat' => []]);
-        }
-
         $tilawat = Tilawa::with('qari')
             ->where('status', 'active')
-            ->where(function ($query) use ($q) {
-                $query->where('title_ar', 'like', '%'.$q.'%')
-                    ->orWhere('title_en', 'like', '%'.$q.'%')
-                    ->orWhereHas('qari', function ($sub) use ($q) {
-                        $sub->where('name_ar', 'like', '%'.$q.'%')
-                            ->orWhere('name_en', 'like', '%'.$q.'%');
-                    });
+            ->when(mb_strlen($q) >= 2, function ($query) use ($q) {
+                $query->where(function ($query) use ($q) {
+                    $query->where('title_ar', 'like', '%'.$q.'%')
+                        ->orWhere('title_en', 'like', '%'.$q.'%')
+                        ->orWhereHas('qari', function ($sub) use ($q) {
+                            $sub->where('name_ar', 'like', '%'.$q.'%')
+                                ->orWhere('name_en', 'like', '%'.$q.'%');
+                        });
+                });
             })
-            ->take(8)
+            ->latest()
+            ->take(12)
             ->get()
             ->map(fn (Tilawa $t) => [
                 'id' => $t->id,

@@ -1,4 +1,4 @@
-<div @if($this->hasActive) wire:poll.5s @endif>
+<div x-data="clipPreview()" @if($this->hasActive) wire:poll.5s @endif>
 
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
         <h2 style="font-size:1.05rem;font-weight:700;margin:0">{{ __('Rendered Clips') }}</h2>
@@ -69,6 +69,14 @@
                         <td>
                             <div style="display:flex;gap:.18rem;align-items:center">
                                 @if($clip->status === 'completed')
+                                <button type="button" class="btn btn-ghost btn-xs" title="{{ __('Preview') }}"
+                                        data-url="{{ $clip->output_url }}"
+                                        data-poster="{{ $clip->poster_url }}"
+                                        data-title="{{ $clip->tilawa?->title ?? __('Short video') }}"
+                                        data-dl="{{ route('admin.clips.download', $clip) }}"
+                                        @click="show($el.dataset.url, $el.dataset.poster, $el.dataset.title, $el.dataset.dl)">
+                                    <i class="fas fa-eye"></i> {{ __('Preview') }}
+                                </button>
                                 <a href="{{ route('admin.clips.download', $clip) }}" class="btn btn-primary btn-xs" title="{{ __('Download video') }}"><i class="fas fa-download"></i> {{ __('Download') }}</a>
                                 @endif
                                 @if($clip->status === 'failed')
@@ -89,4 +97,24 @@
             </table>
         </div>
     @endif
+
+    {{-- Rendered-clip player — teleported to <body> so wire:poll never disturbs it --}}
+    <template x-teleport="body">
+        <div x-show="open" x-transition.opacity
+             style="position:fixed;inset:0;z-index:1000;background:rgba(15,23,42,.8);display:flex;align-items:center;justify-content:center;padding:1.5rem"
+             @click.self="close()" @keydown.escape.window="close()">
+            <div style="position:relative;display:flex;flex-direction:column;align-items:center;gap:.75rem">
+                <button type="button" @click="close()" title="{{ __('Close') }}"
+                        style="position:absolute;top:-14px;inset-inline-end:-14px;width:38px;height:38px;border-radius:50%;background:#fff;border:0;cursor:pointer;color:#0f172a;box-shadow:0 4px 14px rgba(0,0,0,.35);font-size:1rem;z-index:2">
+                    <i class="fas fa-xmark"></i>
+                </button>
+                <video x-ref="vid" :src="url" :poster="poster" controls autoplay playsinline
+                       style="height:min(82vh,720px);width:auto;max-width:94vw;aspect-ratio:9/16;background:#000;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.5)"></video>
+                <div style="display:flex;align-items:center;gap:1rem;color:#fff;font-size:.85rem">
+                    <span x-text="title" style="font-weight:600"></span>
+                    <a :href="download" class="btn btn-primary btn-xs"><i class="fas fa-download"></i> {{ __('Download') }}</a>
+                </div>
+            </div>
+        </div>
+    </template>
 </div>
