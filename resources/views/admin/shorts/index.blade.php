@@ -7,6 +7,8 @@
 @endsection
 @section('content')
 
+<div x-data="{ preview: null }">
+
 <form method="GET" class="filter-bar">
   <div class="f-search">
     <i class="fas fa-magnifying-glass"></i>
@@ -37,15 +39,27 @@
       @forelse($shorts as $s)
       <tr>
         <td>
+          @php($canPreview = $s->media_path && $s->type === 'video')
           <div style="display:flex;align-items:center;gap:.72rem">
-            <span style="width:36px;height:48px;border-radius:8px;background:var(--surface2,var(--surface));display:grid;place-items:center;border:1px solid var(--border2);flex-shrink:0;overflow:hidden">
+            <span @if($canPreview) role="button" tabindex="0" @click="preview='{{ $s->media_url }}'" title="{{ __('Preview') }}" @endif
+                  style="position:relative;width:36px;height:48px;border-radius:8px;background:var(--surface2,var(--surface));display:grid;place-items:center;border:1px solid var(--border2);flex-shrink:0;overflow:hidden;{{ $canPreview ? 'cursor:pointer' : '' }}">
               @if($s->poster_url)
               <img src="{{ $s->poster_url }}" style="width:100%;height:100%;object-fit:cover" alt="">
+              @elseif($canPreview)
+              <video src="{{ $s->media_url }}#t=0.1" muted preload="metadata" style="width:100%;height:100%;object-fit:cover"></video>
               @else
               <i class="fas {{ $s->type === 'video' ? 'fa-clapperboard' : 'fa-music' }}" style="color:var(--gold)"></i>
               @endif
+              @if($canPreview)
+              <span style="position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.28);color:#fff;font-size:.7rem"><i class="fas fa-play"></i></span>
+              @endif
             </span>
-            <div style="font-weight:600;font-size:.88rem">{{ $s->title }}</div>
+            <div>
+              <div style="font-weight:600;font-size:.88rem">{{ $s->title }}</div>
+              @if($s->qari)
+              <div style="font-size:.76rem;color:var(--text2)"><i class="fas fa-microphone-lines"></i> {{ $s->qari->name }}</div>
+              @endif
+            </div>
           </div>
         </td>
         <td>
@@ -56,9 +70,19 @@
         </td>
         <td><span class="badge badge-muted">{{ $s->sort_order }}</span></td>
         <td>
-          <span class="badge {{ $s->status === 'active' ? 'badge-success' : 'badge-muted' }}">
+          @if(in_array($s->import_status, ['pending','processing'], true))
+          <span class="badge badge-amber" title="{{ __('Downloading from TikTok…') }}">
+            <i class="fas fa-spinner fa-spin"></i> {{ __('Downloading') }}
+          </span>
+          @elseif($s->import_status === 'failed')
+          <span class="badge badge-red" title="{{ $s->import_error }}">
+            <i class="fas fa-triangle-exclamation"></i> {{ __('Failed') }}
+          </span>
+          @else
+          <span class="badge {{ $s->status === 'active' ? 'badge-green' : 'badge-muted' }}">
             {{ $s->status === 'active' ? __('Active') : __('Inactive') }}
           </span>
+          @endif
         </td>
         <td style="font-size:.8rem;color:var(--text2)">{{ $s->created_at->format('d M Y') }}</td>
         <td>
@@ -80,4 +104,18 @@
   </table>
 </div>
 <div>{{ $shorts->links('vendor.pagination.custom') }}</div>
+
+<div x-show="preview" x-cloak @click.self="preview=null" @keydown.escape.window="preview=null"
+     style="position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.75);display:grid;place-items:center;padding:1.5rem">
+  <div style="position:relative;width:100%;max-width:340px">
+    <button type="button" @click="preview=null" title="{{ __('Close') }}"
+            style="position:absolute;top:-2.6rem;inset-inline-end:0;background:none;border:none;color:#fff;font-size:1.4rem;cursor:pointer"><i class="fas fa-xmark"></i></button>
+    <template x-if="preview">
+      <video :src="preview" controls autoplay playsinline
+             style="width:100%;aspect-ratio:9/16;border-radius:12px;background:#000;border:1px solid var(--border2)"></video>
+    </template>
+  </div>
+</div>
+
+</div>
 @endsection

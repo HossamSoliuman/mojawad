@@ -18,6 +18,10 @@ class Short extends Model
         'type',
         'media_path',
         'poster_path',
+        'qari_id',
+        'source_url',
+        'import_status',
+        'import_error',
         'created_by',
         'sort_order',
         'status',
@@ -33,6 +37,11 @@ class Short extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function qari(): BelongsTo
+    {
+        return $this->belongsTo(Qari::class);
     }
 
     public function scopeActive(Builder $query): Builder

@@ -20,6 +20,7 @@ class UpdateShortRequest extends FormRequest
             'title_ar' => 'required|string|max:255',
             'title_en' => 'nullable|string|max:255',
             'type' => 'required|in:audio,video',
+            'qari_id' => 'nullable|integer|exists:qaris,id',
             'media_tmp' => 'nullable|string|exists:tmp_uploads,id',
             'poster_tmp' => 'nullable|string|exists:tmp_uploads,id',
             'sort_order' => 'nullable|integer|min:0',

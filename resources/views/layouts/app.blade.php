@@ -1629,17 +1629,20 @@
                 current: null,
                 idx: 0,
                 seenKey: 'mojawad_shorts_seen',
-                sessionKey: 'mojawad_short_shown',
+                dailyKey: 'mojawad_short_day',
+                today() {
+                    return new Date().toISOString().slice(0, 10);
+                },
                 init() {
                     if (!this.items.length) return;
-                    // Only auto-open once per browser session (tab), so navigating
-                    // around the SPA doesn't keep re-triggering it.
+                    // Like a daily welcome message: auto-open once per day. Navigating
+                    // around the SPA or revisiting the same day won't re-trigger it.
                     try {
-                        if (sessionStorage.getItem(this.sessionKey)) return;
+                        if (localStorage.getItem(this.dailyKey) === this.today()) return;
                     } catch (e) {}
                     this.idx = this.pickStart();
                     this.openOverlay();
-                    try { sessionStorage.setItem(this.sessionKey, '1'); } catch (e) {}
+                    try { localStorage.setItem(this.dailyKey, this.today()); } catch (e) {}
                 },
                 _seen() {
                     try { return new Set(JSON.parse(localStorage.getItem(this.seenKey) || '[]')); } catch (e) { return new Set(); }
@@ -1693,6 +1696,10 @@
                     this.idx = (this.idx + 1) % this.items.length;
                     [this.$refs.video, this.$refs.audio].forEach((e) => { if (e) e.pause(); });
                     this.show();
+                },
+                onEnded() {
+                    // Auto-stop after the short finishes and dismiss the welcome overlay.
+                    this.close();
                 },
                 close() {
                     this.open = false;

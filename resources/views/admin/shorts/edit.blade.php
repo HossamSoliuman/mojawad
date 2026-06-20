@@ -35,6 +35,16 @@
         </select>
       </div>
       <div class="form-group">
+        <label class="form-label"><i class="fas fa-microphone-lines"></i> {{ __('Qari') }}</label>
+        <select name="qari_id" class="form-control">
+          <option value="">{{ __('No qari') }}</option>
+          @foreach($qaris as $q)
+          <option value="{{ $q->id }}" {{ old('qari_id', $short->qari_id) == $q->id ? 'selected' : '' }}>{{ $q->name }}</option>
+          @endforeach
+        </select>
+        @error('qari_id')<span class="form-error">{{ $message }}</span>@enderror
+      </div>
+      <div class="form-group">
         <label class="form-label"><i class="fas fa-sort"></i> {{ __('Sort Order') }}</label>
         <input type="number" name="sort_order" class="form-control" value="{{ old('sort_order', $short->sort_order) }}" min="0">
         <span class="form-hint">{{ __('Lower numbers appear first.') }}</span>
@@ -52,7 +62,9 @@
     <div class="form-group">
       <label class="form-label"><i class="fas fa-film"></i> {{ __('Media File') }}</label>
       <div style="margin-bottom:.65rem">
-        @if($short->type === 'video')
+        @if(! $short->media_path)
+        <div class="badge badge-amber"><i class="fas fa-spinner fa-spin"></i> {{ __('Downloading from TikTok…') }}</div>
+        @elseif($short->type === 'video')
         <video src="{{ $short->media_url }}" controls muted preload="metadata" style="max-width:220px;width:100%;border-radius:10px;border:1px solid var(--border2);background:#000"></video>
         @else
         <audio src="{{ $short->media_url }}" controls preload="metadata" style="width:100%;max-width:320px"></audio>

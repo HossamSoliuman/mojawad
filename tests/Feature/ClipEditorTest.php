@@ -155,7 +155,7 @@ it('renders a clip end to end when ffmpeg succeeds', function () {
     });
 });
 
-it('renders the blurred cover from the qari image when the tilawa has no own cover', function () {
+it('renders the sharp cover from the qari image when the tilawa has no own cover', function () {
     Process::fake(function ($process) {
         $cmd = (array) $process->command;
         $output = end($cmd);
@@ -186,7 +186,9 @@ it('renders the blurred cover from the qari image when the tilawa has no own cov
     Process::assertRan(function ($process) {
         $cmd = implode(' ', array_map('strval', (array) $process->command));
 
-        return str_contains($cmd, 'boxblur') && ! str_contains($cmd, 'showwaves');
+        return str_contains($cmd, 'force_original_aspect_ratio=increase')
+            && ! str_contains($cmd, 'boxblur')
+            && ! str_contains($cmd, 'showwaves');
     });
 });
 

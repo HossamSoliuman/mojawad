@@ -244,16 +244,16 @@
       {{-- 1080×1920 stage scaled to fit --}}
       <div x-ref="stage" style="width:1080px;height:1920px;transform:scale(.2704);transform-origin:top left;position:relative;overflow:hidden">
 
-        {{-- Background layer (preview only — NOT captured): blurred cover image --}}
+        {{-- Background layer (preview only — NOT captured): sharp cover fills the frame.
+             The legibility gradient lives in the captured overlay below, so the rendered
+             .mp4 (cover via ffmpeg + overlay PNG) matches this preview exactly. --}}
         <div style="position:absolute;inset:0;background:#0b0f14">
-          <div x-show="selected" style="position:absolute;inset:0">
-            <img :src="selected?.cover" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:blur(40px) brightness(.5);transform:scale(1.2)" alt="">
-            <div style="position:absolute;inset:0;background:rgba(0,0,0,.5)"></div>
-          </div>
+          <img x-show="selected" :src="selected?.cover" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" alt="">
         </div>
 
-        {{-- Overlay layer (transparent — THIS is captured) --}}
-        <div x-ref="overlay" style="position:absolute;inset:0;background:transparent;display:flex;flex-direction:column;padding:120px 90px">
+        {{-- Overlay layer (THIS is captured). Holds the top/bottom legibility gradient
+             so it bakes into the PNG and the rendered video matches the preview. --}}
+        <div x-ref="overlay" style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.6) 0%,rgba(0,0,0,.12) 24%,rgba(0,0,0,.12) 55%,rgba(0,0,0,.9) 100%);display:flex;flex-direction:column;padding:120px 90px">
           <div :style="`flex:1;display:flex;flex-direction:column;justify-content:${posJustify};text-align:center`">
             <div x-text="subtitle" :style="`font-size:${fontPx}px;line-height:1.55;font-weight:700;color:#fff;text-shadow:0 2px 18px rgba(0,0,0,.6)`" dir="rtl"></div>
             <div x-show="selected" style="margin-top:60px">

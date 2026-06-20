@@ -10,11 +10,11 @@
     <button class="shorts-close" @click.stop="close()" aria-label="{{ __('Close') }}"><i class="fas fa-xmark"></i></button>
 
     <video x-ref="video" class="shorts-media" x-show="current && current.type === 'video'"
-      :src="current ? current.src : ''" :poster="current ? current.poster : ''" playsinline loop></video>
+      :src="current ? current.src : ''" :poster="current ? current.poster : ''" playsinline @ended="onEnded()"></video>
 
     <div class="shorts-audio" x-show="current && current.type === 'audio'"
       :style="current && current.poster ? `background-image:url('${current.poster}')` : ''">
-      <audio x-ref="audio" :src="current ? current.src : ''" loop></audio>
+      <audio x-ref="audio" :src="current ? current.src : ''" @ended="onEnded()"></audio>
       <div class="shorts-audio-eq" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
     </div>
 

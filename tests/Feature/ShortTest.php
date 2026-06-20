@@ -1,11 +1,20 @@
 <?php
 
+use App\Jobs\ImportTiktokShort;
+use App\Models\Qari;
 use App\Models\Short;
 use App\Models\TmpUpload;
 use App\Models\User;
+use App\Services\TiktokImportService;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
+
+const TIKTOK_URL = 'https://www.tiktok.com/@quran/video/1234567890123456789';
+const TIKTOK_URL_2 = 'https://vm.tiktok.com/ZMabcdef1/';
 
 beforeEach(function () {
     foreach (['admin', 'creator', 'reviewer', 'user'] as $role) {
@@ -50,6 +59,7 @@ it('creates a video short from a tmp upload', function () {
 
     $this->actingAs($creator)
         ->post(route('admin.shorts.store'), [
+            'source' => 'upload',
             'title_ar' => 'مقطع تجريبي',
             'title_en' => 'Test short',
             'type' => 'video',
@@ -68,11 +78,187 @@ it('creates a video short from a tmp upload', function () {
     expect(TmpUpload::find($tmp->id))->toBeNull();
 });
 
+it('queues a tiktok import linked to a qari and creates a pending short', function () {
+    Bus::fake();
+    $creator = User::factory()->create()->assignRole('creator');
+    $qari = Qari::factory()->create();
+
+    $this->actingAs($creator)
+        ->post(route('admin.shorts.store'), [
+            'source' => 'tiktok',
+            'qari_id' => $qari->id,
+            'urls' => TIKTOK_URL,
+            'status' => 'active',
+        ])
+        ->assertRedirect(route('admin.shorts.index'));
+
+    $short = Short::first();
+    expect($short)->not->toBeNull()
+        ->and($short->type)->toBe('video')
+        ->and($short->media_path)->toBeNull()
+        ->and($short->import_status)->toBe('pending')
+        ->and($short->qari_id)->toBe($qari->id)
+        ->and($short->source_url)->toBe(TIKTOK_URL)
+        ->and($short->title_ar)->toBe($qari->name);
+
+    Bus::assertDispatched(ImportTiktokShort::class, fn ($job) => $job->shortId === $short->id);
+});
+
+it('imports many tiktok urls as separate pending shorts linked to the qari', function () {
+    Bus::fake();
+    $creator = User::factory()->create()->assignRole('creator');
+    $qari = Qari::factory()->create();
+
+    $this->actingAs($creator)
+        ->post(route('admin.shorts.store'), [
+            'source' => 'tiktok',
+            'qari_id' => $qari->id,
+            'urls' => TIKTOK_URL."\n".TIKTOK_URL_2."\n".TIKTOK_URL, // duplicate is de-duped
+            'status' => 'active',
+        ])
+        ->assertRedirect(route('admin.shorts.index'));
+
+    $shorts = Short::all();
+    expect($shorts)->toHaveCount(2)
+        ->and($shorts->pluck('source_url')->all())->toEqualCanonicalizing([TIKTOK_URL, TIKTOK_URL_2])
+        ->and($shorts->every(fn (Short $s) => $s->qari_id === $qari->id))->toBeTrue();
+
+    Bus::assertDispatchedTimes(ImportTiktokShort::class, 2);
+});
+
+it('imports tiktok urls from an uploaded link list', function () {
+    Bus::fake();
+    $creator = User::factory()->create()->assignRole('creator');
+    $qari = Qari::factory()->create();
+
+    $file = UploadedFile::fake()->createWithContent('links.txt', TIKTOK_URL."\n".TIKTOK_URL_2."\n");
+
+    $this->actingAs($creator)
+        ->post(route('admin.shorts.store'), [
+            'source' => 'tiktok',
+            'qari_id' => $qari->id,
+            'urls' => '',
+            'urls_file' => $file,
+            'status' => 'active',
+        ])
+        ->assertRedirect(route('admin.shorts.index'));
+
+    expect(Short::count())->toBe(2);
+    Bus::assertDispatchedTimes(ImportTiktokShort::class, 2);
+});
+
+it('rejects an invalid tiktok url', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+    $qari = Qari::factory()->create();
+
+    $this->actingAs($creator)
+        ->post(route('admin.shorts.store'), [
+            'source' => 'tiktok',
+            'qari_id' => $qari->id,
+            'urls' => 'https://example.com/not-a-tiktok',
+            'status' => 'active',
+        ])
+        ->assertSessionHasErrors('urls');
+
+    expect(Short::count())->toBe(0);
+});
+
+it('requires a qari when importing from tiktok', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+
+    $this->actingAs($creator)
+        ->post(route('admin.shorts.store'), [
+            'source' => 'tiktok',
+            'urls' => TIKTOK_URL,
+            'status' => 'active',
+        ])
+        ->assertSessionHasErrors('qari_id');
+
+    expect(Short::count())->toBe(0);
+});
+
+it('downloads the tiktok video and titles the short from the caption', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+    $short = Short::factory()->create([
+        'created_by' => $creator->id,
+        'media_path' => null,
+        'title_ar' => 'اسم القارئ',
+        'source_url' => TIKTOK_URL,
+        'import_status' => 'pending',
+    ]);
+
+    $this->mock(TiktokImportService::class)
+        ->shouldReceive('download')
+        ->once()
+        ->with(TIKTOK_URL)
+        ->andReturn(['path' => 'shorts/downloaded.mp4', 'title' => 'سورة الرحمن']);
+
+    (new ImportTiktokShort($short->id))->handle(app(TiktokImportService::class));
+
+    $short->refresh();
+    expect($short->import_status)->toBe('completed')
+        ->and($short->media_path)->toBe('shorts/downloaded.mp4')
+        ->and($short->title_ar)->toBe('سورة الرحمن');
+});
+
+it('keeps the provisional title when tiktok has no caption', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+    $short = Short::factory()->create([
+        'created_by' => $creator->id,
+        'media_path' => null,
+        'title_ar' => 'اسم القارئ',
+        'source_url' => TIKTOK_URL,
+        'import_status' => 'pending',
+    ]);
+
+    $this->mock(TiktokImportService::class)
+        ->shouldReceive('download')
+        ->once()
+        ->andReturn(['path' => 'shorts/downloaded.mp4', 'title' => null]);
+
+    (new ImportTiktokShort($short->id))->handle(app(TiktokImportService::class));
+
+    $short->refresh();
+    expect($short->media_path)->toBe('shorts/downloaded.mp4')
+        ->and($short->title_ar)->toBe('اسم القارئ');
+});
+
+it('marks the short failed when the tiktok download throws', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+    $short = Short::factory()->create([
+        'created_by' => $creator->id,
+        'media_path' => null,
+        'source_url' => TIKTOK_URL,
+        'import_status' => 'pending',
+    ]);
+
+    (new ImportTiktokShort($short->id))->failed(new RuntimeException('yt-dlp exploded'));
+
+    $short->refresh();
+    expect($short->import_status)->toBe('failed')
+        ->and($short->import_error)->toContain('yt-dlp exploded');
+});
+
+it('hides still-importing tiktok shorts from the home page', function () {
+    Cache::forget('active_hero_shorts');
+    $admin = User::factory()->create()->assignRole('admin');
+    $pending = Short::factory()->create([
+        'created_by' => $admin->id,
+        'status' => 'active',
+        'media_path' => null,
+        'import_status' => 'pending',
+    ]);
+
+    $this->get(route('home'))->assertOk()
+        ->assertViewHas('hero_shorts', fn (array $shorts) => ! in_array($pending->id, array_column($shorts, 'id'), true));
+});
+
 it('requires a media file when creating a short', function () {
     $creator = User::factory()->create()->assignRole('creator');
 
     $this->actingAs($creator)
         ->post(route('admin.shorts.store'), [
+            'source' => 'upload',
             'title_ar' => 'مقطع',
             'type' => 'video',
             'status' => 'active',

@@ -16,7 +16,7 @@ class HomeController extends Controller
         $hero_shorts = Cache::remember(
             'active_hero_shorts',
             600,
-            fn () => Short::active()->orderBy('sort_order')->latest()->get()
+            fn () => Short::active()->whereNotNull('media_path')->orderBy('sort_order')->latest()->get()
                 ->map(fn (Short $short) => $short->heroPayload())->values()->all()
         );
 

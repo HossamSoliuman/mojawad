@@ -84,8 +84,10 @@ class RenderVideoClip implements ShouldQueue
     }
 
     /**
-     * Compose the blurred cover background (or a solid dark fallback) with the
-     * browser-captured overlay PNG and the trimmed, loudness-normalised audio.
+     * Compose the sharp cover background, scaled to fill the frame (or a solid
+     * dark fallback when no cover resolves), with the browser-captured overlay
+     * PNG — which carries the legibility gradient and text — and the trimmed,
+     * loudness-normalised audio.
      *
      * @return list<string>
      */
@@ -125,9 +127,7 @@ class RenderVideoClip implements ShouldQueue
         $filters = [];
 
         if ($useCover) {
-            $filters[] = "[{$coverIndex}:v]scale={$width}:{$height}:force_original_aspect_ratio=increase,crop={$width}:{$height},boxblur=24:2,format=rgba[cover]";
-            $filters[] = "color=c=black@0.5:s={$width}x{$height}:d={$duration}[scrim]";
-            $filters[] = '[cover][scrim]overlay=0:0[bg]';
+            $filters[] = "[{$coverIndex}:v]scale={$width}:{$height}:force_original_aspect_ratio=increase,crop={$width}:{$height},format=rgba[bg]";
         } else {
             $filters[] = "color=c=0x0b0f14:s={$width}x{$height}:d={$duration}[bg]";
         }

@@ -177,28 +177,6 @@
         {{-- Page-level action buttons injected by child views --}}
         @yield('topbar-actions')
 
-        {{-- User avatar pill --}}
-        <div x-data="{ open: false }" style="position:relative">
-          <button class="user-pill" @click="open=!open" @click.away="open=false" style="gap:.5rem;padding:.28rem .6rem .28rem .28rem">
-            <img src="{{ auth()->user()->avatar_url }}" class="avatar" width="26" height="26" alt="" style="border-radius:50%;border:1px solid rgba(0,0,0,.1)">
-            <span class="user-pill-name" style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ auth()->user()->name }}">
-              {{ auth()->user()->name }}
-            </span>
-            <i class="fas fa-chevron-down" style="font-size:.6rem;opacity:.5"></i>
-          </button>
-          <div class="dropdown" x-show="open" x-transition style="min-width:160px;inset-inline-end:0">
-            <div class="ni-user-hd">{{ auth()->user()->email }}</div>
-            <a href="{{ route('home') }}" target="_blank">
-              <i class="fas fa-arrow-up-right-from-square"></i> {{ __('View Site') }}
-            </a>
-            <form method="POST" action="{{ route('logout') }}">@csrf
-              <button type="button" onclick="this.closest('form').submit()" style="width:100%">
-                <i class="fas fa-arrow-right-from-bracket flip-rtl"></i> {{ __('Logout') }}
-              </button>
-            </form>
-          </div>
-        </div>
-
       </div>
     </div>
 

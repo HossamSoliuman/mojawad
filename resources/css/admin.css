@@ -5,6 +5,8 @@
    var() references inside admin views are also re-themed.
    ============================================================ */
 
+[x-cloak] { display: none !important; }
+
 body.adm {
   /* Re-map the site's colour tokens to a light corporate palette */
   --bg:          #f1f5f9;
