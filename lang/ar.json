@@ -352,6 +352,8 @@
     "Tap to unmute": "اضغط لتشغيل الصوت",
     "Mute": "كتم الصوت",
     "Unmute": "تشغيل الصوت",
+    "More": "المزيد",
+    "Controls": "أدوات التحكم",
     "Studio": "الاستوديو",
     "Import from YouTube": "الاستيراد من يوتيوب",
     "Paste YouTube links and pick a qari — we download the audio and create a tilawa for each in the background.": "الصق روابط يوتيوب واختر القارئ — نقوم بتنزيل الصوت وإنشاء تلاوة لكل رابط في الخلفية.",
@@ -412,5 +414,18 @@
     "Clip queued for rendering.": "تم جدولة المقطع للإنشاء.",
     "Render re-queued.": "تمت إعادة جدولة الإنشاء.",
     "TikTok link saved.": "تم حفظ رابط تيك توك.",
-    "Clip removed.": "تمت إزالة المقطع."
+    "Clip removed.": "تمت إزالة المقطع.",
+    "Welcome Back": "مرحباً بعودتك",
+    "Sign in to your Mojawad account": "سجّل الدخول إلى حسابك في مجوّد",
+    "Sign In": "تسجيل الدخول",
+    "Sign in": "تسجيل الدخول",
+    "Remember me": "تذكّرني",
+    "No account?": "ليس لديك حساب؟",
+    "Create one": "أنشئ حساباً",
+    "Join the Mojawad community": "انضم إلى مجتمع مجوّد",
+    "Your Name": "اسمك",
+    "Confirm Password": "تأكيد كلمة المرور",
+    "Min. 8 characters": "8 أحرف على الأقل",
+    "Repeat password": "أعد كتابة كلمة المرور",
+    "Already have an account?": "لديك حساب بالفعل؟"
 }

@@ -183,14 +183,14 @@
     <div class="player-bar hidden z1" id="playerBar" x-data="audioPlayer()">
         <audio id="audioEl" preload="metadata"></audio>
         <div class="p-info">
-            <div class="p-info-tap" @click="expandPlayer()">
+            <div class="p-info-tap">
                 <img class="p-cover" id="pCover" src="" alt="">
                 <div style="min-width:0">
                     <div class="p-title" id="pTitle"></div>
                     <div class="p-qari" id="pQari"></div>
                 </div>
             </div>
-            <button class="p-btn p-like" :class="liked ? 'liked' : ''" @click="toggleLike()" x-show="currentId"
+            <button class="p-btn p-like" :class="liked ? 'liked' : ''" @click.stop="toggleLike()" x-show="currentId"
                 :title="liked ? '{{ __('Liked') }}' : '{{ __('Like') }}'" :aria-pressed="liked">
                 <i :class="(liked ? 'fas' : 'far') + ' fa-heart' + (likePop ? ' like-pop' : '')"></i>
             </button>
@@ -202,25 +202,29 @@
                 <i class="fas fa-repeat"></i><sup x-show="repeat === 'one'" style="font-size:.55rem">1</sup>
             </button>
             <button class="p-btn" @click="prev()" :disabled="!hasPrev() && cur <= 3"
-                title="{{ __('Previous') }}" aria-label="{{ __('Previous') }}"><i class="fas fa-backward-step"></i></button>
-            <button class="p-btn" @click="seek(-10)" title="–10s" aria-label="{{ __('Rewind 10 seconds') }}"><i class="fas fa-rotate-left"></i></button>
-            <button class="p-btn play" @click="toggle()" :title="playing ? '{{ __('Pause') }}' : '{{ __('Play') }}'"
+                title="{{ __('Previous') }}" aria-label="{{ __('Previous') }}"><i class="fas fa-backward-step flip-rtl"></i></button>
+            <button class="p-btn play" @click.stop="toggle()" :title="playing ? '{{ __('Pause') }}' : '{{ __('Play') }}'"
                 :aria-label="playing ? '{{ __('Pause') }}' : '{{ __('Play') }}'">
                 <i class="fas" :class="playing ? 'fa-pause' : 'fa-play'"></i>
             </button>
-            <button class="p-btn" @click="seek(10)" title="+10s" aria-label="{{ __('Forward 10 seconds') }}"><i class="fas fa-rotate-right"></i></button>
             <button class="p-btn" @click="next()" :disabled="!hasNext()"
-                title="{{ __('Next') }}" aria-label="{{ __('Next') }}"><i class="fas fa-forward-step"></i></button>
+                title="{{ __('Next') }}" aria-label="{{ __('Next') }}"><i class="fas fa-forward-step flip-rtl"></i></button>
+            <button class="p-btn p-more" :class="showMore && 'liked'" @click.stop="toggleMore()"
+                title="{{ __('More') }}" aria-label="{{ __('More') }}" :aria-expanded="showMore.toString()">
+                <i class="fas fa-bars"></i>
+            </button>
         </div>
         <div class="p-progress">
             <span class="p-time" x-text="fmt(cur)">0:00</span>
-            <div class="p-bar" @click="scrub($event)" tabindex="0" role="slider"
+            <div class="p-bar" @pointerdown.prevent="startScrub($event)" @pointermove="scrubMove($event)"
+                @pointerup="endScrub($event)" @pointercancel="endScrub($event)" :class="scrubbing && 'dragging'"
+                tabindex="0" role="slider"
                 aria-label="{{ __('Seek') }}" :aria-valuemin="0" :aria-valuemax="Math.floor(dur)"
                 :aria-valuenow="Math.floor(cur)" :aria-valuetext="fmt(cur) + ' / ' + fmt(dur)"
                 @keydown.arrow-right.prevent="seek(document.documentElement.dir === 'rtl' ? -5 : 5)"
                 @keydown.arrow-left.prevent="seek(document.documentElement.dir === 'rtl' ? 5 : -5)">
                 <div class="p-buffered" :style="'width:' + buffered + '%'"></div>
-                <div class="p-fill" :style="'width:' + pct + '%'"></div>
+                <div class="p-fill" :style="'width:' + pct + '%'"><span class="p-thumb"></span></div>
             </div>
             <span class="p-time" x-text="fmt(dur)">0:00</span>
         </div>
@@ -231,8 +235,6 @@
             <button class="p-btn p-sleep-btn" :class="sleepActive && 'liked'" @click="toggleSleep()"
                 :title="sleepActive ? '{{ __('Sleep timer') }}: ' + (sleepEndOfTrack ? '{{ __('End of track') }}' : fmt(sleepRemaining)) : '{{ __('Sleep timer') }}'"
                 :aria-pressed="sleepActive" aria-label="{{ __('Sleep timer') }}"><i class="fas fa-moon"></i></button>
-            <button class="p-btn p-rate" @click="cycleRate()" title="{{ __('Playback speed') }}"
-                x-text="rate + '×'">1×</button>
             <a href="#" class="p-btn" id="pDownload" title="{{ __('Download') }}"
                 style="display:none; color:var(--text2); text-decoration:none;"><i class="fas fa-download"></i></a>
             <button class="p-btn" @click="muted=!muted">
@@ -240,6 +242,42 @@
                     :class="muted ? 'fa-volume-xmark' : (vol > 0.5 ? 'fa-volume-high' : 'fa-volume-low')"></i>
             </button>
             <input type="range" class="vol-slider" min="0" max="1" step="0.02" x-model.number="vol">
+        </div>
+
+        {{-- More controls (mobile) — revealed by the ☰ button --}}
+        <div class="player-panel more-panel" x-show="showMore" x-transition.opacity
+            @click.outside="showMore = false" style="display:none" role="dialog"
+            aria-label="{{ __('Controls') }}">
+            <div class="player-panel-hd">
+                <span><i class="fas fa-sliders"></i> {{ __('Controls') }}</span>
+                <button class="p-btn" @click="showMore = false" aria-label="{{ __('Close') }}">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </div>
+            <div class="player-panel-body more-body">
+                <div class="more-transport">
+                    <button class="p-btn" :class="repeat !== 'off' && 'liked'" @click="cycleRepeat()"
+                        :title="'{{ __('Repeat') }}: ' + repeat" :aria-label="'{{ __('Repeat') }}: ' + repeat"
+                        :aria-pressed="(repeat !== 'off').toString()">
+                        <i class="fas fa-repeat"></i><sup x-show="repeat === 'one'" style="font-size:.55rem">1</sup>
+                    </button>
+                    <button class="p-btn" @click="prev()" :disabled="!hasPrev() && cur <= 3"
+                        aria-label="{{ __('Previous') }}"><i class="fas fa-backward-step flip-rtl"></i></button>
+                    <button class="p-btn" @click="next()" :disabled="!hasNext()"
+                        aria-label="{{ __('Next') }}"><i class="fas fa-forward-step flip-rtl"></i></button>
+                    <button class="p-btn" :class="showQueue && 'liked'" @click="toggleQueue()"
+                        x-show="queue.length > 1" aria-label="{{ __('Up next') }}"><i class="fas fa-list-ol"></i></button>
+                    <button class="p-btn" :class="sleepActive && 'liked'" @click="toggleSleep()"
+                        aria-label="{{ __('Sleep timer') }}"><i class="fas fa-moon"></i></button>
+                </div>
+                <div class="more-vol">
+                    <button class="p-btn" @click="muted = !muted" aria-label="{{ __('Mute') }}">
+                        <i class="fas"
+                            :class="muted ? 'fa-volume-xmark' : (vol > 0.5 ? 'fa-volume-high' : 'fa-volume-low')"></i>
+                    </button>
+                    <input type="range" class="vol-slider" min="0" max="1" step="0.02" x-model.number="vol">
+                </div>
+            </div>
         </div>
 
         {{-- Up next / queue panel --}}
@@ -323,10 +361,12 @@
                 </div>
 
                 <div class="np-progress">
-                    <div class="np-bar" @click="scrub($event)" tabindex="0" role="slider"
+                    <div class="np-bar" @pointerdown.prevent="startScrub($event)" @pointermove="scrubMove($event)"
+                        @pointerup="endScrub($event)" @pointercancel="endScrub($event)" :class="scrubbing && 'dragging'"
+                        tabindex="0" role="slider"
                         aria-label="{{ __('Seek') }}" :aria-valuenow="Math.floor(cur)" :aria-valuemax="Math.floor(dur)">
                         <div class="p-buffered np-buffered" :style="'width:' + buffered + '%'"></div>
-                        <div class="np-fill" :style="'width:' + pct + '%'"></div>
+                        <div class="np-fill" :style="'width:' + pct + '%'"><span class="p-thumb np-thumb"></span></div>
                     </div>
                     <div class="np-times">
                         <span x-text="fmt(cur)">0:00</span>
@@ -340,15 +380,13 @@
                         <i class="fas fa-repeat"></i><sup x-show="repeat === 'one'" style="font-size:.55rem">1</sup>
                     </button>
                     <button class="p-btn" @click="prev()" :disabled="!hasPrev() && cur <= 3"
-                        aria-label="{{ __('Previous') }}"><i class="fas fa-backward-step"></i></button>
+                        aria-label="{{ __('Previous') }}"><i class="fas fa-backward-step flip-rtl"></i></button>
                     <button class="p-btn np-play" @click="toggle()"
                         :aria-label="playing ? '{{ __('Pause') }}' : '{{ __('Play') }}'">
                         <i class="fas" :class="playing ? 'fa-pause' : 'fa-play'"></i>
                     </button>
                     <button class="p-btn" @click="next()" :disabled="!hasNext()"
-                        aria-label="{{ __('Next') }}"><i class="fas fa-forward-step"></i></button>
-                    <button class="p-btn p-rate" @click="cycleRate()" x-text="rate + '×'"
-                        aria-label="{{ __('Playback speed') }}">1×</button>
+                        aria-label="{{ __('Next') }}"><i class="fas fa-forward-step flip-rtl"></i></button>
                 </div>
 
                 <div class="np-actions">
@@ -953,6 +991,8 @@
                 dur: 0,
                 pct: 0,
                 buffered: 0,
+                scrubbing: false,
+                _scrubEl: null,
                 vol: 1,
                 muted: false,
                 rate: 1,
@@ -971,6 +1011,7 @@
                 expanded: false,
                 showQueue: false,
                 showSleep: false,
+                showMore: false,
                 sleepMinutes: 0,
                 sleepEndOfTrack: false,
                 sleepRemaining: 0,
@@ -1302,12 +1343,39 @@
                     if (this.audio) this.audio.currentTime = Math.max(0, Math.min(this.audio
                         .currentTime + s, this.audio.duration || 0))
                 },
-                scrub(e) {
+                startScrub(e) {
                     if (!this.dur) return;
-                    const r = e.currentTarget.getBoundingClientRect();
+                    this.scrubbing = true;
+                    this._scrubEl = e.currentTarget;
+                    try {
+                        this._scrubEl.setPointerCapture(e.pointerId);
+                    } catch (_) {}
+                    this.scrubTo(e);
+                },
+                scrubMove(e) {
+                    if (this.scrubbing) {
+                        this.scrubTo(e);
+                    }
+                },
+                endScrub(e) {
+                    if (!this.scrubbing) return;
+                    this.scrubbing = false;
+                    try {
+                        this._scrubEl.releasePointerCapture(e.pointerId);
+                    } catch (_) {}
+                },
+                scrubTo(e) {
+                    const el = this._scrubEl;
+                    if (!el || !this.dur) return;
+                    const r = el.getBoundingClientRect();
                     let ratio = (e.clientX - r.left) / r.width;
-                    if (document.documentElement.dir === 'rtl') ratio = 1 - ratio;
-                    this.audio.currentTime = Math.max(0, Math.min(1, ratio)) * this.dur;
+                    if (document.documentElement.dir === 'rtl') {
+                        ratio = 1 - ratio;
+                    }
+                    ratio = Math.max(0, Math.min(1, ratio));
+                    this.cur = ratio * this.dur;
+                    this.pct = ratio * 100;
+                    this.audio.currentTime = this.cur;
                 },
                 async fetchLikeStatus() {
                     this.liked = false;
@@ -1331,10 +1399,21 @@
                     this.expanded = false;
                     document.body.style.overflow = '';
                 },
+                // ── More-controls panel (mobile) ──
+                toggleMore() {
+                    this.showMore = !this.showMore;
+                    if (this.showMore) {
+                        this.showQueue = false;
+                        this.showSleep = false;
+                    }
+                },
                 // ── Up-next queue panel ──
                 toggleQueue() {
                     this.showQueue = !this.showQueue;
-                    if (this.showQueue) this.showSleep = false;
+                    if (this.showQueue) {
+                        this.showSleep = false;
+                        this.showMore = false;
+                    }
                 },
                 jumpTo(i) {
                     if (this.queue[i]) this.load(this.queue[i], this.queue, i);
@@ -1348,7 +1427,10 @@
                 // ── Sleep timer ──
                 toggleSleep() {
                     this.showSleep = !this.showSleep;
-                    if (this.showSleep) this.showQueue = false;
+                    if (this.showSleep) {
+                        this.showQueue = false;
+                        this.showMore = false;
+                    }
                 },
                 get sleepActive() {
                     return this.sleepMinutes > 0 || this.sleepEndOfTrack;

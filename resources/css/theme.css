@@ -1174,14 +1174,57 @@ textarea.form-control {
   background: var(--surface3);
   border-radius: 2px;
   cursor: pointer;
-  position: relative
+  position: relative;
+  touch-action: none;
+  transition: height .15s
 }
 
 .p-fill {
   height: 100%;
   background: linear-gradient(to right, var(--gold-dark), var(--gold-light));
   border-radius: 2px;
-  pointer-events: none
+  pointer-events: none;
+  position: relative
+}
+
+/* Draggable handle (Spotify-style) at the end of the fill. */
+.p-thumb {
+  position: absolute;
+  top: 50%;
+  inset-inline-end: 0;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, .55);
+  transform: translate(50%, -50%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .15s, width .12s, height .12s
+}
+
+[dir="rtl"] .p-thumb {
+  transform: translate(-50%, -50%)
+}
+
+/* Reveal the handle on hover/focus (desktop) and while dragging. */
+.p-bar:hover .p-thumb,
+.p-bar:focus-visible .p-thumb,
+.np-bar .p-thumb,
+.p-bar.dragging .p-thumb,
+.np-bar.dragging .p-thumb {
+  opacity: 1
+}
+
+.p-bar.dragging,
+.np-bar.dragging {
+  height: 7px
+}
+
+.p-bar.dragging .p-thumb,
+.np-bar.dragging .p-thumb {
+  width: 16px;
+  height: 16px
 }
 
 .p-vol {
@@ -1210,7 +1253,19 @@ textarea.form-control {
   cursor: pointer
 }
 
+/* The ☰ "more controls" trigger only appears on mobile. */
+.p-more {
+  display: none;
+}
+
 @media(max-width:768px) {
+  .player-bar {
+    flex-wrap: wrap;
+    align-content: center;
+    gap: .15rem .4rem;
+    padding: 0 .85rem;
+  }
+
   .p-vol {
     display: none
   }
@@ -1219,9 +1274,75 @@ textarea.form-control {
     flex: 1
   }
 
+  /* Progress gets its own full-width row above the transport buttons, so it
+     stays fully scrubbable without overlapping the controls. */
   .p-progress {
-    flex: 2
+    order: -1;
+    flex: 0 0 100%;
+    width: 100%;
+    gap: 0;
+    padding: .4rem 0 .15rem;
   }
+
+  .p-progress .p-time {
+    display: none;
+  }
+
+  .p-progress .p-bar {
+    height: 5px;
+    border-radius: 3px;
+  }
+
+  /* No hover on touch — keep the drag handle always visible. */
+  .p-progress .p-thumb {
+    opacity: 1;
+  }
+
+  /* Bar keeps only play/pause + the ☰ menu; the rest move into its panel. */
+  .p-controls {
+    flex: 0 0 auto;
+    gap: .15rem;
+  }
+
+  .p-controls > .p-btn:not(.play):not(.p-more) {
+    display: none;
+  }
+
+  .p-more {
+    display: flex;
+  }
+}
+
+/* ── More-controls panel internals ────────────────────────────────── */
+.more-body {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+}
+
+.more-transport {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: .35rem .25rem;
+}
+
+.more-transport .p-btn {
+  width: 44px;
+  height: 44px;
+  font-size: 1.1rem;
+}
+
+.more-vol {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .25rem .6rem .4rem;
+}
+
+.more-vol .vol-slider {
+  flex: 1;
+  width: auto;
 }
 
 
@@ -3876,6 +3997,8 @@ textarea:focus-visible,
   border-radius: 3px;
   cursor: pointer;
   position: relative;
+  touch-action: none;
+  transition: height .15s;
 }
 
 .np-fill {
