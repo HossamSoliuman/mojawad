@@ -32,16 +32,13 @@
     <nav class="nav-island z1" x-data="navIsland()" :class="search && 'searching'" @click.outside="closeAll()"
         @open-global-search.window="openSearch()">
 
-        <a href="{{ route('home') }}" wire:navigate class="ni-brand" title="Mojawad">
+        <a href="{{ route('home') }}" wire:navigate
+            class="ni-brand {{ request()->routeIs('home') ? 'active' : '' }}" title="{{ __('Home') }}">
             <i class="fas fa-book-open-reader"></i>
             <span class="ni-brand-name">Mojawad</span>
         </a>
 
         <div class="ni-links">
-            <a href="{{ route('home') }}" wire:navigate
-                class="ni-link {{ request()->routeIs('home') ? 'active' : '' }}" title="{{ __('Home') }}">
-                <i class="fas fa-house"></i><span>{{ __('Home') }}</span>
-            </a>
             <a href="{{ route('qaris.index') }}" wire:navigate
                 class="ni-link {{ request()->routeIs('qaris.*') ? 'active' : '' }}" title="{{ __('Qaris') }}">
                 <i class="fas fa-microphone-lines"></i><span>{{ __('Qaris') }}</span>
@@ -49,10 +46,6 @@
             <a href="{{ route('likes') }}" wire:navigate
                 class="ni-link {{ request()->routeIs('likes') ? 'active' : '' }}" title="{{ __('Likes') }}">
                 <i class="fas fa-heart"></i><span>{{ __('Likes') }}</span>
-            </a>
-            <a href="{{ route('saved') }}" wire:navigate
-                class="ni-link {{ request()->routeIs('saved') ? 'active' : '' }}" title="{{ __('Saved') }}">
-                <i class="fas fa-bookmark"></i><span>{{ __('Saved') }}</span>
             </a>
         </div>
 
