@@ -72,18 +72,33 @@ class TiktokImportService
         }
 
         try {
-            $result = Process::timeout(config('youtube.download_timeout'))
-                ->run([
-                    config('youtube.ytdlp_path'),
-                    '--no-playlist',
-                    '--no-warnings',
-                    '--no-part',
-                    '--write-info-json',
-                    '--remux-video', 'mp4',
-                    '--ffmpeg-location', config('youtube.ffmpeg_path'),
-                    '-o', $workDir.'/video.%(ext)s',
-                    $url,
-                ]);
+            $args = [
+                config('youtube.ytdlp_path'),
+                '--no-playlist',
+                '--no-warnings',
+                '--no-part',
+                '--write-info-json',
+                '--retries', '5',
+                '--fragment-retries', '5',
+                '--remux-video', 'mp4',
+                '--ffmpeg-location', config('youtube.ffmpeg_path'),
+            ];
+
+            $cookiesFile = config('youtube.tiktok_cookies_file');
+            $cookiesBrowser = config('youtube.tiktok_cookies_browser');
+            if ($cookiesFile && is_file($cookiesFile)) {
+                $args[] = '--cookies';
+                $args[] = $cookiesFile;
+            } elseif ($cookiesBrowser) {
+                $args[] = '--cookies-from-browser';
+                $args[] = $cookiesBrowser;
+            }
+
+            $args[] = '-o';
+            $args[] = $workDir.'/video.%(ext)s';
+            $args[] = $url;
+
+            $result = Process::timeout(config('youtube.download_timeout'))->run($args);
 
             if (! $result->successful()) {
                 throw new RuntimeException('yt-dlp download failed: '.trim($result->errorOutput() ?: $result->output()));

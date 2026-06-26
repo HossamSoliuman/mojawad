@@ -89,6 +89,25 @@
       @error('poster_tmp')<span class="form-error">{{ $message }}</span>@enderror
     </div>
 
+    <div class="form-group">
+      <label class="form-label"><i class="fas fa-calendar-check"></i> {{ __('Feature to everyone (schedule)') }}</label>
+      <div class="admin-form-grid">
+        <div>
+          <label class="form-label" style="font-size:.8rem">{{ __('From') }}</label>
+          <input type="datetime-local" name="pinned_starts_at" class="form-control"
+            value="{{ old('pinned_starts_at', $short->pinned_starts_at?->format('Y-m-d\TH:i')) }}">
+          @error('pinned_starts_at')<span class="form-error">{{ $message }}</span>@enderror
+        </div>
+        <div>
+          <label class="form-label" style="font-size:.8rem">{{ __('Until') }}</label>
+          <input type="datetime-local" name="pinned_ends_at" class="form-control"
+            value="{{ old('pinned_ends_at', $short->pinned_ends_at?->format('Y-m-d\TH:i')) }}">
+          @error('pinned_ends_at')<span class="form-error">{{ $message }}</span>@enderror
+        </div>
+      </div>
+      <span class="form-hint">{{ __('While this window is active, every visitor sees only this short. Leave blank for normal rotation.') }}</span>
+    </div>
+
     <div style="display:flex;gap:.65rem;margin-top:1.4rem;flex-wrap:wrap">
       <button type="submit" class="btn btn-primary"><i class="fas fa-floppy-disk"></i> {{ __('Update Short') }}</button>
       <a href="{{ route('admin.shorts.index') }}" class="btn btn-ghost"><i class="fas fa-xmark"></i> {{ __('Cancel') }}</a>

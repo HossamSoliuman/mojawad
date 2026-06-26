@@ -4,21 +4,20 @@ namespace App\Http\Controllers;
 
 use App\Models\Collection;
 use App\Models\Qari;
-use App\Models\Short;
 use App\Models\Tilawa;
 use App\Models\WatchHistory;
+use App\Services\ShortSelector;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
 class HomeController extends Controller
 {
-    public function __invoke()
+    public function __construct(private ShortSelector $selector) {}
+
+    public function __invoke(Request $request)
     {
-        $hero_shorts = Cache::remember(
-            'active_hero_shorts',
-            600,
-            fn () => Short::active()->whereNotNull('media_path')->orderBy('sort_order')->latest()->get()
-                ->map(fn (Short $short) => $short->heroPayload())->values()->all()
-        );
+        $viewerKey = $this->selector->viewerKey($request);
+        $short = $this->selector->forViewer($viewerKey);
 
         $data = Cache::remember('homepage_data', 600, fn () => [
             'featured_tilawat' => Tilawa::with('qari')->where('status', 'active')->where('is_featured', true)->latest()->take(6)->get(),
@@ -37,14 +36,11 @@ class HomeController extends Controller
 
         return view('pages.home', [
             ...$data,
-            'hero_shorts' => $hero_shorts,
+            'hero_short' => $short?->heroPayload(),
             'followed_new' => $this->newFromFollowed(),
         ]);
     }
 
-    /**
-     * Latest tilawat from reciters the signed-in user follows.
-     */
     private function newFromFollowed(): \Illuminate\Support\Collection
     {
         if (! auth()->check()) {
@@ -65,9 +61,6 @@ class HomeController extends Controller
             ->get();
     }
 
-    /**
-     * Most-listened tilawat over the last 7 days, ordered by play activity.
-     */
     private function trendingTilawat(): \Illuminate\Support\Collection
     {
         $ranked = WatchHistory::query()

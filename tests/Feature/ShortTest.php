@@ -8,7 +8,6 @@ use App\Models\User;
 use App\Services\TiktokImportService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Bus;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
@@ -240,9 +239,8 @@ it('marks the short failed when the tiktok download throws', function () {
 });
 
 it('hides still-importing tiktok shorts from the home page', function () {
-    Cache::forget('active_hero_shorts');
     $admin = User::factory()->create()->assignRole('admin');
-    $pending = Short::factory()->create([
+    Short::factory()->create([
         'created_by' => $admin->id,
         'status' => 'active',
         'media_path' => null,
@@ -250,7 +248,7 @@ it('hides still-importing tiktok shorts from the home page', function () {
     ]);
 
     $this->get(route('home'))->assertOk()
-        ->assertViewHas('hero_shorts', fn (array $shorts) => ! in_array($pending->id, array_column($shorts, 'id'), true));
+        ->assertViewHas('hero_short', null);
 });
 
 it('requires a media file when creating a short', function () {
@@ -287,16 +285,11 @@ it('deletes a short and its media', function () {
     Storage::disk('public')->assertMissing('shorts/clip.mp4');
 });
 
-it('exposes active shorts to the home page and hides inactive ones', function () {
+it('exposes an active short to the home page and hides inactive ones', function () {
     $admin = User::factory()->create()->assignRole('admin');
     $active = Short::factory()->create(['created_by' => $admin->id, 'status' => 'active', 'title_ar' => 'مقطع ظاهر']);
-    $hidden = Short::factory()->create(['created_by' => $admin->id, 'status' => 'inactive', 'title_ar' => 'مقطع مخفي']);
+    Short::factory()->create(['created_by' => $admin->id, 'status' => 'inactive', 'title_ar' => 'مقطع مخفي']);
 
-    $response = $this->get(route('home'))->assertOk();
-
-    $response->assertViewHas('hero_shorts', function (array $shorts) use ($active, $hidden) {
-        $ids = array_column($shorts, 'id');
-
-        return in_array($active->id, $ids, true) && ! in_array($hidden->id, $ids, true);
-    });
+    $this->get(route('home'))->assertOk()
+        ->assertViewHas('hero_short', fn ($payload) => $payload !== null && $payload['id'] === $active->id);
 });

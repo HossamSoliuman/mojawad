@@ -20,16 +20,18 @@ class StoreShortRequest extends FormRequest
     {
         return [
             'source' => 'required|in:upload,tiktok',
-            'title_ar' => 'required_if:source,upload|nullable|string|max:255',
+            'title_ar' => 'nullable|string|max:255',
             'title_en' => 'nullable|string|max:255',
             'type' => 'required_if:source,upload|in:audio,video',
             'media_tmp' => 'required_if:source,upload|nullable|string|exists:tmp_uploads,id',
             'poster_tmp' => 'nullable|string|exists:tmp_uploads,id',
-            'qari_id' => 'required_if:source,tiktok|nullable|integer|exists:qaris,id',
+            'qari_id' => 'required_if:source,tiktok|integer|exists:qaris,id',
             'urls' => 'nullable|string',
             'urls_file' => 'nullable|file|mimes:txt,csv|max:1024',
             'sort_order' => 'nullable|integer|min:0',
             'status' => 'required|in:active,inactive',
+            'pinned_starts_at' => 'nullable|date',
+            'pinned_ends_at' => 'nullable|date|after_or_equal:pinned_starts_at',
         ];
     }
 

@@ -59,6 +59,11 @@
               @if($s->qari)
               <div style="font-size:.76rem;color:var(--text2)"><i class="fas fa-microphone-lines"></i> {{ $s->qari->name }}</div>
               @endif
+              @if($s->isPinnedNow())
+              <span class="badge badge-green" style="font-size:.68rem;margin-top:.2rem"><i class="fas fa-star"></i> {{ __('Featured now') }}</span>
+              @elseif($s->hasFuturePin())
+              <span class="badge badge-amber" style="font-size:.68rem;margin-top:.2rem"><i class="fas fa-calendar-clock"></i> {{ __('Scheduled') }}</span>
+              @endif
             </div>
           </div>
         </td>
@@ -88,6 +93,12 @@
         <td>
           <div style="display:flex;gap:.18rem">
             <a href="{{ route('admin.shorts.edit',$s) }}" class="btn-icon" title="{{ __('Edit') }}"><i class="fas fa-pen-to-square"></i></a>
+            @if($s->import_status === 'failed')
+            <form method="POST" action="{{ route('admin.shorts.retry',$s) }}">
+              @csrf
+              <button type="submit" class="btn-icon" style="color:var(--gold)" title="{{ __('Retry import') }}"><i class="fas fa-rotate-right"></i></button>
+            </form>
+            @endif
             <form method="POST" action="{{ route('admin.shorts.destroy',$s) }}" onsubmit="return confirm(@json(__('Delete this short?')))">
               @csrf @method('DELETE')
               <button type="submit" class="btn-icon" style="color:var(--red)" title="{{ __('Delete') }}"><i class="fas fa-trash"></i></button>
@@ -118,4 +129,23 @@
 </div>
 
 </div>
+
+@php($pendingIds = $shorts->filter(fn ($s) => in_array($s->import_status, ['pending', 'processing'], true))->pluck('id')->values())
+@if($pendingIds->isNotEmpty())
+<script>
+(function () {
+  const ids = @json($pendingIds);
+  const pollUrl = '{{ route('admin.shorts.import-poll') }}';
+  const interval = setInterval(async () => {
+    try {
+      const params = new URLSearchParams(ids.map(id => ['ids[]', id]));
+      const res = await fetch(pollUrl + '?' + params);
+      const statuses = await res.json();
+      const done = ids.some(id => !['pending', 'processing'].includes(statuses[id]));
+      if (done) { clearInterval(interval); window.location.reload(); }
+    } catch {}
+  }, 3000);
+})();
+</script>
+@endif
 @endsection

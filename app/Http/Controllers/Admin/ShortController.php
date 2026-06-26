@@ -10,10 +10,10 @@ use App\Models\Qari;
 use App\Models\Short;
 use App\Services\FileUploadService;
 use App\Services\TiktokImportService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
@@ -54,10 +54,13 @@ class ShortController extends Controller
             return $this->storeFromTiktok($request);
         }
 
+        $qari = Qari::find($request->integer('qari_id'));
+
         Short::create([
-            'title_ar' => $request->title_ar,
-            'title_en' => $request->title_en,
+            'title_ar' => $qari?->name_ar ?? __('Short'),
+            'title_en' => $qari?->name_en,
             'type' => $request->type,
+            'qari_id' => $qari?->id,
             'media_path' => $this->uploadService->moveFromTmp($request->media_tmp, 'shorts'),
             'poster_path' => $request->filled('poster_tmp')
                 ? $this->uploadService->moveFromTmp($request->poster_tmp, 'short-posters')
@@ -65,9 +68,9 @@ class ShortController extends Controller
             'sort_order' => $request->integer('sort_order'),
             'status' => $request->status,
             'created_by' => Auth::id(),
+            'pinned_starts_at' => $request->filled('pinned_starts_at') ? $request->date('pinned_starts_at') : null,
+            'pinned_ends_at' => $request->filled('pinned_ends_at') ? $request->date('pinned_ends_at') : null,
         ]);
-
-        Cache::forget('active_hero_shorts');
 
         return redirect()->route('admin.shorts.index')->with('success', __('Short created successfully.'));
     }
@@ -88,11 +91,11 @@ class ShortController extends Controller
         }
 
         $qari = Qari::find($request->integer('qari_id'));
-        $provisionalTitle = $qari?->name ?: __('TikTok video');
 
         foreach ($urls as $url) {
             $short = Short::create([
-                'title_ar' => $provisionalTitle,
+                'title_ar' => $qari?->name_ar ?? __('TikTok video'),
+                'title_en' => $qari?->name_en,
                 'type' => 'video',
                 'media_path' => null,
                 'qari_id' => $qari?->id,
@@ -130,6 +133,30 @@ class ShortController extends Controller
         return $blob;
     }
 
+    public function retryImport(Short $short): RedirectResponse
+    {
+        abort_unless($short->import_status === 'failed', 422);
+
+        $short->update(['import_status' => 'pending', 'import_error' => null]);
+
+        ImportTiktokShort::dispatch($short->id);
+
+        return redirect()->route('admin.shorts.index')->with('success', __('Import re-queued.'));
+    }
+
+    public function importPoll(Request $request): JsonResponse
+    {
+        $ids = array_filter(array_map('intval', (array) $request->query('ids', [])));
+
+        if (empty($ids)) {
+            return response()->json([]);
+        }
+
+        return response()->json(
+            Short::whereIn('id', $ids)->pluck('import_status', 'id')
+        );
+    }
+
     public function edit(Short $short): View
     {
         $qaris = Qari::where('status', 'active')
@@ -148,6 +175,8 @@ class ShortController extends Controller
             'qari_id' => $request->integer('qari_id') ?: null,
             'sort_order' => $request->integer('sort_order'),
             'status' => $request->status,
+            'pinned_starts_at' => $request->filled('pinned_starts_at') ? $request->date('pinned_starts_at') : null,
+            'pinned_ends_at' => $request->filled('pinned_ends_at') ? $request->date('pinned_ends_at') : null,
         ];
 
         if ($request->filled('media_tmp')) {
@@ -164,8 +193,6 @@ class ShortController extends Controller
 
         $short->update($updates);
 
-        Cache::forget('active_hero_shorts');
-
         return redirect()->route('admin.shorts.index')->with('success', __('Short updated successfully.'));
     }
 
@@ -178,8 +205,6 @@ class ShortController extends Controller
             Storage::disk('public')->delete($short->poster_path);
         }
         $short->delete();
-
-        Cache::forget('active_hero_shorts');
 
         return redirect()->route('admin.shorts.index')->with('success', __('Short deleted.'));
     }

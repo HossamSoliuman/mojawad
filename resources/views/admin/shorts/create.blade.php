@@ -30,18 +30,6 @@
     </div>
 
     <div class="admin-form-grid">
-      <div class="form-group admin-form-grid" style="grid-column:1/-1" x-show="source==='upload'">
-        <div>
-          <label class="form-label"><i class="fas fa-heading"></i> {{ __('Title (Arabic)') }} <span style="color:var(--red)">*</span></label>
-          <input type="text" name="title_ar" class="form-control" value="{{ old('title_ar') }}" :required="source==='upload'" placeholder="{{ __('العنوان بالعربية') }}" dir="rtl">
-          @error('title_ar')<span class="form-error">{{ $message }}</span>@enderror
-        </div>
-        <div>
-          <label class="form-label"><i class="fas fa-heading"></i> {{ __('Title (English)') }}</label>
-          <input type="text" name="title_en" class="form-control" value="{{ old('title_en') }}" placeholder="{{ __('Title in English') }}" dir="ltr">
-          @error('title_en')<span class="form-error">{{ $message }}</span>@enderror
-        </div>
-      </div>
       <div class="form-group" x-show="source==='upload'">
         <label class="form-label"><i class="fas fa-clapperboard"></i> {{ __('Type') }} <span style="color:var(--red)">*</span></label>
         <select name="type" class="form-control" x-model="type">
@@ -49,15 +37,14 @@
           <option value="audio" {{ old('type')==='audio' ? 'selected':'' }}>{{ __('Audio') }}</option>
         </select>
       </div>
-      <div class="form-group" x-show="source==='tiktok'" x-cloak>
+      <div class="form-group">
         <label class="form-label"><i class="fas fa-microphone-lines"></i> {{ __('Qari') }} <span style="color:var(--red)">*</span></label>
-        <select name="qari_id" class="form-control" :required="source==='tiktok'">
+        <select name="qari_id" class="form-control" required>
           <option value="">{{ __('Select a qari…') }}</option>
           @foreach($qaris as $q)
           <option value="{{ $q->id }}" {{ old('qari_id') == $q->id ? 'selected' : '' }}>{{ $q->name }}</option>
           @endforeach
         </select>
-        <span class="form-hint">{{ __('All imported shorts will be linked to this qari.') }}</span>
         @error('qari_id')<span class="form-error">{{ $message }}</span>@enderror
       </div>
       <div class="form-group">
@@ -106,6 +93,23 @@
       <span class="form-hint" x-show="type==='audio'">{{ __('Shown behind audio shorts · recommended for audio.') }}</span>
       <span class="form-hint" x-show="type==='video'" style="display:none">{{ __('Optional fallback thumbnail for video.') }}</span>
       @error('poster_tmp')<span class="form-error">{{ $message }}</span>@enderror
+    </div>
+
+    <div class="form-group" x-show="source==='upload'">
+      <label class="form-label"><i class="fas fa-calendar-check"></i> {{ __('Feature to everyone (schedule)') }}</label>
+      <div class="admin-form-grid">
+        <div>
+          <label class="form-label" style="font-size:.8rem">{{ __('From') }}</label>
+          <input type="datetime-local" name="pinned_starts_at" class="form-control" value="{{ old('pinned_starts_at') }}">
+          @error('pinned_starts_at')<span class="form-error">{{ $message }}</span>@enderror
+        </div>
+        <div>
+          <label class="form-label" style="font-size:.8rem">{{ __('Until') }}</label>
+          <input type="datetime-local" name="pinned_ends_at" class="form-control" value="{{ old('pinned_ends_at') }}">
+          @error('pinned_ends_at')<span class="form-error">{{ $message }}</span>@enderror
+        </div>
+      </div>
+      <span class="form-hint">{{ __('While this window is active, every visitor sees only this short. Leave blank for normal rotation.') }}</span>
     </div>
 
     <div style="display:flex;gap:.65rem;margin-top:1.4rem;flex-wrap:wrap">

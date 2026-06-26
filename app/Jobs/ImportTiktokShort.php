@@ -15,7 +15,15 @@ class ImportTiktokShort implements ShouldQueue
 {
     use Queueable;
 
-    public int $tries = 1;
+    public int $tries = 3;
+
+    /**
+     * @return list<int>
+     */
+    public function backoff(): array
+    {
+        return [30, 120];
+    }
 
     public function __construct(public int $shortId) {}
 
@@ -35,17 +43,11 @@ class ImportTiktokShort implements ShouldQueue
 
         $result = $tiktok->download($short->source_url);
 
-        $updates = [
+        $short->update([
             'media_path' => $result['path'],
             'import_status' => 'completed',
             'import_error' => null,
-        ];
-
-        if (filled($result['title'])) {
-            $updates['title_ar'] = $result['title'];
-        }
-
-        $short->update($updates);
+        ]);
 
         Cache::forget('active_hero_shorts');
     }

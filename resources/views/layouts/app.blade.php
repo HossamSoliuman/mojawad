@@ -1618,55 +1618,48 @@
                 },
             }));
 
-            // ── Hero "Shorts" — TikTok-style overlay ──────────────────────────
-            // Autoplays one short (muted) when the site is opened. A different
-            // short is shown on each fresh browser session: ids already shown are
-            // remembered in localStorage and skipped until the pool is exhausted.
-            Alpine.data('heroShorts', (items) => ({
-                items: items || [],
+            // ── Hero Short — server-selected single short overlay ─────────────
+            // The server picks the one short this viewer has seen the fewest times
+            // (or the currently pinned short). Opens once per day; ?shorts_test=1
+            // forces it open every load for development.
+            Alpine.data('heroShort', (item) => ({
+                item: item || null,
                 open: false,
-                muted: true,
-                current: null,
-                idx: 0,
-                seenKey: 'mojawad_shorts_seen',
+                muted: false,
+                recorded: false,
                 dailyKey: 'mojawad_short_day',
+                testKey: 'mojawad_shorts_test',
                 today() {
                     return new Date().toISOString().slice(0, 10);
                 },
+                // Visit /?shorts_test=1 to force the overlay on every load,
+                // or /?shorts_test=0 to turn it back off. Persisted in localStorage.
+                testForced() {
+                    try {
+                        const param = new URLSearchParams(window.location.search).get('shorts_test');
+                        if (param === '1') localStorage.setItem(this.testKey, '1');
+                        if (param === '0') localStorage.removeItem(this.testKey);
+                        return localStorage.getItem(this.testKey) === '1';
+                    } catch (e) {
+                        return false;
+                    }
+                },
                 init() {
-                    if (!this.items.length) return;
-                    // Like a daily welcome message: auto-open once per day. Navigating
-                    // around the SPA or revisiting the same day won't re-trigger it.
+                    if (!this.item) return;
+                    if (this.testForced()) {
+                        this.openOverlay();
+                        return;
+                    }
                     try {
                         if (localStorage.getItem(this.dailyKey) === this.today()) return;
                     } catch (e) {}
-                    this.idx = this.pickStart();
                     this.openOverlay();
                     try { localStorage.setItem(this.dailyKey, this.today()); } catch (e) {}
                 },
-                _seen() {
-                    try { return new Set(JSON.parse(localStorage.getItem(this.seenKey) || '[]')); } catch (e) { return new Set(); }
-                },
-                _markSeen(id) {
-                    const seen = this._seen();
-                    seen.add(id);
-                    try { localStorage.setItem(this.seenKey, JSON.stringify([...seen])); } catch (e) {}
-                },
-                pickStart() {
-                    const seen = this._seen();
-                    let start = this.items.findIndex((i) => !seen.has(i.id));
-                    if (start < 0) {
-                        // Whole pool already seen → start a fresh rotation.
-                        try { localStorage.removeItem(this.seenKey); } catch (e) {}
-                        start = 0;
-                    }
-                    return start;
-                },
                 el() {
-                    return this.current && this.current.type === 'video' ? this.$refs.video : this.$refs.audio;
+                    return this.item && this.item.type === 'video' ? this.$refs.video : this.$refs.audio;
                 },
                 openOverlay() {
-                    // Don't let the live radio / player keep playing behind the short.
                     if (window.globalAudio && !window.globalAudio.paused) window.globalAudio.pause();
                     if (window.quranRadioAudio && !window.quranRadioAudio.paused) window.quranRadioAudio.pause();
                     this.open = true;
@@ -1674,15 +1667,44 @@
                     this.$nextTick(() => this.show());
                 },
                 show() {
-                    this.current = this.items[this.idx];
-                    this._markSeen(this.current.id);
                     this.$nextTick(() => {
                         const el = this.el();
                         if (!el) return;
-                        el.muted = this.muted;
-                        try { el.currentTime = 0; } catch (e) {}
-                        el.play().catch(() => {});
+                        try { el.load(); } catch (e) {}
+                        const start = () => {
+                            try { el.currentTime = 0; } catch (e) {}
+                            el.muted = false;
+                            this.muted = false;
+                            el.play().catch(() => {
+                                el.muted = true;
+                                this.muted = true;
+                                el.play().catch(() => {});
+                            });
+                        };
+                        if (el.readyState >= 2) {
+                            start();
+                        } else {
+                            el.addEventListener('canplay', start, { once: true });
+                        }
+                        // Record the view server-side once per overlay open.
+                        if (!this.recorded) {
+                            this.recorded = true;
+                            const csrf = document.querySelector('meta[name=csrf-token]').content;
+                            fetch(`/shorts/${this.item.id}/view`, {
+                                method: 'POST',
+                                headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+                            }).catch(() => {});
+                        }
                     });
+                },
+                togglePlay() {
+                    const el = this.el();
+                    if (!el) return;
+                    if (el.paused) {
+                        el.play().catch(() => {});
+                    } else {
+                        el.pause();
+                    }
                 },
                 toggleMute() {
                     this.muted = !this.muted;
@@ -1692,13 +1714,7 @@
                         if (!this.muted) el.play().catch(() => {});
                     }
                 },
-                next() {
-                    this.idx = (this.idx + 1) % this.items.length;
-                    [this.$refs.video, this.$refs.audio].forEach((e) => { if (e) e.pause(); });
-                    this.show();
-                },
                 onEnded() {
-                    // Auto-stop after the short finishes and dismiss the welcome overlay.
                     this.close();
                 },
                 close() {

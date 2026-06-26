@@ -25,6 +25,8 @@ class UpdateShortRequest extends FormRequest
             'poster_tmp' => 'nullable|string|exists:tmp_uploads,id',
             'sort_order' => 'nullable|integer|min:0',
             'status' => 'required|in:active,inactive',
+            'pinned_starts_at' => 'nullable|date',
+            'pinned_ends_at' => 'nullable|date|after_or_equal:pinned_starts_at',
         ];
     }
 }

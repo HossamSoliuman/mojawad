@@ -44,4 +44,20 @@ class ShortFactory extends Factory
     {
         return $this->state(fn () => ['status' => 'inactive']);
     }
+
+    public function pinned(): static
+    {
+        return $this->state(fn () => [
+            'pinned_starts_at' => now()->subHour(),
+            'pinned_ends_at' => now()->addHour(),
+        ]);
+    }
+
+    public function scheduledFuture(): static
+    {
+        return $this->state(fn () => [
+            'pinned_starts_at' => now()->addDay(),
+            'pinned_ends_at' => now()->addDay()->addHours(6),
+        ]);
+    }
 }

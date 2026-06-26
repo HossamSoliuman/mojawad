@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
 
 class Short extends Model
@@ -25,12 +26,16 @@ class Short extends Model
         'created_by',
         'sort_order',
         'status',
+        'pinned_starts_at',
+        'pinned_ends_at',
     ];
 
     protected function casts(): array
     {
         return [
             'sort_order' => 'integer',
+            'pinned_starts_at' => 'datetime',
+            'pinned_ends_at' => 'datetime',
         ];
     }
 
@@ -44,9 +49,38 @@ class Short extends Model
         return $this->belongsTo(Qari::class);
     }
 
+    public function views(): HasMany
+    {
+        return $this->hasMany(ShortView::class);
+    }
+
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', 'active');
+    }
+
+    public function scopePinnedNow(Builder $query): Builder
+    {
+        return $query
+            ->whereNotNull('pinned_starts_at')
+            ->whereNotNull('pinned_ends_at')
+            ->where('pinned_starts_at', '<=', now())
+            ->where('pinned_ends_at', '>=', now());
+    }
+
+    public function isPinnedNow(): bool
+    {
+        return $this->pinned_starts_at !== null
+            && $this->pinned_ends_at !== null
+            && $this->pinned_starts_at->lte(now())
+            && $this->pinned_ends_at->gte(now());
+    }
+
+    public function hasFuturePin(): bool
+    {
+        return $this->pinned_starts_at !== null
+            && $this->pinned_ends_at !== null
+            && $this->pinned_starts_at->gt(now());
     }
 
     public function getTitleAttribute(): string

@@ -2,19 +2,21 @@
 @section('title','Home')
 @section('content')
 
-@if(!empty($hero_shorts))
-{{-- ── Hero "Shorts" — TikTok-style autoplay overlay shown on each fresh visit ── --}}
-<div class="shorts-overlay" x-data="heroShorts(@js($hero_shorts))" x-show="open" x-cloak
+@if($hero_short)
+{{-- ── Hero Short — single server-selected short, teleported above nav/player ── --}}
+<div x-data="heroShort(@js($hero_short))">
+<template x-teleport="body">
+<div class="shorts-overlay" x-show="open" x-cloak
   @keydown.escape.window="close()" style="display:none">
-  <div class="shorts-stage" @click="toggleMute()">
+  <div class="shorts-stage" @click="togglePlay()">
     <button class="shorts-close" @click.stop="close()" aria-label="{{ __('Close') }}"><i class="fas fa-xmark"></i></button>
 
-    <video x-ref="video" class="shorts-media" x-show="current && current.type === 'video'"
-      :src="current ? current.src : ''" :poster="current ? current.poster : ''" playsinline @ended="onEnded()"></video>
+    <video x-ref="video" class="shorts-media" x-show="item && item.type === 'video'"
+      :src="item ? item.src : ''" :poster="item ? item.poster : ''" playsinline @ended="onEnded()"></video>
 
-    <div class="shorts-audio" x-show="current && current.type === 'audio'"
-      :style="current && current.poster ? `background-image:url('${current.poster}')` : ''">
-      <audio x-ref="audio" :src="current ? current.src : ''" @ended="onEnded()"></audio>
+    <div class="shorts-audio" x-show="item && item.type === 'audio'"
+      :style="item && item.poster ? `background-image:url('${item.poster}')` : ''">
+      <audio x-ref="audio" :src="item ? item.src : ''" @ended="onEnded()"></audio>
       <div class="shorts-audio-eq" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
     </div>
 
@@ -28,13 +30,11 @@
 
     <div class="shorts-info">
       <span class="shorts-badge"><i class="fas fa-clapperboard"></i> {{ __('Short') }}</span>
-      <div class="shorts-title" x-text="current ? current.title : ''"></div>
+      <div class="shorts-title" x-text="item ? item.title : ''"></div>
     </div>
-
-    <button class="shorts-next" x-show="items.length > 1" @click.stop="next()" aria-label="{{ __('Next') }}">
-      <i class="fas fa-forward-step"></i>
-    </button>
   </div>
+</div>
+</template>
 </div>
 @endif
 

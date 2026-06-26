@@ -18,6 +18,7 @@ use App\Http\Controllers\CollectionController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QariController;
+use App\Http\Controllers\ShortViewController;
 use App\Http\Controllers\SurahController;
 use App\Http\Controllers\TilawaController;
 use Illuminate\Support\Facades\Artisan;
@@ -25,6 +26,7 @@ use Illuminate\Support\Facades\Route;
 
 // ── Public ──────────────────────────────────────────────────────────────
 Route::get('/', HomeController::class)->name('home');
+Route::post('/shorts/{short}/view', ShortViewController::class)->name('shorts.view');
 
 Route::prefix('qaris')->name('qaris.')->group(function () {
     Route::get('/', [QariController::class, 'index'])->name('index');
@@ -113,6 +115,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
         Route::get('/shorts', [ShortController::class, 'index'])->name('shorts.index');
         Route::get('/shorts/create', [ShortController::class, 'create'])->name('shorts.create');
         Route::post('/shorts', [ShortController::class, 'store'])->name('shorts.store');
+        Route::get('/shorts/import-poll', [ShortController::class, 'importPoll'])->name('shorts.import-poll');
+        Route::post('/shorts/{short}/retry', [ShortController::class, 'retryImport'])->name('shorts.retry');
         Route::get('/shorts/{short}/edit', [ShortController::class, 'edit'])->name('shorts.edit')->middleware('can:update,short');
         Route::put('/shorts/{short}', [ShortController::class, 'update'])->name('shorts.update')->middleware('can:update,short');
         Route::delete('/shorts/{short}', [ShortController::class, 'destroy'])->name('shorts.destroy')->middleware('can:delete,short');
