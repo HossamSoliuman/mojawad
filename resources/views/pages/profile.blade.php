@@ -105,7 +105,7 @@
             {{ CarbonInterval::seconds($row['seconds'])->cascade()->forHumans(['short' => true, 'parts' => 2]) }}
           </div>
         </div>
-        <i class="fas fa-chevron-left gold" style="opacity:.6"></i>
+        <i class="fas fa-chevron-right flip-rtl gold" style="opacity:.6"></i>
       </a>
       @endforeach
     </div>

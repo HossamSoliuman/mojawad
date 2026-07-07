@@ -41,7 +41,7 @@
         </div>
 
         <div style="display:flex;gap:.6rem;margin-top:.4rem">
-          <button type="button" class="btn" @click="open = false" style="flex:1;justify-content:center">
+          <button type="button" class="btn btn-ghost" @click="open = false" style="flex:1;justify-content:center">
             {{ __('Cancel') }}
           </button>
           <button type="submit" class="btn btn-primary" style="flex:1;justify-content:center"

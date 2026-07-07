@@ -62,9 +62,13 @@
       </div>
     </div>
   </div>
+
+  <a href="#homeContent" class="hero-scroll-cue" aria-label="{{ __('Scroll to content') }}">
+    <i class="fas fa-chevron-down"></i>
+  </a>
 </section>
 
-<div class="wrap">
+<div class="wrap" id="homeContent">
 
 <section class="section" x-data="continueListening()" @tilawa-history-changed.window="load()"
   x-show="items.length" x-cloak style="display:none">
@@ -150,7 +154,7 @@
 @endif
 
 @if($trending_tilawat->isNotEmpty())
-<section class="section" style="padding-top:0">
+<section class="section">
   <div class="sec-title"><i class="fas fa-arrow-trend-up gold"></i> {{ __('Trending this week') }}</div>
   <div class="grid-tilawat" data-queue>
     @foreach($trending_tilawat as $t)
@@ -180,7 +184,7 @@
 @endif
 
 @if($top_qaris->isNotEmpty())
-<section class="section" style="padding-top:0">
+<section class="section">
   <div class="sec-title"><i class="fas fa-microphone gold"></i> {{ __('Qaris') }}</div>
   <div class="grid-qaris">
     @foreach($top_qaris as $q)
@@ -199,7 +203,7 @@
 @endif
 
 @if($browse_surahs->isNotEmpty())
-<section class="section" style="padding-top:0">
+<section class="section">
   <div class="sec-title"><i class="fas fa-book-open gold"></i> {{ __('Browse by Surah') }}</div>
   <div class="surah-rail">
     @foreach($browse_surahs as $n)
@@ -213,7 +217,7 @@
 @endif
 
 @if($collections->isNotEmpty())
-<section class="section" style="padding-top:0">
+<section class="section">
   <div class="sec-title" style="display:flex;align-items:center;justify-content:space-between">
     <span><i class="fas fa-layer-group gold"></i> {{ __('Collections') }}</span>
     <a href="{{ route('collections.index') }}" wire:navigate class="gold" style="font-size:.78rem">{{ __('View All') }}</a>
@@ -235,7 +239,7 @@
 @endif
 
 @if($popular_tilawat->isNotEmpty())
-<section class="section" style="padding-top:0">
+<section class="section">
   <div class="sec-title"><i class="fas fa-fire gold"></i> {{ __('Most Loved') }}</div>
   <div class="t-list-grid" data-queue>
     @foreach($popular_tilawat as $t)
@@ -260,7 +264,7 @@
 @endif
 
 @if($recent_tilawat->isNotEmpty())
-<section class="section" style="padding-top:0;padding-bottom:3rem">
+<section class="section" style="padding-bottom:2.2rem">
   <div class="sec-title"><i class="fas fa-clock-rotate-left gold"></i> {{ __('Recently Added') }}</div>
   <div class="t-list-grid" data-queue>
     @foreach($recent_tilawat as $t)

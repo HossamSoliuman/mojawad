@@ -9,8 +9,11 @@
 
   @if($liked->isEmpty())
   <div style="text-align:center;padding:4rem 1rem;color:var(--text2)">
-    <i class="fas fa-heart-crack" style="font-size:2.5rem;display:block;margin-bottom:.65rem"></i>
-    {{ __('No liked tilawat yet.') }}
+    <i class="fas fa-heart-crack" style="font-size:2.5rem;display:block;margin-bottom:.65rem;opacity:.5"></i>
+    <p style="margin-bottom:1rem">{{ __('No liked tilawat yet.') }}</p>
+    <a href="{{ route('qaris.index') }}" wire:navigate class="btn btn-primary btn-sm">
+      <i class="fas fa-compass"></i> {{ __('Explore Qaris') }}
+    </a>
   </div>
   @else
   <div class="grid-tilawat" data-queue>

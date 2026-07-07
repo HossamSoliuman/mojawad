@@ -144,19 +144,20 @@
         </div>
     </nav>
 
-    {{-- FLASH --}}
-    @if (session('success') || session('error'))
-        <div class="wrap z1" style="padding-top:.85rem">
-            @if (session('success'))
-                <div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
-            @endif
-            @if (session('error'))
-                <div class="alert alert-error"><i class="fas fa-circle-exclamation"></i> {{ session('error') }}</div>
-            @endif
-        </div>
-    @endif
-
-    <main class="z1 @unless (request()->routeIs('home')) main-nav-pad @endunless">@yield('content')</main>
+    <main class="z1 @if (!request()->routeIs('home') || session('success') || session('error')) main-nav-pad @endif">
+        {{-- FLASH — lives inside <main> so the fixed nav island never covers it --}}
+        @if (session('success') || session('error'))
+            <div class="wrap" style="padding-top:.85rem">
+                @if (session('success'))
+                    <div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
+                @endif
+                @if (session('error'))
+                    <div class="alert alert-error"><i class="fas fa-circle-exclamation"></i> {{ session('error') }}</div>
+                @endif
+            </div>
+        @endif
+        @yield('content')
+    </main>
 
     {{-- AUDIO PLAYER — persisted across wire:navigate so audio never stops --}}
     @persist('player')

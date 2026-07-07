@@ -7,7 +7,7 @@
   @else
   <div style="display:flex;justify-content:flex-end;margin-bottom:1rem">
     <button type="button" class="btn btn-ghost btn-xs" wire:click="clearAll"
-      onclick="return confirm(@js(__('Clear history')) + '?')">
+      wire:confirm="{{ __('Clear all listening history?') }}">
       <i class="fas fa-trash"></i> {{ __('Clear history') }}
     </button>
   </div>

@@ -1,9 +1,9 @@
 @if($paginator->hasPages())
 <div class="pager">
   @if($paginator->onFirstPage())
-  <span style="opacity:.3;cursor:default"><i class="fas fa-chevron-left"></i></span>
+  <span style="opacity:.3;cursor:default"><i class="fas fa-chevron-left flip-rtl"></i></span>
   @else
-  <a href="{{ $paginator->previousPageUrl() }}"><i class="fas fa-chevron-left"></i></a>
+  <a href="{{ $paginator->previousPageUrl() }}" rel="prev" aria-label="{{ __('Previous') }}"><i class="fas fa-chevron-left flip-rtl"></i></a>
   @endif
 
   @foreach($elements as $el)
@@ -20,9 +20,9 @@
   @endforeach
 
   @if($paginator->hasMorePages())
-  <a href="{{ $paginator->nextPageUrl() }}"><i class="fas fa-chevron-right"></i></a>
+  <a href="{{ $paginator->nextPageUrl() }}" rel="next" aria-label="{{ __('Next') }}"><i class="fas fa-chevron-right flip-rtl"></i></a>
   @else
-  <span style="opacity:.3;cursor:default"><i class="fas fa-chevron-right"></i></span>
+  <span style="opacity:.3;cursor:default"><i class="fas fa-chevron-right flip-rtl"></i></span>
   @endif
 </div>
 @endif

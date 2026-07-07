@@ -7,7 +7,7 @@
 <div style="position:relative;overflow:hidden;padding-bottom:2rem">
   <div style="position:absolute;inset:0">
     <img src="{{ $qari->image_url }}" alt="" style="width:100%;height:100%;object-fit:cover;opacity:.12;filter:blur(2px)">
-    <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(17,24,39,.88) 0%,var(--bg) 100%)"></div>
+    <div style="position:absolute;inset:0;background:linear-gradient(to bottom,color-mix(in srgb,var(--bg) 88%,transparent) 0%,var(--bg) 100%)"></div>
   </div>
   <div class="wrap z1" style="padding-top:2.5rem">
     <a href="{{ route('qaris.index') }}" wire:navigate class="back-link" style="font-size:.8rem;color:var(--text2);display:inline-flex;align-items:center;gap:.4rem;margin-bottom:1.4rem">

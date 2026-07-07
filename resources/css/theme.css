@@ -81,7 +81,7 @@ button {
   pointer-events: none;
   z-index: 0;
   background-image:
-    radial-gradient(ellipse 90% 55% at 5% 0%, rgba(201, 161, 83, 0.045) 0%, transparent 55%),
+    radial-gradient(ellipse 90% 55% at 5% 0%, rgba(var(--gold-rgb), 0.045) 0%, transparent 55%),
     radial-gradient(ellipse 70% 45% at 95% 100%, rgba(99, 130, 201, 0.06) 0%, transparent 55%),
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72'%3E%3Cpath d='M36 7 L65 36 L36 65 L7 36Z' fill='none' stroke='rgba(148,163,184,0.04)' stroke-width='.6'/%3E%3C/svg%3E");
 }
@@ -118,7 +118,7 @@ h5 {
   top: 0;
   z-index: 200;
   height: 62px;
-  background: rgba(17, 24, 39, 0.92);
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
   backdrop-filter: blur(22px);
   border-bottom: 1px solid var(--border);
   display: flex;
@@ -210,7 +210,7 @@ h5 {
   background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 100%);
   color: var(--bg);
   transform: translateY(-1px);
-  box-shadow: 0 6px 22px rgba(201, 161, 83, .28);
+  box-shadow: 0 6px 22px rgba(var(--gold-rgb), .28);
 }
 
 .btn-ghost {
@@ -292,10 +292,10 @@ h5 {
 }
 
 .badge-gold {
-  background: rgba(201, 161, 83, .15);
+  background: rgba(var(--gold-rgb), .15);
   color: var(--gold-light);
-  border: 1px solid rgba(201, 161, 83, .3);
-  box-shadow: 0 0 20px rgba(201, 161, 83, 0.1);
+  border: 1px solid rgba(var(--gold-rgb), .3);
+  box-shadow: 0 0 20px rgba(var(--gold-rgb), 0.1);
 }
 
 .badge-green {
@@ -353,7 +353,7 @@ h5 {
 .form-control:focus {
   outline: none;
   border-color: var(--gold);
-  box-shadow: 0 0 0 3px rgba(201, 161, 83, .12)
+  box-shadow: 0 0 0 3px rgba(var(--gold-rgb), .12)
 }
 
 .form-control::placeholder {
@@ -527,7 +527,7 @@ textarea.form-control {
 .q-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(17, 24, 39, .95) 0%, rgba(17, 24, 39, .35) 55%, transparent 100%);
+  background: linear-gradient(to top, rgba(0, 0, 0, .88) 0%, rgba(0, 0, 0, .32) 55%, transparent 100%);
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -615,6 +615,7 @@ textarea.form-control {
 .hero {
   position: relative;
   min-height: 100vh;
+  min-height: 100svh;
   overflow: hidden;
   background: var(--bg);
 }
@@ -628,8 +629,9 @@ textarea.form-control {
   justify-content: center;
   text-align: center;
   min-height: 100vh;
+  min-height: 100svh;
   padding: 2rem;
-  background: radial-gradient(circle at center, rgba(201, 161, 83, 0.08) 0%, transparent 70%);
+  background: radial-gradient(circle at center, rgba(var(--gold-rgb), 0.08) 0%, transparent 70%);
 }
 
 .hero-live {
@@ -651,7 +653,7 @@ textarea.form-control {
   letter-spacing: .08em;
   text-transform: uppercase;
   color: var(--gold);
-  background: rgba(201, 161, 83, 0.1);
+  background: rgba(var(--gold-rgb), 0.1);
   padding: 0.4rem 1rem;
   border-radius: 30px;
 }
@@ -663,6 +665,7 @@ textarea.form-control {
   margin: 0;
   background: linear-gradient(to right, #fff, var(--text2));
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -682,7 +685,7 @@ textarea.form-control {
   gap: 1.1rem;
   padding: 1rem 1.1rem;
   border-radius: 18px;
-  background: rgba(17, 24, 39, 0.55);
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
   border: 1px solid var(--border2);
   backdrop-filter: blur(18px);
   box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
@@ -694,7 +697,7 @@ textarea.form-control {
 
 .radio-card.playing {
   border-color: var(--gold);
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(201, 161, 83, 0.35);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(var(--gold-rgb), 0.35);
 }
 
 @keyframes radioFloat {
@@ -828,7 +831,7 @@ textarea.form-control {
   border: none;
   cursor: pointer;
   background: var(--gold);
-  color: #1a1205;
+  color: var(--bg);
   font-size: 1.1rem;
   display: grid;
   place-items: center;
@@ -848,6 +851,42 @@ textarea.form-control {
   .radio-card {
     gap: .8rem;
     padding: .85rem .9rem;
+  }
+}
+
+/* Scroll affordance at the bottom of the full-height hero */
+.hero-scroll-cue {
+  position: absolute;
+  bottom: 1.1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: var(--text2);
+  font-size: 1rem;
+  animation: scrollCue 2.2s ease-in-out infinite;
+}
+
+.hero-scroll-cue:hover {
+  color: var(--gold);
+}
+
+@keyframes scrollCue {
+
+  0%,
+  100% {
+    transform: translate(-50%, 0);
+    opacity: .55;
+  }
+
+  50% {
+    transform: translate(-50%, 6px);
+    opacity: 1;
   }
 }
 
@@ -998,7 +1037,7 @@ textarea.form-control {
   letter-spacing: .06em;
   text-transform: uppercase;
   color: var(--gold);
-  background: rgba(201, 161, 83, 0.15);
+  background: rgba(var(--gold-rgb), 0.15);
   padding: .25rem .6rem;
   border-radius: 20px;
   margin-bottom: .5rem;
@@ -1022,7 +1061,7 @@ textarea.form-control {
   border: none;
   cursor: pointer;
   background: var(--gold);
-  color: #1a1205;
+  color: var(--bg);
   font-size: 1.05rem;
   display: grid;
   place-items: center;
@@ -1042,7 +1081,7 @@ textarea.form-control {
   right: 0;
   height: var(--player);
   z-index: 300;
-  background: rgba(17, 24, 39, .97);
+  background: color-mix(in srgb, var(--bg) 97%, transparent);
   backdrop-filter: blur(28px);
   border-top: 1px solid var(--border2);
   display: flex;
@@ -1251,6 +1290,21 @@ textarea.form-control {
   border-radius: 50%;
   background: var(--gold);
   cursor: pointer
+}
+
+.vol-slider::-moz-range-thumb {
+  width: 11px;
+  height: 11px;
+  border: none;
+  border-radius: 50%;
+  background: var(--gold);
+  cursor: pointer
+}
+
+.vol-slider::-moz-range-track {
+  height: 3px;
+  background: var(--surface3);
+  border-radius: 2px
 }
 
 /* The ☰ "more controls" trigger only appears on mobile. */
@@ -1707,8 +1761,10 @@ textarea.form-control {
   padding: 0 1.5rem
 }
 
+/* Home sections render conditionally — symmetric padding keeps the rhythm
+   consistent no matter which sections are present. */
 .section {
-  padding: 2.7rem 0
+  padding: 1.35rem 0
 }
 
 .t-list-item {
@@ -1730,6 +1786,10 @@ textarea.form-control {
   border-color: var(--border2);
   transform: translateX(3px);
   color: var(--text);
+}
+
+[dir="rtl"] .t-list-item:hover {
+  transform: translateX(-3px);
 }
 
 .t-list-cover {
@@ -1853,7 +1913,7 @@ textarea.form-control {
 .search-input:focus {
   border-color: var(--gold);
   width: 265px;
-  box-shadow: 0 0 0 3px rgba(201, 161, 83, .1)
+  box-shadow: 0 0 0 3px rgba(var(--gold-rgb), .1)
 }
 
 .search-icon {
@@ -2226,7 +2286,7 @@ textarea.form-control {
   padding: .45rem 1rem;
   border-radius: 999px;
   background: var(--gold);
-  color: #0b1f12;
+  color: var(--bg);
   font-family: var(--font-display);
   font-weight: 700;
   font-size: .85rem;
@@ -2237,7 +2297,7 @@ textarea.form-control {
 
 .ni-join:hover {
   background: var(--gold-light);
-  color: #0b1f12;
+  color: var(--bg);
   transform: translateY(-1px);
 }
 
@@ -2420,7 +2480,7 @@ html[dir="rtl"] .nav-island .dropdown {
 .card-opt input:checked + .card-opt-inner,
 .card-opt-inner.card-opt-active {
   border-color: var(--gold);
-  background: rgba(201, 161, 83, .12);
+  background: rgba(var(--gold-rgb), .12);
   color: var(--text);
   box-shadow: 0 0 0 1px var(--gold) inset;
 }
@@ -2544,7 +2604,7 @@ button.card-opt {
 
 .review-group-toggle button.is-active {
   background: var(--gold);
-  color: #1a1205;
+  color: var(--bg);
   font-weight: 600;
 }
 
@@ -3476,7 +3536,7 @@ a.att-card:hover {
 
 .range-pill.active {
   background: var(--gold);
-  color: #1a1408;
+  color: var(--bg);
   font-weight: 700;
 }
 
@@ -3547,7 +3607,7 @@ a.att-card:hover {
   font-weight: 700;
   padding: .2rem .5rem;
   border-radius: 999px;
-  background: rgba(17, 24, 39, .82);
+  background: rgba(0, 0, 0, .62);
   color: var(--gold);
   backdrop-filter: blur(4px);
 }
@@ -3565,7 +3625,7 @@ html[dir="rtl"] .history-badge {
   height: 26px;
   border-radius: 50%;
   border: none;
-  background: rgba(17, 24, 39, .82);
+  background: rgba(0, 0, 0, .62);
   color: #fff;
   font-size: .8rem;
   display: flex;
@@ -3599,7 +3659,7 @@ html[dir="rtl"] .card-dismiss {
   height: 26px;
   border-radius: 50%;
   border: none;
-  background: rgba(17, 24, 39, .82);
+  background: rgba(0, 0, 0, .62);
   color: #fff;
   font-size: .76rem;
   display: flex;
@@ -3618,7 +3678,7 @@ html[dir="rtl"] .card-dismiss {
 .card-save.saved {
   opacity: 1;
   color: var(--gold);
-  background: rgba(17, 24, 39, .92);
+  background: rgba(0, 0, 0, .75);
 }
 
 .card-save:hover {
@@ -3639,6 +3699,20 @@ html[dir="rtl"] .card-dismiss {
 
 .copy-toast.show {
   opacity: 1;
+}
+
+/* ── Touch devices: hover-revealed controls must stay visible ─────── */
+@media (hover: none) {
+  .t-play-btn {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .card-dismiss,
+  .card-save,
+  .queue-remove {
+    opacity: 1;
+  }
 }
 
 /* ── Accessibility: visible focus rings ───────────────────────────── */
@@ -3669,6 +3743,8 @@ textarea:focus-visible,
   .shorts-audio-eq span,
   .skel,
   .like-pop,
+  .radio-card,
+  .hero-scroll-cue,
   .row-like.liked i {
     animation: none !important;
   }
@@ -3687,7 +3763,7 @@ textarea:focus-visible,
   max-height: min(60vh, 460px);
   display: flex;
   flex-direction: column;
-  background: rgba(17, 24, 39, .98);
+  background: color-mix(in srgb, var(--bg) 98%, transparent);
   backdrop-filter: blur(28px);
   border: 1px solid var(--border2);
   border-radius: var(--r2);
@@ -4057,7 +4133,8 @@ textarea:focus-visible,
   display: inline-flex;
   align-items: center;
   gap: .5rem;
-  padding: .42rem .85rem .42rem .5rem;
+  padding-block: .42rem;
+  padding-inline: .5rem .85rem;
   border: 1px solid var(--border);
   border-radius: 999px;
   background: var(--surface);
@@ -4102,7 +4179,7 @@ textarea:focus-visible,
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: rgba(17, 24, 39, .85);
+  background: rgba(0, 0, 0, .65);
   color: var(--gold);
   font-family: var(--font-display, monospace);
   font-weight: 700;

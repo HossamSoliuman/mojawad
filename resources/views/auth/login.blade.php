@@ -20,7 +20,7 @@
     <input type="checkbox" name="remember" style="accent-color:var(--gold)"> {{ __('Remember me') }}
   </label>
   <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center">
-    <i class="fas fa-arrow-right-to-bracket"></i> {{ __('Sign In') }}
+    <i class="fas fa-arrow-right-to-bracket flip-rtl"></i> {{ __('Sign In') }}
   </button>
 </form>
 <p style="text-align:center;margin-top:1.25rem;font-size:.88rem;color:var(--text2)">
