@@ -143,6 +143,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
         Route::get('/publishing/factory', [PublishingController::class, 'factory'])->name('publishing.factory');
         Route::post('/publishing/ingest', [PublishingController::class, 'ingest'])->name('publishing.ingest');
         Route::get('/publishing/production', [PublishingController::class, 'production'])->name('publishing.production');
+        Route::get('/publishing/card-lab', [PublishingController::class, 'cardLab'])->name('publishing.card-lab');
 
         Route::get('/tilawat', [App\Http\Controllers\Admin\TilawaController::class, 'index'])->name('tilawat.index');
         Route::get('/tilawat/{tilawa}/edit', [App\Http\Controllers\Admin\TilawaController::class, 'edit'])->name('tilawat.edit')->middleware('can:update,tilawa');

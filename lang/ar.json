@@ -552,5 +552,20 @@
     "YouTube is not configured.": "يوتيوب غير مُهيّأ.",
     "Facebook is not configured.": "فيسبوك غير مُهيّأ.",
     "سورة": "سورة",
-    "الآيات": "الآيات"
+    "الآيات": "الآيات",
+    "Card Lab": "معمل البطاقة",
+    "Experimental": "تجريبي",
+    "Experiment with the card-to-video flow: design an HTML card, capture it as an image, then combine it with the recitation audio into a sample video.": "جرّب مسار البطاقة إلى فيديو: صمّم بطاقة HTML، والتقطها كصورة، ثم ادمجها مع صوت التلاوة في فيديو تجريبي.",
+    "Pick a recitation": "اختر تلاوة",
+    "— manual input —": "— إدخال يدوي —",
+    "Qari name": "اسم القارئ",
+    "Surah name": "اسم السورة",
+    "Extra text (optional)": "نص إضافي (اختياري)",
+    "Render card image": "توليد صورة البطاقة",
+    "Render sample video (15s)": "توليد فيديو تجريبي (15 ثانية)",
+    "Live preview": "معاينة حية",
+    "exactly what gets captured": "مطابقة تمامًا لما سيتم التقاطه",
+    "Rendered image": "الصورة الناتجة",
+    "Sample video": "الفيديو التجريبي",
+    "ms": "م.ث"
 }

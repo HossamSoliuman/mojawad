@@ -12,7 +12,7 @@
 <div style="position:relative;z-index:1;width:100%;max-width:405px">
   <div style="text-align:center;margin-bottom:1.85rem">
     <a href="{{ route('home') }}" class="navbar-brand" style="justify-content:center;font-size:1.45rem">
-      <i class="fas fa-book-open-reader"></i> Mojawad
+      <x-brand.mark :size="26" /> Mojawad
     </a>
   </div>
   <div class="card" style="padding:2.2rem">@yield('content')</div>

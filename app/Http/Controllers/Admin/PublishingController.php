@@ -25,6 +25,11 @@ class PublishingController extends Controller
         return view('admin.publishing.production');
     }
 
+    public function cardLab(): View
+    {
+        return view('admin.publishing.card-lab');
+    }
+
     public function ingest(IngestSourceRequest $request): RedirectResponse
     {
         $qariId = (int) $request->input('qari_id');

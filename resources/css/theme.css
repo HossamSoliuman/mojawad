@@ -3104,6 +3104,12 @@ button.card-opt {
   flex-shrink: 0;
 }
 
+/* Mojawad mihrab mark — sits inline in the nav/sidebar/auth lockups */
+.brand-mark {
+  display: block;
+  flex-shrink: 0;
+}
+
 .s-badge {
   margin-inline-start: auto;
   background: rgba(251, 191, 36, .14);

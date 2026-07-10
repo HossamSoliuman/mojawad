@@ -34,7 +34,7 @@
 
         <a href="{{ route('home') }}" wire:navigate
             class="ni-brand {{ request()->routeIs('home') ? 'active' : '' }}" title="{{ __('Home') }}">
-            <i class="fas fa-book-open-reader"></i>
+            <x-brand.mark :size="22" />
             <span class="ni-brand-name">Mojawad</span>
         </a>
 

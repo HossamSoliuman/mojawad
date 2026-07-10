@@ -14,7 +14,7 @@
 <div class="up-shell z1">
   <header class="up-topbar">
     <a href="{{ route('admin.upload') }}" class="navbar-brand" style="font-size:1.15rem">
-      <i class="fas fa-book-open-reader"></i> Mojawad
+      <x-brand.mark :size="22" /> Mojawad
     </a>
     <div style="display:flex;align-items:center;gap:.6rem">
       <div x-data="{ open: false }" style="position:relative">

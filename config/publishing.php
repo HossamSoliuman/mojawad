@@ -69,6 +69,14 @@ return [
 
     // ── Visual branding ────────────────────────────────────────────────
     'video' => ['width' => 1920, 'height' => 1080, 'fps' => 25],
+    'card_lab_dir' => 'published/card-lab',
+    'social' => [
+        'youtube' => env('SOCIAL_YOUTUBE'),
+        'facebook' => env('SOCIAL_FACEBOOK'),
+        'instagram' => env('SOCIAL_INSTAGRAM'),
+        'tiktok' => env('SOCIAL_TIKTOK'),
+        'website' => env('SOCIAL_WEBSITE', 'mojawad.org'),
+    ],
     'cover' => [
         'driver' => env('COVER_DRIVER', 'browsershot'),   // browsershot | ffmpeg
         'size' => 3000,

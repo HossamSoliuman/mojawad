@@ -29,7 +29,7 @@
     {{-- Logo --}}
     <div class="sidebar-logo">
       <a href="{{ route('home') }}" target="_blank">
-        <span class="logo-glyph"><i class="fas fa-book-open-reader"></i></span>
+        <x-brand.mark :size="30" />
         <span>{{ config('app.name') }}</span>
       </a>
     </div>
@@ -87,6 +87,9 @@
       </a>
       <a href="{{ route('admin.publishing.production') }}" class="s-link {{ request()->routeIs('admin.publishing.production') ? 'active':'' }}">
         <i class="fas fa-tower-broadcast"></i> <span>{{ __('Production') }}</span>
+      </a>
+      <a href="{{ route('admin.publishing.card-lab') }}" class="s-link {{ request()->routeIs('admin.publishing.card-lab') ? 'active':'' }}">
+        <i class="fas fa-flask"></i> <span>{{ __('Card Lab') }}</span>
       </a>
       @endhasanyrole
 
