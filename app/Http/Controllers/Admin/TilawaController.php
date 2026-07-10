@@ -30,7 +30,13 @@ class TilawaController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        $qaris = Qari::orderBy('name_ar')->get(['id', 'name_ar', 'name_en']);
+        $qaris = Qari::orderBy('name_ar')
+            ->get(['id', 'name_ar', 'name_en', 'image'])
+            ->map(fn (Qari $q) => [
+                'id' => $q->id,
+                'name' => $q->name,
+                'image' => $q->image_url,
+            ]);
 
         return view('admin.tilawat.index', compact('tilawat', 'qaris'));
     }

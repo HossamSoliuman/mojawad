@@ -41,7 +41,6 @@ class ProductionQueue extends Component
     {
         return Tilawa::query()
             ->whereHas('source', fn ($q) => $q->whereIn('source_type', TilawatSource::FACTORY_TYPES))
-            ->whereNotNull('ayah_from')
             ->when(! Auth::user()->hasRole('admin'), fn ($q) => $q->where('uploaded_by', Auth::id()))
             ->with(['qari', 'publications'])
             ->latest()

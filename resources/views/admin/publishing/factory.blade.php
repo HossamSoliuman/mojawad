@@ -4,8 +4,6 @@
 @section('breadcrumb')<a href="{{ route('admin.dashboard') }}">{{ __('Dashboard') }}</a> › {{ __('Factory') }}@endsection
 @section('content')
 
-@include('admin.publishing._tabs')
-
 <div style="max-width:820px;margin-bottom:2.2rem">
   <livewire:admin.factory-import />
 </div>

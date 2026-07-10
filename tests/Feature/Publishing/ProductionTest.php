@@ -140,6 +140,32 @@ it('marks a youtube publication failed when youtube is not configured', function
         ->and($publication->fresh()->error)->toBe(__('YouTube is not configured.'));
 });
 
+it('shows recitations in production even when the ayah range is not confirmed', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+    $qari = Qari::factory()->create();
+    $tilawa = Tilawa::factory()->create([
+        'qari_id' => $qari->id,
+        'uploaded_by' => $creator->id,
+        'surah_number' => 2,
+        'title_ar' => 'تلاوة بدون نطاق',
+        'ayah_from' => null,
+        'ayah_to' => null,
+    ]);
+    TilawatSource::create([
+        'source_type' => 'upload',
+        'source_url' => 'sources/1/x.mp3',
+        'qari_id' => $qari->id,
+        'surah_number' => 2,
+        'status' => 'completed',
+        'tilawa_id' => $tilawa->id,
+        'created_by' => $creator->id,
+    ]);
+
+    $this->actingAs($creator);
+
+    Livewire::test(ProductionQueue::class)->assertSee('تلاوة بدون نطاق');
+});
+
 it('only shows a creator their own recitations in production', function () {
     $owner = User::factory()->create()->assignRole('creator');
     $other = User::factory()->create()->assignRole('creator');

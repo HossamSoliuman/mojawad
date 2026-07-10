@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Qari;
+use App\Models\Tilawa;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
@@ -64,4 +66,30 @@ it('redirects a creator from the dashboard to the uploader', function () {
 it('no longer exposes the legacy tilawa create routes', function () {
     expect(Route::has('admin.tilawat.create'))->toBeFalse()
         ->and(Route::has('admin.tilawat.store'))->toBeFalse();
+});
+
+it('renders the tilawat index with the searchable qari filter', function () {
+    $admin = User::factory()->create()->assignRole('admin');
+    $qari = Qari::factory()->create(['name_ar' => 'الشيخ المرشد']);
+
+    $this->actingAs($admin)
+        ->get(route('admin.tilawat.index'))
+        ->assertOk()
+        ->assertSee('qariFilter()', false)
+        ->assertSee(json_encode($qari->name), false);
+});
+
+it('filters tilawat by the selected qari', function () {
+    $admin = User::factory()->create()->assignRole('admin');
+    $wanted = Qari::factory()->create();
+    $other = Qari::factory()->create();
+
+    $mine = Tilawa::factory()->create(['qari_id' => $wanted->id, 'title_ar' => 'تلاوة مطلوبة']);
+    $hidden = Tilawa::factory()->create(['qari_id' => $other->id, 'title_ar' => 'تلاوة أخرى']);
+
+    $this->actingAs($admin)
+        ->get(route('admin.tilawat.index', ['qari' => $wanted->id]))
+        ->assertOk()
+        ->assertSee($mine->title_ar)
+        ->assertDontSee($hidden->title_ar);
 });

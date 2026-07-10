@@ -164,12 +164,13 @@ it('marks the source failed when cleaning throws', function () {
     expect($source->fresh()->status)->toBe('failed');
 });
 
-it('shows a listen player for a source that has produced a recitation', function () {
+it('shows a review player for a source that has produced a recitation', function () {
     $creator = User::factory()->create()->assignRole('creator');
     $qari = Qari::factory()->create();
     $tilawa = Tilawa::factory()->create([
         'qari_id' => $qari->id,
         'uploaded_by' => $creator->id,
+        'status' => 'inactive',
         'audio_path' => 'tilawat/ready.mp3',
     ]);
     TilawatSource::create([
@@ -185,8 +186,120 @@ it('shows a listen player for a source that has produced a recitation', function
     $this->actingAs($creator);
 
     Livewire::test(FactoryQueue::class)
-        ->assertSee(__('Listen'))
+        ->call('switchTab', 'review')
         ->assertSeeHtml($tilawa->audio_url);
+});
+
+it('keeps items being cleaned in Processing and cleaned ones in Review', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+    $procQari = Qari::factory()->create(['name_ar' => 'قارئ المعالجة']);
+    $reviewQari = Qari::factory()->create(['name_ar' => 'قارئ المراجعة']);
+
+    TilawatSource::create([
+        'source_type' => 'library',
+        'source_url' => 'lib/a.mp3',
+        'qari_id' => $procQari->id,
+        'surah_number' => 2,
+        'status' => 'processing',
+        'created_by' => $creator->id,
+    ]);
+
+    $tilawa = Tilawa::factory()->create([
+        'qari_id' => $reviewQari->id,
+        'uploaded_by' => $creator->id,
+        'title_ar' => 'تلاوة للمراجعة',
+        'audio_path' => 'tilawat/r.mp3',
+        'status' => 'inactive',
+    ]);
+    TilawatSource::create([
+        'source_type' => 'library',
+        'source_url' => 'lib/b.mp3',
+        'qari_id' => $reviewQari->id,
+        'surah_number' => 2,
+        'status' => 'completed',
+        'tilawa_id' => $tilawa->id,
+        'created_by' => $creator->id,
+    ]);
+
+    $this->actingAs($creator);
+
+    Livewire::test(FactoryQueue::class)
+        ->assertSee('قارئ المعالجة')
+        ->assertDontSee('تلاوة للمراجعة')
+        ->call('switchTab', 'review')
+        ->assertSee('تلاوة للمراجعة')
+        ->assertDontSee('قارئ المعالجة');
+});
+
+it('approves a reviewed recitation and publishes it live', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+    $qari = Qari::factory()->create();
+    $tilawa = Tilawa::factory()->create([
+        'qari_id' => $qari->id,
+        'uploaded_by' => $creator->id,
+        'title_ar' => 'تلاوة للاعتماد',
+        'status' => 'inactive',
+        'review_status' => 'pending',
+    ]);
+    TilawatSource::create([
+        'source_type' => 'upload',
+        'source_url' => 'sources/1/x.mp3',
+        'qari_id' => $qari->id,
+        'surah_number' => 2,
+        'status' => 'completed',
+        'tilawa_id' => $tilawa->id,
+        'created_by' => $creator->id,
+    ]);
+
+    $this->actingAs($creator);
+
+    Livewire::test(FactoryQueue::class)
+        ->call('switchTab', 'review')
+        ->assertSee('تلاوة للاعتماد')
+        ->call('approve', $tilawa->id)
+        ->assertDontSee('تلاوة للاعتماد');
+
+    $tilawa->refresh();
+    expect($tilawa->status)->toBe('active')
+        ->and($tilawa->review_status)->toBe('approved')
+        ->and($tilawa->reviewed_by)->toBe($creator->id)
+        ->and($tilawa->reviews()->where('action', 'approved')->exists())->toBeTrue();
+});
+
+it('locks in an edited ayah range when approving', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+    $qari = Qari::factory()->create();
+    $tilawa = Tilawa::factory()->create([
+        'qari_id' => $qari->id,
+        'uploaded_by' => $creator->id,
+        'surah_number' => 2,
+        'ayah_from' => null,
+        'ayah_to' => null,
+        'status' => 'inactive',
+    ]);
+    TilawatSource::create([
+        'source_type' => 'upload',
+        'source_url' => 'sources/1/x.mp3',
+        'qari_id' => $qari->id,
+        'surah_number' => 2,
+        'status' => 'completed',
+        'tilawa_id' => $tilawa->id,
+        'created_by' => $creator->id,
+    ]);
+
+    $this->actingAs($creator);
+
+    Livewire::test(FactoryQueue::class)
+        ->call('switchTab', 'review')
+        ->set("edits.{$tilawa->id}.from", 3)
+        ->set("edits.{$tilawa->id}.to", 20)
+        ->call('approve', $tilawa->id);
+
+    $tilawa->refresh();
+    expect($tilawa->status)->toBe('active')
+        ->and($tilawa->ayah_from)->toBe(3)
+        ->and($tilawa->ayah_to)->toBe(20)
+        ->and($tilawa->title_ar)->toBe('ما تيسر من سوره البقرة من الايه 3 الي الايه 20');
 });
 
 it('hides the listen player while a source is still being cleaned', function () {

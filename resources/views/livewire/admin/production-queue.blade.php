@@ -17,7 +17,7 @@
     @if($this->tilawat->isEmpty())
         <div style="text-align:center;padding:3rem 1rem;color:var(--text2)">
             <i class="fas fa-tower-broadcast" style="font-size:2.2rem;display:block;margin-bottom:.7rem;opacity:.4"></i>
-            <div style="font-size:.95rem">{{ __('Nothing ready to publish yet. Confirm an ayah range in the Factory first.') }}</div>
+            <div style="font-size:.95rem">{{ __('Nothing ready to publish yet. Ingest a source in the Factory first.') }}</div>
         </div>
     @else
         <div class="tbl-wrap">

@@ -1,5 +1,21 @@
 <div @if($this->hasActive) wire:poll.5s @endif>
 
+    {{-- Tab switcher: items in flight vs. items waiting for a human listen --}}
+    <div class="fq-tabs">
+        <button type="button" wire:click="switchTab('processing')"
+                class="fq-tab @if($tab === 'processing') is-active @endif">
+            <i class="fas fa-gears"></i> {{ __('Processing') }}
+            <span class="fq-count">{{ $this->processingCount }}</span>
+        </button>
+        <button type="button" wire:click="switchTab('review')"
+                class="fq-tab @if($tab === 'review') is-active @endif">
+            <i class="fas fa-headphones"></i> {{ __('Review') }}
+            <span class="fq-count fq-count-green">{{ $this->reviewCount }}</span>
+        </button>
+    </div>
+
+    @if($tab === 'processing')
+    {{-- ── PROCESSING ─────────────────────────────────────────── --}}
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
         <h2 style="font-size:1.05rem;font-weight:700;margin:0">{{ __('Ingest Queue') }}</h2>
         @if($this->hasActive)
@@ -7,10 +23,10 @@
         @endif
     </div>
 
-    @if($this->sources->isEmpty())
+    @if($this->processingSources->isEmpty())
         <div style="text-align:center;padding:3rem 1rem;color:var(--text2)">
             <i class="fas fa-industry" style="font-size:2.2rem;display:block;margin-bottom:.7rem;opacity:.4"></i>
-            <div style="font-size:.95rem">{{ __('Nothing ingested yet. Upload a source above to get started.') }}</div>
+            <div style="font-size:.95rem">{{ __('Nothing being processed. Import a folder above to get started.') }}</div>
         </div>
     @else
         <div class="tbl-wrap">
@@ -18,57 +34,30 @@
                 <thead><tr>
                     <th>{{ __('Recitation') }}</th>
                     <th>{{ __('Qari') }}</th>
-                    <th>{{ __('Ayah range') }}</th>
                     <th>{{ __('Status') }}</th>
                     <th>{{ __('Actions') }}</th>
                 </tr></thead>
                 <tbody>
-                    @foreach($this->sources as $source)
-                    @php($tilawa = $source->tilawa)
-                    <tr wire:key="src-{{ $source->id }}">
+                    @foreach($this->processingSources as $source)
+                    <tr wire:key="proc-{{ $source->id }}">
                         <td>
                             <div style="display:flex;align-items:center;gap:.72rem">
                                 <span style="width:44px;height:44px;border-radius:8px;background:var(--bg3,#1e1e35);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text3)"><i class="fas fa-book-quran"></i></span>
                                 <div style="min-width:0">
-                                    <div style="font-weight:600;font-size:.86rem">{{ $tilawa?->title_ar ?? __('Cleaning audio…') }}</div>
+                                    <div style="font-weight:600;font-size:.86rem">{{ $source->tilawa?->title_ar ?? __('Cleaning audio…') }}</div>
                                     <div style="font-size:.72rem;color:var(--text3)">{{ $source->surah_number ? config('surahs.'.$source->surah_number) : '—' }}</div>
                                 </div>
                             </div>
                         </td>
                         <td style="color:var(--gold);font-size:.85rem">{{ $source->qari?->name ?? '—' }}</td>
                         <td>
-                            @if($tilawa)
-                            <div style="display:flex;align-items:center;gap:.35rem">
-                                <input type="number" min="1" wire:model="edits.{{ $tilawa->id }}.from"
-                                       class="form-control" style="width:74px;padding:.3rem .45rem;font-size:.8rem" placeholder="{{ __('From ayah') }}">
-                                <span style="color:var(--text3)">–</span>
-                                <input type="number" min="1" wire:model="edits.{{ $tilawa->id }}.to"
-                                       class="form-control" style="width:74px;padding:.3rem .45rem;font-size:.8rem" placeholder="{{ __('To ayah') }}">
-                            </div>
-                            @error('to')<span class="form-error" style="font-size:.72rem">{{ $message }}</span>@enderror
-                            @else
-                            <span style="color:var(--text3)">—</span>
-                            @endif
-                        </td>
-                        <td>
                             @php($map = [
                                 'pending'    => ['badge-muted', __('Pending'),    'fa-clock'],
                                 'processing' => ['badge-amber', __('Processing'), 'fa-spinner fa-spin'],
-                                'completed'  => ['badge-green', __('Ingested'),   'fa-circle-check'],
                                 'failed'     => ['badge-red',   __('Failed'),     'fa-circle-exclamation'],
                             ])
                             @php([$cls, $label, $icon] = $map[$source->status] ?? ['badge-muted', $source->status, 'fa-question'])
                             <span class="badge {{ $cls }}"><i class="fas {{ $icon }}"></i> {{ $label }}</span>
-
-                            @if($tilawa)
-                                @if($tilawa->ayah_confidence === 'high')
-                                <span class="badge badge-green" style="margin-top:.3rem"><i class="fas fa-robot"></i> {{ __('Detected') }}</span>
-                                @elseif($tilawa->ayah_confidence === 'low')
-                                <div style="font-size:.74rem;color:#e0a852;margin-top:.35rem"><i class="fas fa-triangle-exclamation"></i> {{ __('Low confidence — please review') }}</div>
-                                @elseif($tilawa->ayah_confidence === null && $source->status === 'completed' && $asrEnabled && $tilawa->ayah_from === null)
-                                <div style="font-size:.74rem;color:var(--text2);margin-top:.35rem"><i class="fas fa-spinner fa-spin"></i> {{ __('Detecting ayat') }}</div>
-                                @endif
-                            @endif
 
                             @if($source->status === 'failed' && $source->error)
                             <div style="font-size:.74rem;color:#e86060;margin-top:.35rem;max-width:240px" title="{{ $source->error }}">
@@ -77,32 +66,9 @@
                             @endif
                         </td>
                         <td>
-                            <div style="display:flex;gap:.2rem;align-items:center;flex-wrap:wrap">
-                                @if($tilawa)
-                                <button type="button" wire:click="confirm({{ $tilawa->id }})" class="btn btn-primary btn-xs" title="{{ __('Confirm ayah range') }}">
-                                    <i class="fas fa-check"></i> {{ __('Confirm') }}
-                                </button>
-                                @if($asrEnabled)
-                                <button type="button" wire:click="redetect({{ $tilawa->id }})" class="btn-icon" title="{{ __('Detect again') }}"><i class="fas fa-robot"></i></button>
-                                @endif
-                                <a href="{{ route('admin.tilawat.edit', $tilawa) }}" class="btn-icon" title="{{ __('Open tilawa') }}"><i class="fas fa-arrow-up-right-from-square"></i></a>
-                                @endif
-                                <button type="button" wire:click="deleteSource({{ $source->id }})"
-                                        wire:confirm="{{ __('Remove this source and its recitation?') }}"
-                                        class="btn-icon" style="color:var(--red)" title="{{ __('Remove') }}"><i class="fas fa-trash"></i></button>
-                            </div>
-
-                            @if($tilawa)
-                            <div wire:ignore x-data="{ open: false }" style="margin-top:.45rem">
-                                <button type="button" @click="open = ! open" class="btn btn-ghost btn-xs" title="{{ __('Listen') }}">
-                                    <i class="fas" :class="open ? 'fa-chevron-up' : 'fa-headphones'"></i> {{ __('Listen') }}
-                                </button>
-                                <div x-show="open" x-cloak style="margin-top:.45rem">
-                                    <audio controls preload="none" src="{{ $tilawa->audio_url }}"
-                                           style="width:100%;max-width:260px;height:34px"></audio>
-                                </div>
-                            </div>
-                            @endif
+                            <button type="button" wire:click="deleteSource({{ $source->id }})"
+                                    wire:confirm="{{ __('Remove this source and its recitation?') }}"
+                                    class="btn-icon" style="color:var(--red)" title="{{ __('Remove') }}"><i class="fas fa-trash"></i></button>
                         </td>
                     </tr>
                     @endforeach
@@ -110,4 +76,105 @@
             </table>
         </div>
     @endif
+
+    @else
+    {{-- ── REVIEW ─────────────────────────────────────────────── --}}
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;gap:1rem;flex-wrap:wrap">
+        <div>
+            <h2 style="font-size:1.05rem;font-weight:700;margin:0">{{ __('Review & approve') }}</h2>
+            <p style="color:var(--text2);font-size:.84rem;margin:.2rem 0 0">{{ __('Listen through each recitation, optionally set the ayah range, then approve to publish it live.') }}</p>
+        </div>
+    </div>
+
+    @if($this->reviewSources->isEmpty())
+        <div style="text-align:center;padding:3rem 1rem;color:var(--text2)">
+            <i class="fas fa-headphones" style="font-size:2.2rem;display:block;margin-bottom:.7rem;opacity:.4"></i>
+            <div style="font-size:.95rem">{{ __('No recitations waiting for review. Cleaned files land here automatically.') }}</div>
+        </div>
+    @else
+        <div class="fq-review-list">
+            @foreach($this->reviewSources as $source)
+            @php($tilawa = $source->tilawa)
+            <div class="fq-review-card" wire:key="rev-{{ $source->id }}">
+
+                <div class="fq-review-head">
+                    <div style="min-width:0">
+                        <div class="fq-review-title">{{ $tilawa->title_ar }}</div>
+                        <div class="fq-review-sub">
+                            <i class="fas fa-microphone-lines"></i> {{ $tilawa->qari?->name ?? '—' }}
+                            <span style="opacity:.4">·</span> {{ $source->surah_number ? config('surahs.'.$source->surah_number) : '—' }}
+                            <span style="opacity:.4">·</span> {{ $tilawa->formatted_duration }}
+                        </div>
+                    </div>
+                    @if($tilawa->ayah_confidence === 'high')
+                    <span class="badge badge-green"><i class="fas fa-robot"></i> {{ __('Detected') }}</span>
+                    @elseif($tilawa->ayah_confidence === 'low')
+                    <span class="badge badge-amber"><i class="fas fa-triangle-exclamation"></i> {{ __('Low confidence') }}</span>
+                    @elseif($tilawa->ayah_confidence === null && $asrEnabled && $tilawa->ayah_from === null)
+                    <span class="badge badge-muted"><i class="fas fa-spinner fa-spin"></i> {{ __('Detecting ayat') }}</span>
+                    @endif
+                </div>
+
+                {{-- Fast listening & seeking --}}
+                <audio controls preload="metadata" src="{{ $tilawa->audio_url }}" class="fq-audio"></audio>
+
+                <div class="fq-review-foot">
+                    <div class="fq-range">
+                        <span class="fq-range-label">{{ __('Ayah range') }}</span>
+                        <input type="number" min="1" wire:model="edits.{{ $tilawa->id }}.from"
+                               class="form-control fq-range-input" placeholder="{{ __('From ayah') }}">
+                        <span style="color:var(--text3)">–</span>
+                        <input type="number" min="1" wire:model="edits.{{ $tilawa->id }}.to"
+                               class="form-control fq-range-input" placeholder="{{ __('To ayah') }}">
+                        <button type="button" wire:click="confirm({{ $tilawa->id }})" class="btn btn-ghost btn-xs" title="{{ __('Save the ayah range and update the title') }}">
+                            <i class="fas fa-arrows-left-right-to-line"></i> {{ __('Set range') }}
+                        </button>
+                        @error("edits.{$tilawa->id}.to")<span class="form-error" style="font-size:.72rem">{{ $message }}</span>@enderror
+                    </div>
+
+                    <div class="fq-review-actions">
+                        @if($asrEnabled)
+                        <button type="button" wire:click="redetect({{ $tilawa->id }})" class="btn-icon" title="{{ __('Detect again') }}"><i class="fas fa-robot"></i></button>
+                        @endif
+                        <a href="{{ route('admin.tilawat.edit', $tilawa) }}" class="btn-icon" title="{{ __('Open tilawa') }}"><i class="fas fa-arrow-up-right-from-square"></i></a>
+                        <button type="button" wire:click="deleteSource({{ $source->id }})"
+                                wire:confirm="{{ __('Remove this source and its recitation?') }}"
+                                class="btn-icon" style="color:var(--red)" title="{{ __('Remove') }}"><i class="fas fa-trash"></i></button>
+                        <button type="button" wire:click="approve({{ $tilawa->id }})" class="btn fq-approve btn-sm">
+                            <i class="fas fa-circle-check"></i> {{ __('Approve & publish') }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+            @endforeach
+        </div>
+    @endif
+    @endif
+
+    <style>
+        .fq-tabs{display:flex;gap:.4rem;margin-bottom:1.4rem;border-bottom:1px solid var(--border)}
+        .fq-tab{display:inline-flex;align-items:center;gap:.5rem;padding:.6rem 1rem;border:0;background:none;cursor:pointer;font-family:inherit;font-size:.9rem;font-weight:600;color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-1px;transition:.15s}
+        .fq-tab:hover{color:var(--text1)}
+        .fq-tab.is-active{color:var(--gold);border-bottom-color:var(--gold)}
+        .fq-count{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 .35rem;border-radius:999px;background:var(--bg3,#1e1e35);color:var(--text2);font-size:.72rem;font-weight:700}
+        .fq-count-green{background:rgba(34,197,94,.16);color:#22c55e}
+
+        .fq-review-list{display:flex;flex-direction:column;gap:.9rem}
+        .fq-review-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.1rem 1.2rem}
+        .fq-review-head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:.85rem}
+        .fq-review-title{font-weight:700;font-size:.98rem;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .fq-review-sub{font-size:.76rem;color:var(--text3);margin-top:.2rem}
+        .fq-review-sub i{color:var(--gold)}
+
+        .fq-audio{width:100%;height:40px;margin-bottom:.9rem}
+
+        .fq-review-foot{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+        .fq-range{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}
+        .fq-range-label{font-size:.76rem;color:var(--text2);font-weight:600}
+        .fq-range-input{width:74px;padding:.3rem .45rem;font-size:.8rem}
+        .fq-review-actions{display:flex;align-items:center;gap:.35rem;flex-wrap:wrap}
+
+        .fq-approve{background:#22c55e;border-color:#22c55e;color:#04210f;font-weight:700}
+        .fq-approve:hover{background:#16a34a;border-color:#16a34a}
+    </style>
 </div>
