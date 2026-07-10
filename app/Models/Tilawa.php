@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\Storage;
 
 class Tilawa extends Model
 {
@@ -14,9 +15,9 @@ class Tilawa extends Model
 
     protected $table = 'tilawat';
 
-    protected $fillable = ['qari_id', 'title_ar', 'title_en', 'slug', 'description_ar', 'description_en', 'recorded_at', 'recorded_place', 'surah_number', 'audio_path', 'duration', 'cover_image', 'uploaded_by', 'is_featured', 'downloads_count', 'plays_count', 'likes_count', 'status', 'review_status', 'rejection_note', 'reviewed_by', 'reviewed_at'];
+    protected $fillable = ['qari_id', 'title_ar', 'title_en', 'slug', 'description_ar', 'description_en', 'recorded_at', 'recorded_place', 'surah_number', 'audio_path', 'duration', 'cover_image', 'uploaded_by', 'is_featured', 'downloads_count', 'plays_count', 'likes_count', 'status', 'review_status', 'rejection_note', 'reviewed_by', 'reviewed_at', 'ayah_from', 'ayah_to', 'ayah_confidence', 'subtitle_path', 'master_audio_path', 'brand_cover_path', 'brand_video_path', 'brand_status', 'brand_error'];
 
-    protected $casts = ['is_featured' => 'boolean', 'recorded_at' => 'date', 'reviewed_at' => 'datetime'];
+    protected $casts = ['is_featured' => 'boolean', 'recorded_at' => 'date', 'reviewed_at' => 'datetime', 'ayah_from' => 'integer', 'ayah_to' => 'integer'];
 
     public function qari()
     {
@@ -46,6 +47,11 @@ class Tilawa extends Model
     public function clips(): HasMany
     {
         return $this->hasMany(VideoClip::class);
+    }
+
+    public function publications(): HasMany
+    {
+        return $this->hasMany(Publication::class);
     }
 
     public function scopePendingReview(Builder $query): Builder
@@ -112,6 +118,26 @@ class Tilawa extends Model
     public function getSurahNameAttribute(): ?string
     {
         return $this->surah_number ? config('surahs.'.$this->surah_number) : null;
+    }
+
+    public function getBrandVideoUrlAttribute(): ?string
+    {
+        return $this->brand_video_path ? Storage::disk('public')->url($this->brand_video_path) : null;
+    }
+
+    public function getBrandCoverUrlAttribute(): ?string
+    {
+        return $this->brand_cover_path ? Storage::disk('public')->url($this->brand_cover_path) : null;
+    }
+
+    public function getMasterAudioUrlAttribute(): ?string
+    {
+        return $this->master_audio_path ? Storage::disk('public')->url($this->master_audio_path) : null;
+    }
+
+    public function getSubtitleUrlAttribute(): ?string
+    {
+        return $this->subtitle_path ? Storage::disk('public')->url($this->subtitle_path) : null;
     }
 
     /**

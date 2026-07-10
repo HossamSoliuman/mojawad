@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\ClipController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\PublishingController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\ShortController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\WatchHistoryController;
 use App\Http\Controllers\CollectionController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\PodcastFeedController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QariController;
 use App\Http\Controllers\ShortViewController;
@@ -27,6 +29,9 @@ use Illuminate\Support\Facades\Route;
 // ── Public ──────────────────────────────────────────────────────────────
 Route::get('/', HomeController::class)->name('home');
 Route::post('/shorts/{short}/view', ShortViewController::class)->name('shorts.view');
+
+// Podcast RSS feed pulled by Spotify & Anghami — submit this URL to each once.
+Route::get('/podcast/feed.xml', [PodcastFeedController::class, 'feed'])->name('podcast.feed');
 
 Route::prefix('qaris')->name('qaris.')->group(function () {
     Route::get('/', [QariController::class, 'index'])->name('index');
@@ -134,6 +139,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
         Route::post('/clips/{clip}/retry', [ClipController::class, 'retry'])->name('clips.retry')->middleware('can:update,clip');
         Route::patch('/clips/{clip}/tiktok', [ClipController::class, 'tiktok'])->name('clips.tiktok')->middleware('can:update,clip');
         Route::delete('/clips/{clip}', [ClipController::class, 'destroy'])->name('clips.destroy')->middleware('can:delete,clip');
+
+        Route::get('/publishing/factory', [PublishingController::class, 'factory'])->name('publishing.factory');
+        Route::post('/publishing/ingest', [PublishingController::class, 'ingest'])->name('publishing.ingest');
+        Route::get('/publishing/production', [PublishingController::class, 'production'])->name('publishing.production');
 
         Route::get('/tilawat', [App\Http\Controllers\Admin\TilawaController::class, 'index'])->name('tilawat.index');
         Route::get('/tilawat/{tilawa}/edit', [App\Http\Controllers\Admin\TilawaController::class, 'edit'])->name('tilawat.edit')->middleware('can:update,tilawa');

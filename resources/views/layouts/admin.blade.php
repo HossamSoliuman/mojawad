@@ -79,6 +79,15 @@
         @endif
         @endrole
       </a>
+
+      <div class="adm-nav-divider"></div>
+      <div class="nav-sec-lbl">{{ __('Publishing') }}</div>
+      <a href="{{ route('admin.publishing.factory') }}" class="s-link {{ request()->routeIs('admin.publishing.factory') ? 'active':'' }}">
+        <i class="fas fa-industry"></i> <span>{{ __('Factory') }}</span>
+      </a>
+      <a href="{{ route('admin.publishing.production') }}" class="s-link {{ request()->routeIs('admin.publishing.production') ? 'active':'' }}">
+        <i class="fas fa-tower-broadcast"></i> <span>{{ __('Production') }}</span>
+      </a>
       @endhasanyrole
 
       @role('reviewer')
