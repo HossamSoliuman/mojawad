@@ -117,5 +117,5 @@ it('renders the card html with the social footer', function () {
         ->toContain('الشيخ الحصري')
         ->toContain('البقرة')
         ->toContain('@mojawad')
-        ->toContain('mojawad.org');
+        ->toContain('mojawad.net');
 });

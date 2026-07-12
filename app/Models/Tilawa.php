@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\TilawaTitle;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -15,9 +16,9 @@ class Tilawa extends Model
 
     protected $table = 'tilawat';
 
-    protected $fillable = ['qari_id', 'title_ar', 'title_en', 'slug', 'description_ar', 'description_en', 'recorded_at', 'recorded_place', 'surah_number', 'audio_path', 'duration', 'cover_image', 'uploaded_by', 'is_featured', 'downloads_count', 'plays_count', 'likes_count', 'status', 'review_status', 'rejection_note', 'reviewed_by', 'reviewed_at', 'ayah_from', 'ayah_to', 'ayah_confidence', 'subtitle_path', 'master_audio_path', 'brand_cover_path', 'brand_video_path', 'brand_status', 'brand_error'];
+    protected $fillable = ['qari_id', 'title_ar', 'title_en', 'slug', 'description_ar', 'description_en', 'recorded_at', 'recorded_place', 'surah_number', 'surahs', 'audio_path', 'duration', 'cover_image', 'uploaded_by', 'is_featured', 'downloads_count', 'plays_count', 'likes_count', 'status', 'review_status', 'rejection_note', 'reviewed_by', 'reviewed_at', 'ayah_from', 'ayah_to', 'ayah_confidence', 'subtitle_path', 'master_audio_path', 'brand_cover_path', 'brand_video_path', 'brand_status', 'brand_error'];
 
-    protected $casts = ['is_featured' => 'boolean', 'recorded_at' => 'date', 'reviewed_at' => 'datetime', 'ayah_from' => 'integer', 'ayah_to' => 'integer'];
+    protected $casts = ['is_featured' => 'boolean', 'recorded_at' => 'date', 'reviewed_at' => 'datetime', 'ayah_from' => 'integer', 'ayah_to' => 'integer', 'surahs' => 'array'];
 
     public function qari()
     {
@@ -57,6 +58,27 @@ class Tilawa extends Model
     public function scopePendingReview(Builder $query): Builder
     {
         return $query->where('review_status', 'pending');
+    }
+
+    /**
+     * Match recitations belonging to a surah, whether it is the sole surah or
+     * one of several a multi-surah recitation spans.
+     */
+    public function scopeForSurah(Builder $query, int $surah): Builder
+    {
+        return $query->where(function (Builder $q) use ($surah) {
+            $q->where('surah_number', $surah)
+                ->orWhereJsonContains('surahs', $surah);
+        });
+    }
+
+    /**
+     * A recitation that spans more than one surah — its `surahs` list holds the
+     * ordered surah numbers and no single ayah range applies across them.
+     */
+    public function isMultiSurah(): bool
+    {
+        return is_array($this->surahs) && count($this->surahs) > 1;
     }
 
     public function logReview(string $action, ?string $note = null, ?int $reviewerId = null): TilawaReview
@@ -118,6 +140,15 @@ class Tilawa extends Model
     public function getSurahNameAttribute(): ?string
     {
         return $this->surah_number ? config('surahs.'.$this->surah_number) : null;
+    }
+
+    /**
+     * Display label of every surah this recitation covers, collapsing to the
+     * single surah name when it does not span multiple surahs.
+     */
+    public function getSurahLabelAttribute(): ?string
+    {
+        return TilawaTitle::surahList($this->surahs ?: $this->surah_number);
     }
 
     public function getBrandVideoUrlAttribute(): ?string

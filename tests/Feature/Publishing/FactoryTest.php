@@ -320,6 +320,108 @@ it('hides the listen player while a source is still being cleaned', function () 
         ->assertDontSeeHtml('<audio');
 });
 
+it('selects every source in the active tab with one toggle', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+    $qari = Qari::factory()->create();
+    $ids = collect(range(1, 3))->map(fn () => TilawatSource::create([
+        'source_type' => 'upload',
+        'source_url' => 'sources/1/'.Str::uuid().'.mp3',
+        'qari_id' => $qari->id,
+        'surah_number' => 2,
+        'status' => 'processing',
+        'created_by' => $creator->id,
+    ])->id);
+
+    $this->actingAs($creator);
+
+    $expected = $ids->map(fn ($id) => (string) $id)->sort()->values()->all();
+
+    Livewire::test(FactoryQueue::class)
+        ->set('selectAll', true)
+        ->assertSet('selected', fn ($selected) => collect($selected)->sort()->values()->all() === $expected)
+        ->set('selectAll', false)
+        ->assertSet('selected', []);
+});
+
+it('bulk deletes the selected sources through the confirmation modal', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+    $qari = Qari::factory()->create();
+    $keep = TilawatSource::create([
+        'source_type' => 'upload',
+        'source_url' => 'sources/1/keep.mp3',
+        'qari_id' => $qari->id,
+        'surah_number' => 2,
+        'status' => 'processing',
+        'created_by' => $creator->id,
+    ]);
+    $drop = collect(range(1, 2))->map(fn () => TilawatSource::create([
+        'source_type' => 'upload',
+        'source_url' => 'sources/1/'.Str::uuid().'.mp3',
+        'qari_id' => $qari->id,
+        'surah_number' => 2,
+        'status' => 'processing',
+        'created_by' => $creator->id,
+    ]));
+
+    $this->actingAs($creator);
+
+    Livewire::test(FactoryQueue::class)
+        ->set('selected', $drop->map(fn ($s) => (string) $s->id)->all())
+        ->call('confirmBulkDelete')
+        ->assertSet('confirmingBulkDelete', true)
+        ->call('performDelete')
+        ->assertSet('confirmingBulkDelete', false)
+        ->assertSet('selected', []);
+
+    expect(TilawatSource::whereIn('id', $drop->pluck('id'))->count())->toBe(0)
+        ->and(TilawatSource::whereKey($keep->id)->exists())->toBeTrue();
+});
+
+it('deletes a single source through the confirmation modal', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+    $qari = Qari::factory()->create();
+    $source = TilawatSource::create([
+        'source_type' => 'upload',
+        'source_url' => 'sources/1/x.mp3',
+        'qari_id' => $qari->id,
+        'surah_number' => 2,
+        'status' => 'processing',
+        'created_by' => $creator->id,
+    ]);
+
+    $this->actingAs($creator);
+
+    Livewire::test(FactoryQueue::class)
+        ->call('confirmDelete', $source->id)
+        ->assertSet('confirmingSourceId', $source->id)
+        ->call('performDelete')
+        ->assertSet('confirmingSourceId', null);
+
+    expect(TilawatSource::whereKey($source->id)->exists())->toBeFalse();
+});
+
+it('will not bulk delete sources owned by another creator', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+    $other = User::factory()->create()->assignRole('creator');
+    $qari = Qari::factory()->create();
+    $foreign = TilawatSource::create([
+        'source_type' => 'upload',
+        'source_url' => 'sources/1/foreign.mp3',
+        'qari_id' => $qari->id,
+        'surah_number' => 2,
+        'status' => 'processing',
+        'created_by' => $other->id,
+    ]);
+
+    $this->actingAs($creator);
+
+    Livewire::test(FactoryQueue::class)
+        ->set('selected', [(string) $foreign->id])
+        ->call('performDelete');
+
+    expect(TilawatSource::whereKey($foreign->id)->exists())->toBeTrue();
+});
+
 it('lets an editor confirm the ayah range and finalize the title', function () {
     $creator = User::factory()->create()->assignRole('creator');
     $qari = Qari::factory()->create();

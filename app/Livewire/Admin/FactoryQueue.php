@@ -24,6 +24,15 @@ class FactoryQueue extends Component
     /** @var array<int, array{from: ?int, to: ?int}> */
     public array $edits = [];
 
+    /** @var array<int, string> */
+    public array $selected = [];
+
+    public bool $selectAll = false;
+
+    public ?int $confirmingSourceId = null;
+
+    public bool $confirmingBulkDelete = false;
+
     public bool $asrEnabled = false;
 
     public function mount(): void
@@ -34,6 +43,19 @@ class FactoryQueue extends Component
     public function switchTab(string $tab): void
     {
         $this->tab = in_array($tab, ['processing', 'review'], true) ? $tab : 'processing';
+
+        $this->reset('selected', 'selectAll');
+    }
+
+    /**
+     * Toggle every source in the active tab in one click. Selection is stored as
+     * string ids so the checkboxes stay in sync with their rendered values.
+     */
+    public function updatedSelectAll(bool $value): void
+    {
+        $this->selected = $value
+            ? $this->currentSources()->pluck('id')->map(fn ($id) => (string) $id)->all()
+            : [];
     }
 
     #[On('factory-updated')]
@@ -113,6 +135,10 @@ class FactoryQueue extends Component
     {
         $tilawa = $this->ownedTilawa($tilawaId);
 
+        if ($tilawa->isMultiSurah()) {
+            return;
+        }
+
         $tilawa->update($this->rangeAttributes($tilawa, $tilawaId));
     }
 
@@ -126,7 +152,7 @@ class FactoryQueue extends Component
 
         $edit = $this->edits[$tilawaId] ?? [];
 
-        $range = (! empty($edit['from']) && ! empty($edit['to']))
+        $range = (! $tilawa->isMultiSurah() && ! empty($edit['from']) && ! empty($edit['to']))
             ? $this->rangeAttributes($tilawa, $tilawaId)
             : [];
 
@@ -150,6 +176,10 @@ class FactoryQueue extends Component
     {
         $tilawa = $this->ownedTilawa($tilawaId);
 
+        if ($tilawa->isMultiSurah()) {
+            return;
+        }
+
         if (! AyahDetectionService::enabled()) {
             throw ValidationException::withMessages(['asr' => __('Ayah detection is not configured.')]);
         }
@@ -159,12 +189,75 @@ class FactoryQueue extends Component
         DetectAyahRange::dispatch($tilawa->id);
     }
 
+    public function confirmDelete(int $sourceId): void
+    {
+        $this->confirmingSourceId = $sourceId;
+    }
+
+    public function confirmBulkDelete(): void
+    {
+        if ($this->selected !== []) {
+            $this->confirmingBulkDelete = true;
+        }
+    }
+
+    public function cancelDelete(): void
+    {
+        $this->reset('confirmingSourceId', 'confirmingBulkDelete');
+    }
+
+    /**
+     * Run the delete the confirmation modal was opened for — the selected batch
+     * when a bulk delete is pending, otherwise the single queued source.
+     */
+    public function performDelete(): void
+    {
+        if ($this->confirmingBulkDelete) {
+            $this->deleteSelected();
+        } elseif ($this->confirmingSourceId !== null) {
+            $this->deleteSource($this->confirmingSourceId);
+        }
+
+        $this->reset('confirmingSourceId', 'confirmingBulkDelete');
+    }
+
     public function deleteSource(int $sourceId): void
     {
         $source = TilawatSource::uploads()
             ->when(! Auth::user()->hasRole('admin'), fn ($q) => $q->where('created_by', Auth::id()))
+            ->with('tilawa')
             ->findOrFail($sourceId);
 
+        $this->deleteSourceRecord($source);
+    }
+
+    /**
+     * Remove every currently selected source (and its recitation) in one action,
+     * scoped to sources the user owns so ids from other creators are ignored.
+     */
+    public function deleteSelected(): void
+    {
+        $ids = array_map('intval', $this->selected);
+
+        if ($ids === []) {
+            return;
+        }
+
+        $sources = TilawatSource::uploads()
+            ->when(! Auth::user()->hasRole('admin'), fn ($q) => $q->where('created_by', Auth::id()))
+            ->whereIn('id', $ids)
+            ->with('tilawa')
+            ->get();
+
+        foreach ($sources as $source) {
+            $this->deleteSourceRecord($source);
+        }
+
+        $this->reset('selected', 'selectAll');
+    }
+
+    private function deleteSourceRecord(TilawatSource $source): void
+    {
         $disk = Storage::disk(config('publishing.disk'));
 
         if ($source->source_url) {
@@ -182,6 +275,14 @@ class FactoryQueue extends Component
         }
 
         $source->delete();
+    }
+
+    /**
+     * The sources shown in the active tab, used to drive the select-all toggle.
+     */
+    private function currentSources()
+    {
+        return $this->tab === 'review' ? $this->reviewSources : $this->processingSources;
     }
 
     public function render()

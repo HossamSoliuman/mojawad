@@ -14,6 +14,14 @@
         </button>
     </div>
 
+    @if(count($selected))
+    <div class="fq-bulk">
+        <span class="fq-bulk-count">{{ __(':count selected', ['count' => count($selected)]) }}</span>
+        <button type="button" wire:click="confirmBulkDelete"
+                class="btn btn-sm fq-bulk-delete"><i class="fas fa-trash"></i> {{ __('Delete selected') }}</button>
+    </div>
+    @endif
+
     @if($tab === 'processing')
     {{-- ── PROCESSING ─────────────────────────────────────────── --}}
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
@@ -32,6 +40,7 @@
         <div class="tbl-wrap">
             <table class="tbl">
                 <thead><tr>
+                    <th style="width:34px"><input type="checkbox" class="fq-check" wire:model.live="selectAll" title="{{ __('Select all') }}"></th>
                     <th>{{ __('Recitation') }}</th>
                     <th>{{ __('Qari') }}</th>
                     <th>{{ __('Status') }}</th>
@@ -40,12 +49,13 @@
                 <tbody>
                     @foreach($this->processingSources as $source)
                     <tr wire:key="proc-{{ $source->id }}">
+                        <td><input type="checkbox" class="fq-check" value="{{ $source->id }}" wire:model.live="selected"></td>
                         <td>
                             <div style="display:flex;align-items:center;gap:.72rem">
                                 <span style="width:44px;height:44px;border-radius:8px;background:var(--bg3,#1e1e35);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text3)"><i class="fas fa-book-quran"></i></span>
                                 <div style="min-width:0">
                                     <div style="font-weight:600;font-size:.86rem">{{ $source->tilawa?->title_ar ?? __('Cleaning audio…') }}</div>
-                                    <div style="font-size:.72rem;color:var(--text3)">{{ $source->surah_number ? config('surahs.'.$source->surah_number) : '—' }}</div>
+                                    <div style="font-size:.72rem;color:var(--text3)">{{ $source->surah_label ?? '—' }}</div>
                                 </div>
                             </div>
                         </td>
@@ -66,8 +76,7 @@
                             @endif
                         </td>
                         <td>
-                            <button type="button" wire:click="deleteSource({{ $source->id }})"
-                                    wire:confirm="{{ __('Remove this source and its recitation?') }}"
+                            <button type="button" wire:click="confirmDelete({{ $source->id }})"
                                     class="btn-icon" style="color:var(--red)" title="{{ __('Remove') }}"><i class="fas fa-trash"></i></button>
                         </td>
                     </tr>
@@ -84,6 +93,9 @@
             <h2 style="font-size:1.05rem;font-weight:700;margin:0">{{ __('Review & approve') }}</h2>
             <p style="color:var(--text2);font-size:.84rem;margin:.2rem 0 0">{{ __('Listen through each recitation, optionally set the ayah range, then approve to publish it live.') }}</p>
         </div>
+        @if($this->reviewSources->isNotEmpty())
+        <label class="fq-select-all"><input type="checkbox" class="fq-check" wire:model.live="selectAll"> {{ __('Select all') }}</label>
+        @endif
     </div>
 
     @if($this->reviewSources->isEmpty())
@@ -98,15 +110,20 @@
             <div class="fq-review-card" wire:key="rev-{{ $source->id }}">
 
                 <div class="fq-review-head">
-                    <div style="min-width:0">
+                    <div style="display:flex;align-items:flex-start;gap:.7rem;min-width:0">
+                        <input type="checkbox" class="fq-check" style="margin-top:.25rem" value="{{ $source->id }}" wire:model.live="selected">
+                        <div style="min-width:0">
                         <div class="fq-review-title">{{ $tilawa->title_ar }}</div>
                         <div class="fq-review-sub">
                             <i class="fas fa-microphone-lines"></i> {{ $tilawa->qari?->name ?? '—' }}
-                            <span style="opacity:.4">·</span> {{ $source->surah_number ? config('surahs.'.$source->surah_number) : '—' }}
+                            <span style="opacity:.4">·</span> {{ $tilawa->surah_label ?? '—' }}
                             <span style="opacity:.4">·</span> {{ $tilawa->formatted_duration }}
                         </div>
+                        </div>
                     </div>
-                    @if($tilawa->ayah_confidence === 'high')
+                    @if($tilawa->isMultiSurah())
+                    <span class="badge badge-muted"><i class="fas fa-layer-group"></i> {{ __('Multiple surahs') }}</span>
+                    @elseif($tilawa->ayah_confidence === 'high')
                     <span class="badge badge-green"><i class="fas fa-robot"></i> {{ __('Detected') }}</span>
                     @elseif($tilawa->ayah_confidence === 'low')
                     <span class="badge badge-amber"><i class="fas fa-triangle-exclamation"></i> {{ __('Low confidence') }}</span>
@@ -119,6 +136,11 @@
                 <audio controls preload="metadata" src="{{ $tilawa->audio_url }}" class="fq-audio"></audio>
 
                 <div class="fq-review-foot">
+                    @if($tilawa->isMultiSurah())
+                    <div class="fq-range">
+                        <span class="fq-range-label"><i class="fas fa-circle-info"></i> {{ __('Spans several surahs — no single ayah range applies.') }}</span>
+                    </div>
+                    @else
                     <div class="fq-range">
                         <span class="fq-range-label">{{ __('Ayah range') }}</span>
                         <input type="number" min="1" wire:model="edits.{{ $tilawa->id }}.from"
@@ -131,14 +153,14 @@
                         </button>
                         @error("edits.{$tilawa->id}.to")<span class="form-error" style="font-size:.72rem">{{ $message }}</span>@enderror
                     </div>
+                    @endif
 
                     <div class="fq-review-actions">
-                        @if($asrEnabled)
+                        @if($asrEnabled && ! $tilawa->isMultiSurah())
                         <button type="button" wire:click="redetect({{ $tilawa->id }})" class="btn-icon" title="{{ __('Detect again') }}"><i class="fas fa-robot"></i></button>
                         @endif
                         <a href="{{ route('admin.tilawat.edit', $tilawa) }}" class="btn-icon" title="{{ __('Open tilawa') }}"><i class="fas fa-arrow-up-right-from-square"></i></a>
-                        <button type="button" wire:click="deleteSource({{ $source->id }})"
-                                wire:confirm="{{ __('Remove this source and its recitation?') }}"
+                        <button type="button" wire:click="confirmDelete({{ $source->id }})"
                                 class="btn-icon" style="color:var(--red)" title="{{ __('Remove') }}"><i class="fas fa-trash"></i></button>
                         <button type="button" wire:click="approve({{ $tilawa->id }})" class="btn fq-approve btn-sm">
                             <i class="fas fa-circle-check"></i> {{ __('Approve & publish') }}
@@ -151,6 +173,32 @@
     @endif
     @endif
 
+    {{-- Delete confirmation — an in-page HTML modal, never the browser's confirm() dialog --}}
+    @if($confirmingBulkDelete || $confirmingSourceId !== null)
+    <div class="modal-backdrop" wire:click.self="cancelDelete"
+         x-data @keydown.escape.window="$wire.cancelDelete()">
+        <div class="modal" style="max-width:400px">
+            <div class="modal-title"><i class="fas fa-trash" style="color:var(--red)"></i> {{ __('Confirm deletion') }}</div>
+            <p style="color:var(--text2);font-size:.9rem;margin:0 0 1.4rem">
+                @if($confirmingBulkDelete)
+                    {{ __('Delete the selected sources and their recitations?') }}
+                @else
+                    {{ __('Remove this source and its recitation?') }}
+                @endif
+            </p>
+            <div style="display:flex;gap:.6rem">
+                <button type="button" wire:click="cancelDelete" class="btn btn-ghost" style="flex:1;justify-content:center">{{ __('Cancel') }}</button>
+                <button type="button" wire:click="performDelete" class="btn fq-bulk-delete" style="flex:1;justify-content:center"
+                        wire:loading.attr="disabled" wire:target="performDelete">
+                    <i class="fas fa-trash" wire:loading.remove wire:target="performDelete"></i>
+                    <i class="fas fa-circle-notch fa-spin" wire:loading wire:target="performDelete"></i>
+                    {{ __('Delete') }}
+                </button>
+            </div>
+        </div>
+    </div>
+    @endif
+
     <style>
         .fq-tabs{display:flex;gap:.4rem;margin-bottom:1.4rem;border-bottom:1px solid var(--border)}
         .fq-tab{display:inline-flex;align-items:center;gap:.5rem;padding:.6rem 1rem;border:0;background:none;cursor:pointer;font-family:inherit;font-size:.9rem;font-weight:600;color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-1px;transition:.15s}
@@ -158,6 +206,13 @@
         .fq-tab.is-active{color:var(--gold);border-bottom-color:var(--gold)}
         .fq-count{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 .35rem;border-radius:999px;background:var(--bg3,#1e1e35);color:var(--text2);font-size:.72rem;font-weight:700}
         .fq-count-green{background:rgba(34,197,94,.16);color:#22c55e}
+
+        .fq-bulk{display:flex;align-items:center;gap:.9rem;margin-bottom:1.1rem;padding:.55rem .9rem;border-radius:10px;background:rgba(29,185,84,.1);border:1px solid rgba(29,185,84,.28)}
+        .fq-bulk-count{font-size:.84rem;font-weight:600;color:var(--text1)}
+        .fq-bulk-delete{background:var(--red);border-color:var(--red);color:#fff;font-weight:600}
+        .fq-bulk-delete:hover{filter:brightness(.92)}
+        .fq-select-all{display:inline-flex;align-items:center;gap:.45rem;font-size:.82rem;font-weight:600;color:var(--text2);cursor:pointer}
+        .fq-check{width:16px;height:16px;accent-color:#1DB954;cursor:pointer}
 
         .fq-review-list{display:flex;flex-direction:column;gap:.9rem}
         .fq-review-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.1rem 1.2rem}

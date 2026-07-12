@@ -21,7 +21,17 @@ class IngestSourceAudio implements ShouldQueue
 
     public int $tries = 1;
 
-    public function __construct(public int $sourceId) {}
+    /**
+     * Cleaning a full-surah recitation shells out to ffmpeg for up to the render
+     * timeout, so the worker must give the job at least that long before killing
+     * it — while staying under the queue's retry_after so it is never reclaimed.
+     */
+    public int $timeout;
+
+    public function __construct(public int $sourceId)
+    {
+        $this->timeout = (int) config('publishing.render_timeout') + 60;
+    }
 
     public function handle(SourceCleanService $cleaner): void
     {
@@ -49,13 +59,21 @@ class IngestSourceAudio implements ShouldQueue
 
         $cleaner->clean($sourceAbs, $disk->path($cleanRelative));
 
-        $title = $source->surah_number
-            ? TilawaTitle::surahOnly($source->surah_number)
-            : ($source->source_title ?: TilawaTitle::surahOnly(null));
+        $surahs = $source->surahs ?? [];
+        $isMultiSurah = count($surahs) > 1;
+
+        if ($isMultiSurah) {
+            $title = TilawaTitle::forSurahs($surahs);
+        } elseif ($source->surah_number) {
+            $title = TilawaTitle::forSurahs([$source->surah_number], $source->part);
+        } else {
+            $title = $source->source_title ?: TilawaTitle::surahOnly(null);
+        }
 
         $tilawa = Tilawa::create([
             'qari_id' => $source->qari_id,
             'surah_number' => $source->surah_number,
+            'surahs' => $isMultiSurah ? $surahs : null,
             'title_ar' => $title,
             'title_en' => null,
             'slug' => $this->uniqueSlug($title),
@@ -81,7 +99,7 @@ class IngestSourceAudio implements ShouldQueue
             'error' => null,
         ]);
 
-        if (AyahDetectionService::enabled()) {
+        if (AyahDetectionService::enabled() && ! $isMultiSurah) {
             DetectAyahRange::dispatch($tilawa->id);
         }
     }

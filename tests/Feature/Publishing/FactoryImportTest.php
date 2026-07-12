@@ -22,6 +22,24 @@ beforeEach(function () {
     Storage::fake('public');
 });
 
+it('lets a long ingest job finish before the queue reclaims and fails it', function () {
+    // A full-surah clean can run up to the ffmpeg render timeout; the database
+    // queue must not reclaim (retry) the tries=1 ingest job before then, or it
+    // dies with MaxAttemptsExceededException and the source is marked failed.
+    $renderTimeout = (int) config('publishing.render_timeout');
+    $retryAfter = (int) config('queue.connections.database.retry_after');
+
+    $job = new IngestSourceAudio(1);
+
+    expect($retryAfter)->toBeGreaterThan($renderTimeout)
+        ->and($job->timeout)->toBeGreaterThanOrEqual($renderTimeout)
+        ->and($job->timeout)->toBeLessThan($retryAfter);
+});
+
+it('waits on sqlite locks instead of failing the ingest with a locked database', function () {
+    expect((int) config('database.connections.sqlite.busy_timeout'))->toBeGreaterThan(0);
+});
+
 it('guesses the surah number from recitation file names', function (string $filename, ?int $expected) {
     expect(RecitationLibrary::guessSurahNumber($filename))->toBe($expected);
 })->with([
@@ -30,6 +48,8 @@ it('guesses the surah number from recitation file names', function (string $file
     ['سورة الأحزاب 59-73.mp3', 33],
     ['ماتيسر من طه.mp3', 20],
     ['سورة الإخلاص.mp3', 112],
+    ['ماتيسر من سورة مريم1.mp3', 19],
+    ['ماتيسر من سورة ق1.mp3', 50],
     ['recording without a surah.mp3', null],
 ]);
 
@@ -76,12 +96,14 @@ it('does not re-queue files already imported for the reciter', function () {
     $creator = User::factory()->create()->assignRole('creator');
     $qari = Qari::factory()->create();
 
+    $tilawa = Tilawa::factory()->create(['qari_id' => $qari->id]);
     Storage::disk('recitations')->put('محمد رفعت/سورة التين.mp3', 'a');
     TilawatSource::create([
         'source_type' => 'library',
         'source_url' => 'محمد رفعت/سورة التين.mp3',
         'qari_id' => $qari->id,
         'status' => 'completed',
+        'tilawa_id' => $tilawa->id,
         'created_by' => $creator->id,
     ]);
 
@@ -95,6 +117,36 @@ it('does not re-queue files already imported for the reciter', function () {
         ->assertSet('imported', 1);
 
     expect(TilawatSource::where('source_type', 'library')->count())->toBe(2);
+});
+
+it('reprocesses an orphaned source whose recitation was deleted', function () {
+    Bus::fake();
+    $creator = User::factory()->create()->assignRole('creator');
+    $qari = Qari::factory()->create();
+
+    Storage::disk('recitations')->put('محمد رفعت/سورة التين.mp3', 'a');
+    $orphan = TilawatSource::create([
+        'source_type' => 'library',
+        'source_url' => 'محمد رفعت/سورة التين.mp3',
+        'source_title' => 'سورة التين',
+        'qari_id' => $qari->id,
+        'surah_number' => 95,
+        'status' => 'completed',
+        'tilawa_id' => null,
+        'created_by' => $creator->id,
+    ]);
+
+    Livewire::actingAs($creator)
+        ->test(FactoryImport::class)
+        ->call('selectQari', $qari->id)
+        ->call('selectFolder', 'محمد رفعت')
+        ->call('import')
+        ->assertSet('imported', 1);
+
+    expect(TilawatSource::where('source_type', 'library')->count())->toBe(1)
+        ->and($orphan->fresh()->status)->toBe('pending');
+
+    Bus::assertDispatched(IngestSourceAudio::class);
 });
 
 it('ingests a library source by reading straight from the recitations disk', function () {

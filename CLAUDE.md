@@ -266,3 +266,8 @@ protected function isAccessible(User $user, ?string $path = null): bool
 - This app is Arabic-facing. Every user-visible string MUST go through `__()` (or `@lang`), never hardcoded text.
 - Whenever you add or change a `__()` key in Blade/PHP, immediately add the matching Arabic translation to `lang/ar.json`. Do this in the same change — do not leave it for later.
 - After editing `lang/ar.json`, verify it is still valid JSON.
+
+## Confirmations & Modals
+
+- Never use the browser's native `confirm()` dialog for confirmations, including Livewire's `wire:confirm`. Always use an in-page HTML modal instead.
+- Follow the existing modal pattern: the `.modal-backdrop` / `.modal` / `.modal-title` classes, toggled with Livewire state (or Alpine `@entangle`) — see `resources/views/livewire/profile-edit.blade.php` and the delete modal in `resources/views/livewire/admin/factory-queue.blade.php`.

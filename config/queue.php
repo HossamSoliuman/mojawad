@@ -40,7 +40,10 @@ return [
             'connection' => env('DB_QUEUE_CONNECTION'),
             'table' => env('DB_QUEUE_TABLE', 'jobs'),
             'queue' => env('DB_QUEUE', 'default'),
-            'retry_after' => (int) env('DB_QUEUE_RETRY_AFTER', 90),
+            // Must exceed the longest job's runtime — the Factory ingest/render
+            // jobs shell out to ffmpeg for up to publishing.render_timeout (1800s),
+            // so a 90s default would reclaim & fail them mid-clean.
+            'retry_after' => (int) env('DB_QUEUE_RETRY_AFTER', 1920),
             'after_commit' => false,
         ],
 

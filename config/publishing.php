@@ -45,6 +45,9 @@ return [
     'ayah_match_min_score' => 0.7,        // below → flag ayah_confidence = 'low'
     'title_pattern' => 'ما تيسر من سوره :surah من الايه :from الي الايه :to',
     'title_pattern_surah_only' => 'ما تيسر من سوره :surah',
+    'title_pattern_surahs_dual' => 'ما تيسر من سورتي :surahs',   // exactly two surahs
+    'title_pattern_surahs' => 'ما تيسر من سور :surahs',          // three or more
+    'title_part_suffix' => ' (الجزء :part)',                     // one file of a multi-part surah
 
     // ── Subtitle alignment ─────────────────────────────────────────────
     'subtitles' => [
@@ -71,11 +74,10 @@ return [
     'video' => ['width' => 1920, 'height' => 1080, 'fps' => 25],
     'card_lab_dir' => 'published/card-lab',
     'social' => [
-        'youtube' => env('SOCIAL_YOUTUBE'),
-        'facebook' => env('SOCIAL_FACEBOOK'),
-        'instagram' => env('SOCIAL_INSTAGRAM'),
-        'tiktok' => env('SOCIAL_TIKTOK'),
-        'website' => env('SOCIAL_WEBSITE', 'mojawad.org'),
+        'youtube' => env('SOCIAL_YOUTUBE', 'mojawad.net'),
+        'facebook' => env('SOCIAL_FACEBOOK', 'mojawad.net'),
+        'website' => env('SOCIAL_WEBSITE', 'mojawad.net'),
+        'instagram' => env('SOCIAL_INSTAGRAM', 'mojawad.net'),
     ],
     'cover' => [
         'driver' => env('COVER_DRIVER', 'browsershot'),   // browsershot | ffmpeg

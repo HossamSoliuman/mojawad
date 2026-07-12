@@ -1182,4 +1182,176 @@ body.adm .quran-verse {
   body.adm .kpi-val {
     font-size: 1.4rem;
   }
+
+  body.adm .qari-cards {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: .8rem;
+  }
+}
+
+
+/* ============================================================
+   QARI AVATAR HERO (create / edit forms)
+   ============================================================ */
+body.adm .qari-avatar-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .7rem;
+  padding: 1.75rem 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(180deg, var(--surface2), var(--surface));
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+body.adm .qari-avatar-frame {
+  position: relative;
+  width: 152px;
+  height: 152px;
+  border-radius: 50%;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+body.adm .qari-avatar-frame img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid var(--surface);
+  box-shadow: 0 6px 20px rgba(0,0,0,.14), 0 0 0 1px var(--border2);
+}
+
+body.adm .qari-avatar-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--surface3);
+  border: 2px dashed var(--border3);
+  color: var(--text3);
+  font-size: 2.8rem;
+}
+
+body.adm .qari-avatar-frame:not(.is-empty) .qari-avatar-placeholder { display: none; }
+body.adm .qari-avatar-frame.is-empty img { display: none; }
+
+body.adm .qari-avatar-badge {
+  position: absolute;
+  bottom: 6px;
+  inset-inline-end: 6px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .82rem;
+  border: 3px solid var(--surface);
+  box-shadow: 0 2px 6px rgba(0,0,0,.2);
+  transition: background .14s;
+}
+
+body.adm .qari-avatar-frame:hover .qari-avatar-badge { background: var(--gold-dark); }
+
+body.adm .qari-avatar-caption {
+  font-size: .82rem;
+  font-weight: 500;
+  color: var(--text2);
+}
+
+
+/* ============================================================
+   QARI CARDS (admin index grid)
+   ============================================================ */
+body.adm .qari-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 1.1rem;
+}
+
+body.adm .qari-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 1.5rem 1.1rem 1rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  transition: box-shadow .16s, transform .16s, border-color .16s;
+}
+
+body.adm .qari-card:hover {
+  box-shadow: 0 10px 26px rgba(0,0,0,.09);
+  border-color: #cbd5e1;
+  transform: translateY(-2px);
+}
+
+body.adm .qari-card-img {
+  width: 98px;
+  height: 98px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 1px var(--border2), 0 4px 12px rgba(0,0,0,.1);
+}
+
+body.adm .qari-card-name {
+  margin-top: .85rem;
+  font-weight: 700;
+  font-size: .98rem;
+  color: var(--text);
+  line-height: 1.25;
+}
+
+body.adm .qari-card-slug {
+  font-size: .72rem;
+  color: var(--text3);
+  margin-top: .12rem;
+  direction: ltr;
+}
+
+body.adm .qari-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45rem;
+  flex-wrap: wrap;
+  margin: .8rem 0 .55rem;
+}
+
+body.adm .qari-card-date {
+  font-size: .72rem;
+  color: var(--text3);
+  margin-bottom: .1rem;
+}
+
+body.adm .qari-card-actions {
+  display: flex;
+  gap: .25rem;
+  justify-content: center;
+  width: 100%;
+  margin-top: .85rem;
+  padding-top: .85rem;
+  border-top: 1px solid var(--border);
+}
+
+body.adm .qari-card-fav {
+  position: absolute;
+  top: .75rem;
+  inset-inline-end: .75rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.05rem;
+  line-height: 1;
+  padding: .1rem;
 }

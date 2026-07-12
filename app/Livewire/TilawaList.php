@@ -57,7 +57,7 @@ class TilawaList extends Component
         }
 
         if ($this->surah) {
-            $query->where('surah_number', $this->surah);
+            $query->forSurah($this->surah);
         }
 
         match ($this->sort) {

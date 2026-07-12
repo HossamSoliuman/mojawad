@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\TilawaTitle;
 use Database\Factories\TilawatSourceFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -30,6 +31,8 @@ class TilawatSource extends Model
         'thumbnail_url',
         'qari_id',
         'surah_number',
+        'surahs',
+        'part',
         'status',
         'error',
         'created_by',
@@ -40,6 +43,8 @@ class TilawatSource extends Model
     {
         return [
             'processed_at' => 'datetime',
+            'surahs' => 'array',
+            'part' => 'integer',
         ];
     }
 
@@ -56,6 +61,15 @@ class TilawatSource extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * Human label of the surah(s) this source covers, joined with the Arabic
+     * conjunction when the file spans more than one surah.
+     */
+    public function getSurahLabelAttribute(): ?string
+    {
+        return TilawaTitle::surahList($this->surahs ?: $this->surah_number);
     }
 
     public function scopePending(Builder $query): Builder

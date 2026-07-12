@@ -45,6 +45,14 @@
 
     <div class="form-group">
       <label class="form-label"><i class="fas fa-image"></i> {{ __('Qari Image') }}</label>
+      <div class="qari-avatar-hero">
+        <div class="qari-avatar-frame is-empty" id="qari-avatar-frame" role="button" tabindex="0" title="{{ __('Choose photo') }}">
+          <img id="qari-avatar-preview" src="" data-original="" alt="{{ __('Qari Image') }}">
+          <span class="qari-avatar-placeholder"><i class="fas fa-user"></i></span>
+          <span class="qari-avatar-badge"><i class="fas fa-camera"></i></span>
+        </div>
+        <div class="qari-avatar-caption">{{ __('Add a portrait') }}</div>
+      </div>
       <input type="hidden" name="image_tmp" id="image_tmp_input">
       <input type="file" id="image-pond" data-filepond data-pond-type="image" data-pond-token="image_tmp" accept="image/jpeg,image/png,image/webp">
       <span class="form-hint">{{ __('JPG, PNG or WEBP · max 20MB · optional') }}</span>
@@ -79,4 +87,35 @@
 .filepond--item-panel { background: var(--surface2, var(--surface)); }
 .filepond--file-action-button { background: var(--gold); }
 </style>
+
+@push('scripts')
+<script>
+(function () {
+  const frame   = document.getElementById('qari-avatar-frame');
+  const preview = document.getElementById('qari-avatar-preview');
+  if (!frame || !preview) { return; }
+
+  const showFile = (file) => {
+    if (!file || !file.type || !file.type.startsWith('image/')) { return; }
+    preview.src = URL.createObjectURL(file);
+    frame.classList.remove('is-empty');
+  };
+
+  const revert = () => {
+    const original = preview.getAttribute('data-original') || '';
+    preview.src = original;
+    frame.classList.toggle('is-empty', original === '');
+  };
+
+  document.addEventListener('FilePond:addfile', (e) => showFile(e.detail?.file?.file));
+  document.addEventListener('FilePond:removefile', revert);
+
+  const browse = () => document.querySelector('.filepond--browser')?.click();
+  frame.addEventListener('click', browse);
+  frame.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); browse(); }
+  });
+})();
+</script>
+@endpush
 @endsection

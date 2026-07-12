@@ -95,26 +95,43 @@ class FactoryImport extends Component
         $existing = TilawatSource::query()
             ->where('source_type', 'library')
             ->where('qari_id', $this->qariId)
-            ->where('status', '!=', 'failed')
-            ->pluck('source_url')
-            ->flip();
+            ->get()
+            ->keyBy('source_url');
 
         $count = 0;
 
         foreach ($library->audioFiles($this->folder) as $path) {
-            if ($existing->has($path)) {
+            $source = $existing->get($path);
+
+            // Leave files that are mid-flight or already produced a recitation
+            // untouched; reprocess ones that are failed or orphaned (their tilawa
+            // was deleted) so a re-import regenerates them with fresh parsing.
+            if ($source !== null && ($source->tilawa_id !== null || in_array($source->status, ['pending', 'processing'], true))) {
                 continue;
             }
 
-            $source = TilawatSource::create([
-                'source_type' => 'library',
-                'source_url' => $path,
-                'source_title' => pathinfo($path, PATHINFO_FILENAME),
-                'qari_id' => $this->qariId,
-                'surah_number' => RecitationLibrary::guessSurahNumber($path),
+            $parsed = RecitationLibrary::parse($path);
+
+            $attributes = [
+                'surah_number' => $parsed['surahs'][0] ?? null,
+                'surahs' => count($parsed['surahs']) > 1 ? $parsed['surahs'] : null,
+                'part' => $parsed['part'],
                 'status' => 'pending',
-                'created_by' => Auth::id(),
-            ]);
+                'error' => null,
+            ];
+
+            if ($source !== null) {
+                $source->update($attributes);
+            } else {
+                $source = TilawatSource::create([
+                    'source_type' => 'library',
+                    'source_url' => $path,
+                    'source_title' => pathinfo($path, PATHINFO_FILENAME),
+                    'qari_id' => $this->qariId,
+                    'created_by' => Auth::id(),
+                    ...$attributes,
+                ]);
+            }
 
             IngestSourceAudio::dispatch($source->id);
             $count++;

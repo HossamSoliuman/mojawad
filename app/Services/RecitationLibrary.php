@@ -55,39 +55,118 @@ class RecitationLibrary
     }
 
     /**
-     * Best-effort surah number parsed from a recitation file name by matching
-     * the longest surah name that appears as a whole word. Returns null when
-     * nothing matches, leaving the surah for ayah detection or manual review.
+     * Best-effort surah number parsed from a recitation file name — the first
+     * surah the file covers, or null when nothing matches.
      */
     public static function guessSurahNumber(string $filename): ?int
     {
+        return self::parse($filename)['surahs'][0] ?? null;
+    }
+
+    /**
+     * Parse a recitation file name into the surah(s) it covers and, for a file
+     * that is one cut of a longer surah, its part number. A file may name more
+     * than one surah ("ما تيسر من سورة التوبة ويونس") or repeat a surah across
+     * numbered files ("سورة البقرة 1", "سورة البقرة 2").
+     *
+     * @return array{surahs: list<int>, part: ?int}
+     */
+    public static function parse(string $filename): array
+    {
         $haystack = self::normalize(pathinfo($filename, PATHINFO_FILENAME));
 
-        $bestNumber = null;
-        $bestLength = 0;
+        // Peel the part number off first so a surah name glued to it ("مريم1",
+        // "ق1") is still matched as a whole word once the digits are removed.
+        [$haystack, $part] = self::extractPart($haystack);
+
+        $matches = [];
 
         foreach (config('surahs', []) as $number => $name) {
             $needle = self::normalize((string) $name);
 
-            if ($needle === '' || mb_strlen($needle) <= $bestLength) {
+            if ($needle === '') {
                 continue;
             }
 
-            if (self::containsWord($haystack, $needle)) {
-                $bestNumber = (int) $number;
-                $bestLength = mb_strlen($needle);
+            $found = self::wordMatch($haystack, $needle);
+
+            if ($found !== null) {
+                $matches[] = ['number' => (int) $number] + $found;
             }
         }
 
-        return $bestNumber;
+        return [
+            'surahs' => self::resolveOverlaps($matches),
+            'part' => $part,
+        ];
     }
 
-    private static function containsWord(string $haystack, string $needle): bool
+    /**
+     * Locate a surah name as a whole word, tolerating a leading "و" conjunction
+     * so the second surah in "التوبة ويونس" is still found. Byte offsets are
+     * enough to order and de-overlap the matches.
+     *
+     * @return array{pos: int, len: int}|null
+     */
+    private static function wordMatch(string $haystack, string $needle): ?array
     {
-        return (bool) preg_match(
-            '/(?:^|[\s\-_])'.preg_quote($needle, '/').'(?:$|[\s\-_])/u',
-            $haystack
-        );
+        $pattern = '/(?:^|[\s\-_])و?('.preg_quote($needle, '/').')(?=$|[\s\-_])/u';
+
+        if (preg_match($pattern, $haystack, $m, PREG_OFFSET_CAPTURE)) {
+            return ['pos' => $m[1][1], 'len' => strlen($m[1][0])];
+        }
+
+        return null;
+    }
+
+    /**
+     * Order matches by position and drop any whose span sits inside a longer
+     * match, so a shorter surah name that overlaps a longer one is not counted.
+     *
+     * @param  list<array{number: int, pos: int, len: int}>  $matches
+     * @return list<int>
+     */
+    private static function resolveOverlaps(array $matches): array
+    {
+        usort($matches, fn (array $a, array $b): int => $a['pos'] <=> $b['pos'] ?: $b['len'] <=> $a['len']);
+
+        $kept = [];
+
+        foreach ($matches as $match) {
+            $end = $match['pos'] + $match['len'];
+
+            foreach ($kept as $existing) {
+                if ($match['pos'] < $existing['pos'] + $existing['len'] && $end > $existing['pos']) {
+                    continue 2;
+                }
+            }
+
+            $kept[] = $match;
+        }
+
+        return array_values(array_map(fn (array $match): int => $match['number'], $kept));
+    }
+
+    /**
+     * Split a trailing part number ("البقرة 1", "مريم1") off the name, returning
+     * the remaining text and the part. Ayah ranges like "59-73" are left intact
+     * by refusing a value that follows another digit or a dash.
+     *
+     * @return array{0: string, 1: ?int}
+     */
+    private static function extractPart(string $haystack): array
+    {
+        $haystack = strtr($haystack, ['٠' => '0', '١' => '1', '٢' => '2', '٣' => '3', '٤' => '4', '٥' => '5', '٦' => '6', '٧' => '7', '٨' => '8', '٩' => '9']);
+
+        if (preg_match('/(?<![\d\-])(\d{1,2})\s*$/u', $haystack, $m, PREG_OFFSET_CAPTURE)) {
+            $part = (int) $m[1][0];
+
+            if ($part >= 1 && $part <= 20) {
+                return [trim(substr($haystack, 0, $m[1][1])), $part];
+            }
+        }
+
+        return [$haystack, null];
     }
 
     private static function normalize(string $value): string

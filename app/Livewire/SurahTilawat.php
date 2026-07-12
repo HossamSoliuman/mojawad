@@ -32,7 +32,7 @@ class SurahTilawat extends Component
         $query = Tilawa::query()
             ->with('qari')
             ->where('status', 'active')
-            ->where('surah_number', $this->surah);
+            ->forSurah($this->surah);
 
         match ($this->sort) {
             'latest' => $query->latest(),

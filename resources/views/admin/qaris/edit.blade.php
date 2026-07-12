@@ -45,12 +45,14 @@
 
     <div class="form-group">
       <label class="form-label"><i class="fas fa-image"></i> {{ __('Qari Image') }}</label>
-      @if($qari->image)
-      <div style="margin-bottom:.65rem;display:flex;align-items:center;gap:.75rem">
-        <img src="{{ $qari->image_url }}" style="width:60px;height:60px;border-radius:50%;object-fit:cover;border:2px solid var(--border2)" alt="{{ $qari->name }}">
-        <span style="font-size:.8rem;color:var(--text2)">{{ __('Upload a new image to replace') }}</span>
+      <div class="qari-avatar-hero">
+        <div class="qari-avatar-frame{{ $qari->image ? '' : ' is-empty' }}" id="qari-avatar-frame" role="button" tabindex="0" title="{{ __('Change photo') }}">
+          <img id="qari-avatar-preview" src="{{ $qari->image_url }}" data-original="{{ $qari->image ? $qari->image_url : '' }}" alt="{{ $qari->name }}">
+          <span class="qari-avatar-placeholder"><i class="fas fa-user"></i></span>
+          <span class="qari-avatar-badge"><i class="fas fa-camera"></i></span>
+        </div>
+        <div class="qari-avatar-caption">{{ $qari->image ? __('Upload a new image to replace') : __('Add a portrait') }}</div>
       </div>
-      @endif
       <input type="hidden" name="image_tmp" id="image_tmp_input">
       <input type="file" id="image-pond" data-filepond data-pond-type="image" data-pond-token="image_tmp" accept="image/jpeg,image/png,image/webp">
       <span class="form-hint">{{ __('Leave empty to keep current image') }}</span>
@@ -85,4 +87,35 @@
 .filepond--item-panel { background: var(--surface2, var(--surface)); }
 .filepond--file-action-button { background: var(--gold); }
 </style>
+
+@push('scripts')
+<script>
+(function () {
+  const frame   = document.getElementById('qari-avatar-frame');
+  const preview = document.getElementById('qari-avatar-preview');
+  if (!frame || !preview) { return; }
+
+  const showFile = (file) => {
+    if (!file || !file.type || !file.type.startsWith('image/')) { return; }
+    preview.src = URL.createObjectURL(file);
+    frame.classList.remove('is-empty');
+  };
+
+  const revert = () => {
+    const original = preview.getAttribute('data-original') || '';
+    preview.src = original;
+    frame.classList.toggle('is-empty', original === '');
+  };
+
+  document.addEventListener('FilePond:addfile', (e) => showFile(e.detail?.file?.file));
+  document.addEventListener('FilePond:removefile', revert);
+
+  const browse = () => document.querySelector('.filepond--browser')?.click();
+  frame.addEventListener('click', browse);
+  frame.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); browse(); }
+  });
+})();
+</script>
+@endpush
 @endsection
