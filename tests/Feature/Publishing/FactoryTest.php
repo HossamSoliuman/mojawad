@@ -115,7 +115,7 @@ it('cleans a source and creates a draft recitation with the surah-only title', f
 
 it('dispatches ayah detection when ASR is configured', function () {
     Bus::fake();
-    config(['publishing.transcription.api_key' => 'test-key']);
+    config(['publishing.transcription.gemini.api_key' => 'test-key']);
 
     Process::fake(function ($process) {
         $cmd = (array) $process->command;

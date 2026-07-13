@@ -34,12 +34,22 @@ return [
 
     // ── AI ayah detection ──────────────────────────────────────────────
     'transcription' => [
-        'driver' => env('ASR_DRIVER', 'openai'),   // openai | local
+        'driver' => env('ASR_DRIVER', 'gemini'),   // gemini | openai
         'api_key' => env('ASR_API_KEY'),
         'base_url' => env('ASR_BASE_URL', 'https://api.openai.com/v1'),
         'model' => env('ASR_MODEL', 'whisper-1'),
         'timeout' => (int) env('ASR_TIMEOUT', 600),
         'window' => (int) env('ASR_WINDOW', 30),   // seconds of head/tail audio transcribed
+
+        // Google Gemini backend. Flash models natively accept audio and the
+        // Google AI Studio tier is free, so only the ~30s head/tail windows are
+        // sent (never the full recitation) and both go in a single request.
+        'gemini' => [
+            'api_key' => env('GEMINI_API_KEY'),
+            'base_url' => env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'),
+            'model' => env('ASR_GEMINI_MODEL', 'gemini-flash-latest'),
+            'timeout' => (int) env('ASR_GEMINI_TIMEOUT', 120),
+        ],
     ],
     'quran_text_path' => resource_path('data/quran-uthmani.json'), // fixed reference corpus
     'ayah_match_min_score' => 0.7,        // below → flag ayah_confidence = 'low'
