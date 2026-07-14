@@ -7,6 +7,7 @@ use App\Models\Tilawa;
 use App\Models\TilawatSource;
 use App\Services\AyahDetectionService;
 use App\Support\TilawaTitle;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -261,13 +262,13 @@ class FactoryQueue extends Component
         $disk = Storage::disk(config('publishing.disk'));
 
         if ($source->source_url) {
-            $disk->delete($source->source_url);
+            $this->deleteFromDisk($disk, $source->source_url);
         }
 
         if ($source->tilawa) {
             foreach ([$source->tilawa->audio_path, $source->tilawa->master_audio_path, $source->tilawa->brand_cover_path, $source->tilawa->brand_video_path, $source->tilawa->subtitle_path] as $path) {
                 if ($path) {
-                    $disk->delete($path);
+                    $this->deleteFromDisk($disk, $path);
                 }
             }
             unset($this->edits[$source->tilawa->id]);
@@ -275,6 +276,22 @@ class FactoryQueue extends Component
         }
 
         $source->delete();
+    }
+
+    /**
+     * Delete a stored file without letting a bad path abort the record removal.
+     *
+     * Legacy imports can carry mis-encoded paths that Flysystem's normalizer
+     * rejects with CorruptedPathDetected before touching the filesystem, so we
+     * report and swallow any failure rather than block deleting the DB row.
+     */
+    private function deleteFromDisk(Filesystem $disk, string $path): void
+    {
+        try {
+            $disk->delete($path);
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     /**

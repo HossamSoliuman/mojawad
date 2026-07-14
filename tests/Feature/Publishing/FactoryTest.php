@@ -400,6 +400,36 @@ it('deletes a single source through the confirmation modal', function () {
     expect(TilawatSource::whereKey($source->id)->exists())->toBeFalse();
 });
 
+it('deletes a source even when its stored path is corrupted', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+    $qari = Qari::factory()->create();
+    $tilawa = Tilawa::factory()->create([
+        'qari_id' => $qari->id,
+        'uploaded_by' => $creator->id,
+        'status' => 'inactive',
+        'audio_path' => "tilawat/bad\x07audio.mp3",
+    ]);
+    $source = TilawatSource::create([
+        'source_type' => 'upload',
+        'source_url' => "sources/{$qari->id}/bad\x07path.mp3",
+        'qari_id' => $qari->id,
+        'surah_number' => 2,
+        'status' => 'completed',
+        'tilawa_id' => $tilawa->id,
+        'created_by' => $creator->id,
+    ]);
+
+    $this->actingAs($creator);
+
+    Livewire::test(FactoryQueue::class)
+        ->call('confirmDelete', $source->id)
+        ->call('performDelete')
+        ->assertSet('confirmingSourceId', null);
+
+    expect(TilawatSource::whereKey($source->id)->exists())->toBeFalse()
+        ->and(Tilawa::whereKey($tilawa->id)->exists())->toBeFalse();
+});
+
 it('will not bulk delete sources owned by another creator', function () {
     $creator = User::factory()->create()->assignRole('creator');
     $other = User::factory()->create()->assignRole('creator');
