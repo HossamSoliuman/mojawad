@@ -12,6 +12,7 @@
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 @vite(['resources/css/app.css','resources/css/admin.css','resources/js/app.js','resources/js/filepond.js'])
 @livewireStyles
+@stack('styles')
 </head>
 <body class="adm" x-data="{ sideOpen: false }">
 

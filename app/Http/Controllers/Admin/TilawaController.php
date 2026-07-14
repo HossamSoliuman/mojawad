@@ -152,10 +152,17 @@ class TilawaController extends Controller
             'title_en' => $request->title_en,
             'description_ar' => $request->description_ar,
             'description_en' => $request->description_en,
+            'surah_number' => $request->surah_number,
+            'ayah_from' => $request->ayah_from,
+            'ayah_to' => $request->ayah_to,
             'recorded_at' => $request->recorded_at,
             'recorded_place' => $request->recorded_place,
             'is_featured' => $request->boolean('is_featured'),
         ];
+
+        if ($request->filled('slug')) {
+            $updates['slug'] = $request->slug;
+        }
 
         $isAdmin = Auth::user()->hasRole('admin');
         $resubmitted = false;

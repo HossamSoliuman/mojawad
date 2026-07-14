@@ -25,10 +25,18 @@ it('blocks admins without the creator role from the uploader', function () {
 
 it('lets a creator open the uploader', function () {
     $creator = User::factory()->create()->assignRole('creator');
+    Qari::factory()->create([
+        'name_ar' => 'Studio Reciter',
+        'name_en' => 'Studio Reciter',
+    ]);
 
     $this->actingAs($creator)
         ->get(route('admin.upload'))
-        ->assertOk();
+        ->assertOk()
+        ->assertSee('class="tilawa-create"', false)
+        ->assertSee('class="tu-workspace"', false)
+        ->assertSee('id="dropzone"', false)
+        ->assertSee('Studio Reciter');
 });
 
 it('shows the dashboard with reports data to an admin', function () {
