@@ -76,8 +76,18 @@
                             @endif
                         </td>
                         <td>
-                            <button type="button" wire:click="confirmDelete({{ $source->id }})"
-                                    class="btn-icon" style="color:var(--red)" title="{{ __('Remove') }}"><i class="fas fa-trash"></i></button>
+                            <div style="display:flex;align-items:center;gap:.35rem">
+                                @if($source->status === 'failed')
+                                <button type="button" wire:click="retry({{ $source->id }})"
+                                        class="btn-icon" style="color:var(--gold)" title="{{ __('Retry') }}"
+                                        wire:loading.attr="disabled" wire:target="retry({{ $source->id }})">
+                                    <i class="fas fa-rotate-right" wire:loading.remove wire:target="retry({{ $source->id }})"></i>
+                                    <i class="fas fa-circle-notch fa-spin" wire:loading wire:target="retry({{ $source->id }})"></i>
+                                </button>
+                                @endif
+                                <button type="button" wire:click="confirmDelete({{ $source->id }})"
+                                        class="btn-icon" style="color:var(--red)" title="{{ __('Remove') }}"><i class="fas fa-trash"></i></button>
+                            </div>
                         </td>
                     </tr>
                     @endforeach

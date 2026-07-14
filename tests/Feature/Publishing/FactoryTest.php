@@ -9,6 +9,7 @@ use App\Models\TilawatSource;
 use App\Models\TmpUpload;
 use App\Models\User;
 use App\Services\SourceCleanService;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
@@ -428,6 +429,78 @@ it('deletes a source even when its stored path is corrupted', function () {
 
     expect(TilawatSource::whereKey($source->id)->exists())->toBeFalse()
         ->and(Tilawa::whereKey($tilawa->id)->exists())->toBeFalse();
+});
+
+it('re-queues a failed source for ingest', function () {
+    Bus::fake();
+    $creator = User::factory()->create()->assignRole('creator');
+    $qari = Qari::factory()->create();
+    $source = TilawatSource::create([
+        'source_type' => 'upload',
+        'source_url' => 'sources/1/x.mp3',
+        'qari_id' => $qari->id,
+        'surah_number' => 2,
+        'status' => 'failed',
+        'error' => 'ffmpeg failed',
+        'processed_at' => now(),
+        'created_by' => $creator->id,
+    ]);
+
+    $this->actingAs($creator);
+
+    Livewire::test(FactoryQueue::class)
+        ->call('retry', $source->id);
+
+    $source->refresh();
+    expect($source->status)->toBe('pending')
+        ->and($source->error)->toBeNull()
+        ->and($source->processed_at)->toBeNull();
+
+    Bus::assertDispatched(IngestSourceAudio::class, fn ($job) => $job->sourceId === $source->id);
+});
+
+it('does not retry a source that has not failed', function () {
+    Bus::fake();
+    $creator = User::factory()->create()->assignRole('creator');
+    $qari = Qari::factory()->create();
+    $source = TilawatSource::create([
+        'source_type' => 'upload',
+        'source_url' => 'sources/1/x.mp3',
+        'qari_id' => $qari->id,
+        'surah_number' => 2,
+        'status' => 'processing',
+        'created_by' => $creator->id,
+    ]);
+
+    $this->actingAs($creator);
+
+    expect(fn () => Livewire::test(FactoryQueue::class)->call('retry', $source->id))
+        ->toThrow(ModelNotFoundException::class);
+
+    expect($source->fresh()->status)->toBe('processing');
+    Bus::assertNotDispatched(IngestSourceAudio::class);
+});
+
+it('will not retry a failed source owned by another creator', function () {
+    Bus::fake();
+    $creator = User::factory()->create()->assignRole('creator');
+    $other = User::factory()->create()->assignRole('creator');
+    $qari = Qari::factory()->create();
+    $foreign = TilawatSource::create([
+        'source_type' => 'upload',
+        'source_url' => 'sources/1/foreign.mp3',
+        'qari_id' => $qari->id,
+        'surah_number' => 2,
+        'status' => 'failed',
+        'created_by' => $other->id,
+    ]);
+
+    $this->actingAs($creator);
+
+    expect(fn () => Livewire::test(FactoryQueue::class)->call('retry', $foreign->id))
+        ->toThrow(ModelNotFoundException::class);
+
+    Bus::assertNotDispatched(IngestSourceAudio::class);
 });
 
 it('will not bulk delete sources owned by another creator', function () {

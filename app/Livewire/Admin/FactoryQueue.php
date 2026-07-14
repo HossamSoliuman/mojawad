@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin;
 
 use App\Jobs\DetectAyahRange;
+use App\Jobs\IngestSourceAudio;
 use App\Models\Tilawa;
 use App\Models\TilawatSource;
 use App\Services\AyahDetectionService;
@@ -230,6 +231,24 @@ class FactoryQueue extends Component
             ->findOrFail($sourceId);
 
         $this->deleteSourceRecord($source);
+    }
+
+    /**
+     * Re-queue a failed source for ingest — reset it to pending, clear the last
+     * error, and dispatch a fresh cleaning job so it flows back through the pipe.
+     */
+    public function retry(int $sourceId): void
+    {
+        $source = TilawatSource::uploads()
+            ->when(! Auth::user()->hasRole('admin'), fn ($q) => $q->where('created_by', Auth::id()))
+            ->where('status', 'failed')
+            ->findOrFail($sourceId);
+
+        $source->update(['status' => 'pending', 'error' => null, 'processed_at' => null]);
+
+        IngestSourceAudio::dispatch($source->id);
+
+        unset($this->processingSources, $this->processingCount, $this->hasActive);
     }
 
     /**
