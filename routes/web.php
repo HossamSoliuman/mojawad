@@ -146,6 +146,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
         Route::get('/publishing/card-lab', [PublishingController::class, 'cardLab'])->name('publishing.card-lab');
 
         Route::get('/tilawat', [App\Http\Controllers\Admin\TilawaController::class, 'index'])->name('tilawat.index');
+        Route::put('/tilawat/bulk', [App\Http\Controllers\Admin\TilawaController::class, 'bulkUpdate'])->name('tilawat.bulk')->middleware('role:admin');
         Route::get('/tilawat/{tilawa}/edit', [App\Http\Controllers\Admin\TilawaController::class, 'edit'])->name('tilawat.edit')->middleware('can:update,tilawa');
         Route::put('/tilawat/{tilawa}/quick', [App\Http\Controllers\Admin\TilawaController::class, 'quickUpdate'])->name('tilawat.quick-update')->middleware('role:admin');
         Route::put('/tilawat/{tilawa}', [App\Http\Controllers\Admin\TilawaController::class, 'update'])->name('tilawat.update')->middleware('can:update,tilawa');

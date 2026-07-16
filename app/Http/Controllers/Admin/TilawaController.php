@@ -8,6 +8,7 @@ use App\Models\Qari;
 use App\Models\Tilawa;
 use App\Services\AudioDurationService;
 use App\Services\FileUploadService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,15 +21,33 @@ class TilawaController extends Controller
 
     public function index(Request $request)
     {
-        $tilawat = Tilawa::with('qari', 'uploader')
-            ->when(! Auth::user()->hasRole('admin'), fn ($q) => $q->where('uploaded_by', Auth::id()))
-            ->when($request->search, fn ($q) => $q->where(fn ($sub) => $sub->where('title_ar', 'like', '%'.$request->search.'%')->orWhere('title_en', 'like', '%'.$request->search.'%')))
-            ->when($request->status, fn ($q) => $q->where('status', $request->status))
-            ->when($request->review, fn ($q) => $q->where('review_status', $request->review))
-            ->when($request->qari, fn ($q) => $q->where('qari_id', $request->qari))
-            ->latest()
+        $sort = $request->string('sort')->toString();
+
+        $tilawat = $this->scopedQuery()
+            ->with('qari', 'uploader')
+            ->when($request->search, fn (Builder $q) => $q->where(fn (Builder $sub) => $sub->where('title_ar', 'like', '%'.$request->search.'%')->orWhere('title_en', 'like', '%'.$request->search.'%')))
+            ->when($request->status, fn (Builder $q) => $q->where('status', $request->status))
+            ->when($request->review, fn (Builder $q) => $q->where('review_status', $request->review))
+            ->when($request->qari, fn (Builder $q) => $q->where('qari_id', $request->qari))
+            ->when($request->boolean('featured'), fn (Builder $q) => $q->where('is_featured', true))
+            ->when($sort === 'oldest', fn (Builder $q) => $q->oldest())
+            ->when($sort === 'plays', fn (Builder $q) => $q->orderByDesc('plays_count'))
+            ->when($sort === 'downloads', fn (Builder $q) => $q->orderByDesc('downloads_count'))
+            ->when($sort === 'likes', fn (Builder $q) => $q->orderByDesc('likes_count'))
+            ->when(! in_array($sort, ['oldest', 'plays', 'downloads', 'likes'], true), fn (Builder $q) => $q->latest())
             ->paginate(15)
             ->withQueryString();
+
+        $stats = [
+            'total' => $this->scopedQuery()->count(),
+            'active' => $this->scopedQuery()->where('status', 'active')->count(),
+            'in_review' => $this->scopedQuery()->where('review_status', 'pending')->count(),
+            'rejected' => $this->scopedQuery()->where('review_status', 'rejected')->count(),
+            'featured' => $this->scopedQuery()->where('is_featured', true)->count(),
+            'plays' => (int) $this->scopedQuery()->sum('plays_count'),
+            'downloads' => (int) $this->scopedQuery()->sum('downloads_count'),
+            'likes' => (int) $this->scopedQuery()->sum('likes_count'),
+        ];
 
         $qaris = Qari::orderBy('name_ar')
             ->get(['id', 'name_ar', 'name_en', 'image'])
@@ -38,7 +57,19 @@ class TilawaController extends Controller
                 'image' => $q->image_url,
             ]);
 
-        return view('admin.tilawat.index', compact('tilawat', 'qaris'));
+        return view('admin.tilawat.index', compact('tilawat', 'qaris', 'stats'));
+    }
+
+    /**
+     * Base recitation query, narrowed to the current user's own uploads when
+     * they are not an admin so creators only ever manage their own content.
+     */
+    private function scopedQuery(): Builder
+    {
+        return Tilawa::query()->when(
+            ! Auth::user()->hasRole('admin'),
+            fn (Builder $q) => $q->where('uploaded_by', Auth::id())
+        );
     }
 
     public function uploader(Request $request)
@@ -233,11 +264,45 @@ class TilawaController extends Controller
 
     public function destroy(Tilawa $tilawa)
     {
-        $this->uploadService->delete($tilawa->audio_path);
-        $this->uploadService->delete($tilawa->cover_image);
-        $tilawa->delete();
+        $this->deleteTilawa($tilawa);
         Cache::forget('homepage_data');
 
         return redirect()->route('admin.tilawat.index')->with('success', 'Tilawa deleted.');
+    }
+
+    public function bulkUpdate(Request $request)
+    {
+        $data = $request->validate([
+            'action' => 'required|in:approve,feature,unfeature,deactivate,delete',
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:tilawat,id',
+        ]);
+
+        $tilawat = Tilawa::whereIn('id', $data['ids'])->get();
+
+        foreach ($tilawat as $tilawa) {
+            match ($data['action']) {
+                'approve' => $tilawa->update(['status' => 'active', 'review_status' => 'approved']),
+                'feature' => $tilawa->update(['is_featured' => true]),
+                'unfeature' => $tilawa->update(['is_featured' => false]),
+                'deactivate' => $tilawa->update(['status' => 'inactive']),
+                'delete' => $this->deleteTilawa($tilawa),
+            };
+        }
+
+        Cache::forget('homepage_data');
+
+        $message = $data['action'] === 'delete'
+            ? __(':count tilawat deleted.', ['count' => $tilawat->count()])
+            : __(':count tilawat updated.', ['count' => $tilawat->count()]);
+
+        return back()->with('success', $message);
+    }
+
+    private function deleteTilawa(Tilawa $tilawa): void
+    {
+        $this->uploadService->delete($tilawa->audio_path);
+        $this->uploadService->delete($tilawa->cover_image);
+        $tilawa->delete();
     }
 }

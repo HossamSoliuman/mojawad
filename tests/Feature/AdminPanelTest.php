@@ -101,3 +101,82 @@ it('filters tilawat by the selected qari', function () {
         ->assertSee($mine->title_ar)
         ->assertDontSee($hidden->title_ar);
 });
+
+it('surfaces recitation stats on the tilawat index', function () {
+    $admin = User::factory()->create()->assignRole('admin');
+    Tilawa::factory()->approved()->count(3)->create();
+    Tilawa::factory()->count(2)->create(); // pending review
+    Tilawa::factory()->rejected()->create();
+
+    $this->actingAs($admin)
+        ->get(route('admin.tilawat.index'))
+        ->assertOk()
+        ->assertViewHas('stats', fn ($stats) => $stats['total'] === 6
+            && $stats['active'] === 3
+            && $stats['in_review'] === 2
+            && $stats['rejected'] === 1)
+        // Guard against Blade directives leaking as raw text (compilation breaking mid-template).
+        ->assertDontSee('@endforelse')
+        ->assertDontSee('@endrole')
+        ->assertDontSee('reviewLabel');
+});
+
+it('sorts the tilawat index by most played', function () {
+    $admin = User::factory()->create()->assignRole('admin');
+    $quiet = Tilawa::factory()->create(['title_ar' => 'تلاوة هادئة', 'plays_count' => 5]);
+    $popular = Tilawa::factory()->create(['title_ar' => 'تلاوة رائجة', 'plays_count' => 900]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.tilawat.index', ['sort' => 'plays']))
+        ->assertOk()
+        ->assertSeeInOrder([$popular->title_ar, $quiet->title_ar]);
+});
+
+it('scopes the index and its stats to a creator\'s own uploads', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+    $mine = Tilawa::factory()->create(['uploaded_by' => $creator->id, 'title_ar' => 'تلاوتي']);
+    $theirs = Tilawa::factory()->create(['title_ar' => 'تلاوة غيري']);
+
+    $this->actingAs($creator)
+        ->get(route('admin.tilawat.index'))
+        ->assertOk()
+        ->assertSee($mine->title_ar)
+        ->assertDontSee($theirs->title_ar)
+        ->assertViewHas('stats', fn ($stats) => $stats['total'] === 1);
+});
+
+it('bulk approves selected tilawat', function () {
+    $admin = User::factory()->create()->assignRole('admin');
+    $a = Tilawa::factory()->create();
+    $b = Tilawa::factory()->create();
+
+    $this->actingAs($admin)
+        ->put(route('admin.tilawat.bulk'), ['action' => 'approve', 'ids' => [$a->id, $b->id]])
+        ->assertRedirect();
+
+    expect($a->fresh())->status->toBe('active')->review_status->toBe('approved')
+        ->and($b->fresh())->status->toBe('active')->review_status->toBe('approved');
+});
+
+it('bulk deletes selected tilawat', function () {
+    $admin = User::factory()->create()->assignRole('admin');
+    $a = Tilawa::factory()->create();
+    $b = Tilawa::factory()->create();
+
+    $this->actingAs($admin)
+        ->put(route('admin.tilawat.bulk'), ['action' => 'delete', 'ids' => [$a->id, $b->id]])
+        ->assertRedirect();
+
+    expect(Tilawa::whereIn('id', [$a->id, $b->id])->count())->toBe(0);
+});
+
+it('blocks creators from bulk actions', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+    $tilawa = Tilawa::factory()->create(['uploaded_by' => $creator->id]);
+
+    $this->actingAs($creator)
+        ->put(route('admin.tilawat.bulk'), ['action' => 'delete', 'ids' => [$tilawa->id]])
+        ->assertForbidden();
+
+    expect($tilawa->fresh())->not->toBeNull();
+});
