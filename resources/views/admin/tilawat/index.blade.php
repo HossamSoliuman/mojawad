@@ -12,10 +12,13 @@
 @php
   $isAdmin   = auth()->user()->hasRole('admin');
   $keep      = request()->only(['search', 'qari', 'sort']);
-  $activeTab = request('featured') ? 'featured'
+  $activeTab = request('tab') === 'qaris' ? 'qaris'
+             : (request('featured') ? 'featured'
              : (request('review') === 'pending' ? 'review'
              : (request('review') === 'rejected' ? 'rejected'
-             : (request('status') === 'active' ? 'active' : 'all')));
+             : (request('status') === 'active' ? 'active' : 'all'))));
+  $qariView    = request('tab') === 'qaris';
+  $currentQari = ($qariView && request('qari')) ? collect($qaris)->firstWhere('id', (int) request('qari')) : null;
 @endphp
 
 @if(request('uploaded'))
@@ -79,7 +82,58 @@
     <a href="{{ route('admin.tilawat.index', $keep + ['featured' => 1]) }}" class="tw-tab {{ $activeTab === 'featured' ? 'is-active' : '' }}">
       {{ __('Featured') }} <span class="tw-count">{{ number_format($stats['featured']) }}</span>
     </a>
+    <a href="{{ route('admin.tilawat.index', ['tab' => 'qaris'] + request()->only('search')) }}" class="tw-tab {{ $activeTab === 'qaris' ? 'is-active' : '' }}">
+      <i class="fas fa-microphone-lines"></i> {{ __('By Qari') }} <span class="tw-count">{{ number_format($stats['qaris']) }}</span>
+    </a>
   </div>
+
+  @if($showQariGrid)
+  {{-- ===================== QARI GRID ===================== --}}
+  <div class="tw-toolbar">
+    <form method="GET" class="filter-bar">
+      <input type="hidden" name="tab" value="qaris">
+      <div class="f-search">
+        <i class="fas fa-magnifying-glass"></i>
+        <input type="text" name="search" value="{{ request('search') }}" placeholder="{{ __('Search qari…') }}">
+      </div>
+      @if(request('search'))
+      <a href="{{ route('admin.tilawat.index', ['tab' => 'qaris']) }}" class="btn btn-ghost btn-sm"><i class="fas fa-xmark"></i> {{ __('Clear') }}</a>
+      @endif
+    </form>
+  </div>
+
+  <div class="qari-grid">
+    @forelse($qariGrid as $q)
+    <a href="{{ route('admin.tilawat.index', ['tab' => 'qaris', 'qari' => $q->id]) }}" class="qari-card">
+      <img src="{{ $q->image_url }}" alt="" class="qari-card-img">
+      <div class="qari-card-name">{{ $q->name }}</div>
+      <div class="qari-card-metrics">
+        <span title="{{ __('Tilawat') }}"><i class="fas fa-music"></i> {{ number_format($q->tilawat_count) }}</span>
+        <span title="{{ __('Plays') }}"><i class="fas fa-play"></i> {{ number_format((int) $q->plays_sum) }}</span>
+      </div>
+      <span class="qari-card-go"><i class="fas fa-arrow-left flip-rtl"></i></span>
+    </a>
+    @empty
+    <div class="qari-grid-empty">
+      <i class="fas fa-microphone-lines"></i>
+      <p>{{ __('No qaris found.') }}</p>
+    </div>
+    @endforelse
+  </div>
+  @else
+
+  @if($qariView)
+  {{-- ===================== QARI DETAIL HEADER ===================== --}}
+  <div class="qari-back">
+    <a href="{{ route('admin.tilawat.index', ['tab' => 'qaris']) }}" class="btn btn-ghost btn-sm"><i class="fas fa-arrow-right flip-rtl"></i> {{ __('All Qaris') }}</a>
+    @if($currentQari)
+    <div class="qari-back-info">
+      <img src="{{ $currentQari['image'] }}" alt="">
+      <span>{{ $currentQari['name'] }}</span>
+    </div>
+    @endif
+  </div>
+  @endif
 
   {{-- ===================== TOOLBAR ===================== --}}
   <div class="tw-toolbar">
@@ -87,6 +141,7 @@
       @if(request('status'))<input type="hidden" name="status" value="{{ request('status') }}">@endif
       @if(request('review'))<input type="hidden" name="review" value="{{ request('review') }}">@endif
       @if(request('featured'))<input type="hidden" name="featured" value="1">@endif
+      @if(request('tab'))<input type="hidden" name="tab" value="{{ request('tab') }}">@endif
 
       <div class="f-search">
         <i class="fas fa-magnifying-glass"></i>
@@ -317,6 +372,7 @@
   </div>
 
   <div style="margin-top:1.2rem">{{ $tilawat->links('vendor.pagination.custom') }}</div>
+  @endif
 
   {{-- ===================== DELETE CONFIRM MODAL ===================== --}}
   <div class="modal-backdrop" x-show="confirmOpen" x-cloak @click.self="confirmOpen = false" @keydown.escape.window="confirmOpen = false" style="display:none">
@@ -417,18 +473,45 @@
 .tbl tbody tr { transition: background .12s; }
 
 /* ── Grid view ── */
-.tw-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; }
-.tw-card { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: .85rem; box-shadow: 0 1px 3px rgba(0,0,0,.04); transition: .16s; }
-.tw-card:hover { border-color: var(--border2); box-shadow: 0 4px 14px rgba(0,0,0,.07); }
+.tw-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(255px, 1fr)); gap: 1.05rem; }
+.tw-card { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: .9rem; box-shadow: 0 1px 3px rgba(0,0,0,.04); transition: transform .16s, box-shadow .16s, border-color .16s; }
+.tw-card:hover { border-color: var(--border2); box-shadow: 0 8px 22px rgba(0,0,0,.09); transform: translateY(-3px); }
 .tw-card.is-sel { border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold-glow); }
-.tw-card-top { display: flex; gap: .7rem; align-items: flex-start; }
-.tw-card-cover { position: relative; width: 56px; height: 56px; flex-shrink: 0; }
-.tw-card-cover img { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; }
-.tw-card-play { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(15,23,42,.45); color: #fff; border: 0; border-radius: 10px; opacity: 0; cursor: pointer; transition: .15s; }
+.tw-card-top { display: flex; gap: .8rem; align-items: flex-start; }
+.tw-card-cover { position: relative; width: 62px; height: 62px; flex-shrink: 0; }
+.tw-card-cover img { width: 62px; height: 62px; border-radius: 12px; object-fit: cover; border: 1px solid var(--border); }
+.tw-card-play { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: linear-gradient(160deg, rgba(37,99,235,.55), rgba(15,23,42,.62)); color: #fff; border: 0; border-radius: 12px; opacity: 0; cursor: pointer; transition: opacity .15s; font-size: 1.05rem; }
 .tw-card-cover:hover .tw-card-play { opacity: 1; }
-.tw-card-cb { position: absolute; top: .6rem; inset-inline-end: .6rem; z-index: 2; }
-.tw-card-badges { display: flex; gap: .35rem; flex-wrap: wrap; margin: .7rem 0 .55rem; }
-.tw-card-foot { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--border); padding-top: .6rem; }
+.tw-card-cb { position: absolute; top: .65rem; inset-inline-end: .65rem; z-index: 2; }
+.tw-card-badges { display: flex; gap: .35rem; flex-wrap: wrap; margin: .75rem 0 .6rem; }
+.tw-card-foot { display: flex; align-items: center; justify-content: space-between; gap: .5rem; border-top: 1px solid var(--border); padding-top: .65rem; }
+
+/* ── Qari grid (By Qari tab) ── */
+.qari-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 1.05rem; }
+.qari-card { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; text-decoration: none; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.4rem 1rem 1.15rem; box-shadow: 0 1px 3px rgba(0,0,0,.04); transition: transform .16s, box-shadow .16s, border-color .16s; }
+.qari-card:hover { border-color: var(--gold); box-shadow: 0 8px 22px rgba(0,0,0,.09); transform: translateY(-3px); }
+.qari-card-img { width: 74px; height: 74px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border); box-shadow: 0 2px 6px rgba(0,0,0,.08); }
+.qari-card-name { margin-top: .8rem; font-weight: 700; font-size: .92rem; color: var(--text1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.qari-card-metrics { display: flex; gap: .45rem; margin-top: .6rem; }
+.qari-card-metrics span { display: inline-flex; align-items: center; gap: .3rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: .16rem .48rem; font-size: .74rem; color: var(--text2); }
+.qari-card-metrics i { color: var(--text3); font-size: .68rem; }
+.qari-card-go { position: absolute; top: .8rem; inset-inline-end: .85rem; color: var(--text3); font-size: .78rem; opacity: 0; transform: translateX(4px); transition: .18s; }
+.qari-card:hover .qari-card-go { opacity: 1; transform: translateX(0); color: var(--gold); }
+.qari-grid-empty { grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--text2); }
+.qari-grid-empty i { font-size: 1.6rem; opacity: .4; display: block; margin-bottom: .5rem; }
+
+/* ── Qari detail header ── */
+.qari-back { display: flex; align-items: center; gap: .9rem; flex-wrap: wrap; margin-bottom: 1.15rem; }
+.qari-back-info { display: inline-flex; align-items: center; gap: .55rem; font-weight: 700; color: var(--gold); }
+.qari-back-info img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); }
+
+@media (max-width: 640px) {
+  .tw-toolbar { align-items: stretch; }
+  .tw-toolbar .filter-bar { flex-direction: column; align-items: stretch; }
+  .tw-view { align-self: flex-end; }
+  .tw-tabs { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+  .tw-tab { white-space: nowrap; }
+}
 </style>
 @endsection
 

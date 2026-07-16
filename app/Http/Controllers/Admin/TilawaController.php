@@ -11,6 +11,7 @@ use App\Services\FileUploadService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
@@ -22,6 +23,8 @@ class TilawaController extends Controller
     public function index(Request $request)
     {
         $sort = $request->string('sort')->toString();
+        $isAdmin = Auth::user()->hasRole('admin');
+        $showQariGrid = $request->string('tab')->toString() === 'qaris' && ! $request->filled('qari');
 
         $tilawat = $this->scopedQuery()
             ->with('qari', 'uploader')
@@ -47,9 +50,11 @@ class TilawaController extends Controller
             'plays' => (int) $this->scopedQuery()->sum('plays_count'),
             'downloads' => (int) $this->scopedQuery()->sum('downloads_count'),
             'likes' => (int) $this->scopedQuery()->sum('likes_count'),
+            'qaris' => $this->qariScope($isAdmin)->count(),
         ];
 
-        $qaris = Qari::orderBy('name_ar')
+        $qaris = $this->qariScope($isAdmin)
+            ->orderBy('name_ar')
             ->get(['id', 'name_ar', 'name_en', 'image'])
             ->map(fn (Qari $q) => [
                 'id' => $q->id,
@@ -57,7 +62,38 @@ class TilawaController extends Controller
                 'image' => $q->image_url,
             ]);
 
-        return view('admin.tilawat.index', compact('tilawat', 'qaris', 'stats'));
+        $qariGrid = $showQariGrid ? $this->qariGrid($request, $isAdmin) : collect();
+
+        return view('admin.tilawat.index', compact('tilawat', 'qaris', 'stats', 'qariGrid', 'showQariGrid'));
+    }
+
+    /**
+     * Qaris visible to the current user: all of them for admins, otherwise
+     * only those the creator has uploaded a recitation for.
+     */
+    private function qariScope(bool $isAdmin): Builder
+    {
+        return Qari::query()->when(
+            ! $isAdmin,
+            fn (Builder $q) => $q->whereHas('tilawat', fn (Builder $sub) => $sub->where('uploaded_by', Auth::id()))
+        );
+    }
+
+    /**
+     * Qaris with their recitation totals for the "By Qari" tab, ordered by the
+     * most recitations first.
+     */
+    private function qariGrid(Request $request, bool $isAdmin): Collection
+    {
+        $ownScope = fn (Builder $q) => $q->when(! $isAdmin, fn (Builder $sub) => $sub->where('uploaded_by', Auth::id()));
+
+        return $this->qariScope($isAdmin)
+            ->withCount(['tilawat as tilawat_count' => $ownScope])
+            ->withSum(['tilawat as plays_sum' => $ownScope], 'plays_count')
+            ->when($request->search, fn (Builder $q) => $q->where(fn (Builder $sub) => $sub->where('name_ar', 'like', '%'.$request->search.'%')->orWhere('name_en', 'like', '%'.$request->search.'%')))
+            ->orderByDesc('tilawat_count')
+            ->orderBy('name_ar')
+            ->get();
     }
 
     /**
