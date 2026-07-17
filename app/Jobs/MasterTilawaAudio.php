@@ -6,6 +6,7 @@ use App\Models\Tilawa;
 use App\Services\AudioMasteringService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -22,6 +23,13 @@ class MasterTilawaAudio implements ShouldQueue
         $tilawa = Tilawa::with('qari')->find($this->tilawaId);
 
         if ($tilawa === null) {
+            return;
+        }
+
+        // Mastering is the slow two-pass loudnorm over the full recitation; when a
+        // master already exists (e.g. re-rendering the video or retrying a failed
+        // render), reuse it instead of paying that cost again.
+        if ($tilawa->master_audio_path && Storage::disk(config('publishing.disk'))->exists($tilawa->master_audio_path)) {
             return;
         }
 

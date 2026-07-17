@@ -275,6 +275,22 @@ class ProductionQueue extends Component
         $pipeline->prepare($tilawa);
     }
 
+    /**
+     * Re-run a failed render. The pipeline reuses the already-mastered audio,
+     * cover, and subtitles, so a retry only re-renders the video — the step
+     * that actually failed — and finishes far quicker than the first pass.
+     */
+    public function retryRender(int $tilawaId, PublishingPipeline $pipeline): void
+    {
+        $tilawa = $this->ownedTilawa($tilawaId);
+
+        if (! in_array($tilawa->brand_status, ['failed', 'ready'], true)) {
+            return;
+        }
+
+        $pipeline->prepare($tilawa);
+    }
+
     public function moveToPublishing(int $tilawaId): void
     {
         $tilawa = $this->ownedTilawa($tilawaId);

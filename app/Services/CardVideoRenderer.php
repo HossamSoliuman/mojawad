@@ -107,7 +107,7 @@ class CardVideoRenderer
             '-map', '[v]',
             '-map', '0:a',
             '-c:v', 'libx264',
-            '-preset', 'veryfast',
+            '-preset', (string) config('publishing.video.preset'),
             '-r', (string) $fps,
             '-c:a', 'aac',
             '-b:a', '192k',

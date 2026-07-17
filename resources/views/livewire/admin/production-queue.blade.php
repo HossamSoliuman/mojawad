@@ -147,9 +147,17 @@
                                     <button type="button" wire:click="openEditor({{ $tilawa->id }})" class="btn btn-primary btn-xs">
                                         <i class="fas fa-wand-magic-sparkles"></i> {{ __('Design & render') }}
                                     </button>
-                                    <button type="button" wire:click="prepare({{ $tilawa->id }})" class="btn btn-ghost btn-xs">
-                                        <i class="fas fa-gears"></i> {{ $tilawa->brand_status === 'failed' ? __('Retry') : __('Quick render') }}
+                                    @if($tilawa->brand_status === 'failed')
+                                    <button type="button" wire:click="retryRender({{ $tilawa->id }})"
+                                            wire:loading.attr="disabled" wire:target="retryRender({{ $tilawa->id }})"
+                                            class="btn btn-ghost btn-xs" style="color:var(--amber,#d9a441)">
+                                        <i class="fas fa-rotate-right"></i> {{ __('Retry') }}
                                     </button>
+                                    @else
+                                    <button type="button" wire:click="prepare({{ $tilawa->id }})" class="btn btn-ghost btn-xs">
+                                        <i class="fas fa-gears"></i> {{ __('Quick render') }}
+                                    </button>
+                                    @endif
                                     @endif
                                     @if($tilawa->brand_status === 'ready')
                                     <button type="button" wire:click="moveToPublishing({{ $tilawa->id }})" class="btn btn-ghost btn-xs" style="color:var(--gold,#c9a153)">

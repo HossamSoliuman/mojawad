@@ -132,7 +132,7 @@ class VideoCardService
             '-map', '[v]',
             '-map', '0:a',
             '-c:v', 'libx264',
-            '-preset', 'veryfast',
+            '-preset', (string) config('publishing.video.preset'),
             '-r', (string) config('publishing.video.fps'),
             '-c:a', 'aac',
             '-b:a', '192k',

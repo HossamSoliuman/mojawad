@@ -317,6 +317,51 @@ it('does not re-dispatch the chain while a render is already processing', functi
     Bus::assertNotDispatched(AlignSubtitles::class);
 });
 
+it('retries a failed render and re-dispatches the chain', function () {
+    Bus::fake();
+    $creator = User::factory()->create()->assignRole('creator');
+    $tilawa = readyTilawa($creator, 'failed', 'preparing');
+
+    $this->actingAs($creator);
+
+    Livewire::test(ProductionQueue::class)->call('retryRender', $tilawa->id);
+
+    expect($tilawa->fresh()->brand_status)->toBe('processing');
+
+    Bus::assertChained([
+        AlignSubtitles::class,
+        RenderBrandCover::class,
+        MasterTilawaAudio::class,
+        RenderBrandedVideo::class,
+    ]);
+});
+
+it('does not retry a render that has not failed', function () {
+    Bus::fake();
+    $creator = User::factory()->create()->assignRole('creator');
+    $tilawa = readyTilawa($creator, 'none', 'preparing');
+
+    $this->actingAs($creator);
+
+    Livewire::test(ProductionQueue::class)->call('retryRender', $tilawa->id);
+
+    Bus::assertNotDispatched(AlignSubtitles::class);
+    expect($tilawa->fresh()->brand_status)->toBe('none');
+});
+
+it('reuses an existing master instead of re-mastering on retry', function () {
+    $tilawa = readyTilawa(User::factory()->create(), 'failed', 'preparing');
+    $tilawa->update(['master_audio_path' => 'published/audio/existing.mp3']);
+    Storage::disk('public')->put('published/audio/existing.mp3', 'audio');
+
+    $mastering = Mockery::mock(App\Services\AudioMasteringService::class);
+    $mastering->shouldNotReceive('master');
+
+    (new MasterTilawaAudio($tilawa->id))->handle($mastering);
+
+    expect($tilawa->fresh()->master_audio_path)->toBe('published/audio/existing.mp3');
+});
+
 it('drops a recitation from production without deleting it from the site', function () {
     $creator = User::factory()->create()->assignRole('creator');
     $tilawa = readyTilawa($creator, 'ready', 'preparing');

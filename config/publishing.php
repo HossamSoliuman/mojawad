@@ -81,7 +81,7 @@ return [
     'id3' => ['album_artist' => 'Mojawad', 'genre' => 'Quran', 'publisher' => 'mojawad.org'],
 
     // ── Visual branding ────────────────────────────────────────────────
-    'video' => ['width' => 1920, 'height' => 1080, 'fps' => 25],
+    'video' => ['width' => 1920, 'height' => 1080, 'fps' => 25, 'preset' => env('PUBLISH_VIDEO_PRESET', 'ultrafast')],
     'card_lab_dir' => 'published/card-lab',
     'cards_dir' => 'published/cards',
 

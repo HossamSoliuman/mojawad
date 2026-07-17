@@ -7,6 +7,7 @@ use App\Services\SubtitleAlignService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 class AlignSubtitles implements ShouldQueue
@@ -27,6 +28,12 @@ class AlignSubtitles implements ShouldQueue
         $tilawa = Tilawa::find($this->tilawaId);
 
         if ($tilawa === null) {
+            return;
+        }
+
+        // Alignment is expensive and deterministic — skip it when subtitles are
+        // already aligned so a re-render/retry goes straight to the video.
+        if ($tilawa->subtitle_path && Storage::disk(config('publishing.disk'))->exists($tilawa->subtitle_path)) {
             return;
         }
 

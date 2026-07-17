@@ -159,7 +159,7 @@ class RenderBrandedVideo implements ShouldQueue
             '-map', '[v]',
             '-map', '0:a',
             '-c:v', 'libx264',
-            '-preset', 'veryfast',
+            '-preset', (string) config('publishing.video.preset'),
             '-pix_fmt', 'yuv420p',
             '-r', (string) $fps,
             '-c:a', 'aac',
