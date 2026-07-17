@@ -25,10 +25,10 @@ beforeEach(function () {
 });
 
 /**
- * A recitation that has cleared the Factory (ayah range set) and is owned by
- * the given user, so it appears in that user's Production queue.
+ * A recitation owned by the given user, optionally already seeded into a
+ * production stage with a matching brand status.
  */
-function readyTilawa(User $owner, string $brandStatus = 'none'): Tilawa
+function readyTilawa(User $owner, string $brandStatus = 'none', ?string $stage = null): Tilawa
 {
     $qari = Qari::factory()->create();
     $tilawa = Tilawa::factory()->create([
@@ -38,6 +38,7 @@ function readyTilawa(User $owner, string $brandStatus = 'none'): Tilawa
         'ayah_from' => 1,
         'ayah_to' => 7,
         'brand_status' => $brandStatus,
+        'production_stage' => $stage,
     ]);
     TilawatSource::create([
         'source_type' => 'upload',
@@ -64,10 +65,49 @@ it('blocks regular users from the production page', function () {
     $this->actingAs($user)->get(route('admin.publishing.production'))->assertForbidden();
 });
 
+it('lists qaris with pickable recitations in the selection tab', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+    $tilawa = readyTilawa($creator);
+    $tilawa->update(['title_ar' => 'تلاوة قابلة للاختيار']);
+    $tilawa->qari->update(['name_ar' => 'الشيخ المختار']);
+
+    $this->actingAs($creator);
+
+    Livewire::test(ProductionQueue::class)
+        ->assertSet('tab', 'selection')
+        ->assertSee('الشيخ المختار')
+        ->call('selectQari', $tilawa->qari_id)
+        ->assertSee('تلاوة قابلة للاختيار');
+});
+
+it('moves a recitation into preparation when it is selected', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+    $tilawa = readyTilawa($creator);
+
+    $this->actingAs($creator);
+
+    Livewire::test(ProductionQueue::class)->call('addToProduction', $tilawa->id);
+
+    expect($tilawa->fresh()->production_stage)->toBe('preparing');
+});
+
+it('only shows a creator their own recitations in selection', function () {
+    $owner = User::factory()->create()->assignRole('creator');
+    $other = User::factory()->create()->assignRole('creator');
+    readyTilawa($owner)->qari->update(['name_ar' => 'قارئ المالك']);
+    readyTilawa($other)->qari->update(['name_ar' => 'قارئ الآخر']);
+
+    $this->actingAs($owner);
+
+    Livewire::test(ProductionQueue::class)
+        ->assertSee('قارئ المالك')
+        ->assertDontSee('قارئ الآخر');
+});
+
 it('dispatches the full brand chain when preparing', function () {
     Bus::fake();
     $creator = User::factory()->create()->assignRole('creator');
-    $tilawa = readyTilawa($creator);
+    $tilawa = readyTilawa($creator, 'none', 'preparing');
 
     $this->actingAs($creator);
 
@@ -83,9 +123,24 @@ it('dispatches the full brand chain when preparing', function () {
     ]);
 });
 
-it('publishes to the podcast feed inline and activates the recitation', function () {
+it('moves a ready recitation from preparation to publishing', function () {
     $creator = User::factory()->create()->assignRole('creator');
-    $tilawa = readyTilawa($creator, 'ready');
+    $ready = readyTilawa($creator, 'ready', 'preparing');
+    $notReady = readyTilawa($creator, 'none', 'preparing');
+
+    $this->actingAs($creator);
+
+    Livewire::test(ProductionQueue::class)
+        ->call('moveToPublishing', $ready->id)
+        ->call('moveToPublishing', $notReady->id);
+
+    expect($ready->fresh()->production_stage)->toBe('publishing')
+        ->and($notReady->fresh()->production_stage)->toBe('preparing');
+});
+
+it('publishes to the podcast feed inline and moves the recitation to published', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+    $tilawa = readyTilawa($creator, 'ready', 'publishing');
 
     $this->actingAs($creator);
 
@@ -97,12 +152,51 @@ it('publishes to the podcast feed inline and activates the recitation', function
     $publication = Publication::where('tilawa_id', $tilawa->id)->where('platform', 'podcast')->first();
     expect($publication)->not->toBeNull()
         ->and($publication->status)->toBe('completed')
-        ->and($tilawa->fresh()->status)->toBe('active');
+        ->and($tilawa->fresh()->status)->toBe('active')
+        ->and($tilawa->fresh()->production_stage)->toBe('published');
+});
+
+it('stores the composed per-platform meta on the publication', function () {
+    Bus::fake();
+    $creator = User::factory()->create()->assignRole('creator');
+    $tilawa = readyTilawa($creator, 'ready', 'publishing');
+
+    $this->actingAs($creator);
+
+    Livewire::test(ProductionQueue::class)
+        ->call('openPublish', $tilawa->id)
+        ->set('platforms', ['youtube'])
+        ->set('ytTitle', 'عنوان مخصص لليوتيوب')
+        ->set('ytDescription', 'وصف مخصص')
+        ->call('doPublish');
+
+    $publication = Publication::where('tilawa_id', $tilawa->id)->where('platform', 'youtube')->first();
+    expect($publication)->not->toBeNull()
+        ->and($publication->meta['title'])->toBe('عنوان مخصص لليوتيوب')
+        ->and($publication->meta['description'])->toBe('وصف مخصص');
+
+    Bus::assertDispatched(PublishToYoutube::class);
+});
+
+it('can push an already published recitation to another platform', function () {
+    Bus::fake();
+    $creator = User::factory()->create()->assignRole('creator');
+    $tilawa = readyTilawa($creator, 'ready', 'published');
+
+    $this->actingAs($creator);
+
+    Livewire::test(ProductionQueue::class)
+        ->call('openPublish', $tilawa->id)
+        ->assertSet('publishFor', $tilawa->id)
+        ->set('platforms', ['youtube'])
+        ->call('doPublish');
+
+    expect(Publication::where('tilawa_id', $tilawa->id)->where('platform', 'youtube')->exists())->toBeTrue();
 });
 
 it('does not publish when the brand assets are not ready', function () {
     $creator = User::factory()->create()->assignRole('creator');
-    $tilawa = readyTilawa($creator, 'none');
+    $tilawa = readyTilawa($creator, 'none', 'publishing');
 
     $this->actingAs($creator);
 
@@ -114,24 +208,9 @@ it('does not publish when the brand assets are not ready', function () {
     expect(Publication::where('tilawa_id', $tilawa->id)->count())->toBe(0);
 });
 
-it('dispatches the youtube publisher when youtube is selected', function () {
-    Bus::fake();
-    $creator = User::factory()->create()->assignRole('creator');
-    $tilawa = readyTilawa($creator, 'ready');
-
-    $this->actingAs($creator);
-
-    Livewire::test(ProductionQueue::class)
-        ->call('openPublish', $tilawa->id)
-        ->set('platforms', ['youtube'])
-        ->call('doPublish');
-
-    Bus::assertDispatched(PublishToYoutube::class);
-});
-
 it('marks a youtube publication failed when youtube is not configured', function () {
     config(['publishing.youtube.client_id' => null]);
-    $tilawa = readyTilawa(User::factory()->create(), 'ready');
+    $tilawa = readyTilawa(User::factory()->create(), 'ready', 'publishing');
     $publication = Publication::factory()->youtube()->create(['tilawa_id' => $tilawa->id]);
 
     (new PublishToYoutube($publication->id))->handle(app(YoutubePublisher::class));
@@ -140,83 +219,29 @@ it('marks a youtube publication failed when youtube is not configured', function
         ->and($publication->fresh()->error)->toBe(__('YouTube is not configured.'));
 });
 
-it('shows recitations in production even when the ayah range is not confirmed', function () {
-    $creator = User::factory()->create()->assignRole('creator');
-    $qari = Qari::factory()->create();
-    $tilawa = Tilawa::factory()->create([
-        'qari_id' => $qari->id,
-        'uploaded_by' => $creator->id,
-        'surah_number' => 2,
-        'title_ar' => 'تلاوة بدون نطاق',
-        'ayah_from' => null,
-        'ayah_to' => null,
-    ]);
-    TilawatSource::create([
-        'source_type' => 'upload',
-        'source_url' => 'sources/1/x.mp3',
-        'qari_id' => $qari->id,
-        'surah_number' => 2,
-        'status' => 'completed',
-        'tilawa_id' => $tilawa->id,
-        'created_by' => $creator->id,
-    ]);
-
-    $this->actingAs($creator);
-
-    Livewire::test(ProductionQueue::class)->assertSee('تلاوة بدون نطاق');
-});
-
-it('only shows a creator their own recitations in production', function () {
-    $owner = User::factory()->create()->assignRole('creator');
-    $other = User::factory()->create()->assignRole('creator');
-    readyTilawa($owner)->update(['title_ar' => 'تلاوة المالك']);
-    readyTilawa($other)->update(['title_ar' => 'تلاوة الآخر']);
-
-    $this->actingAs($owner);
-
-    Livewire::test(ProductionQueue::class)
-        ->assertSee('تلاوة المالك')
-        ->assertDontSee('تلاوة الآخر');
-});
-
-it('splits recitations between the create and publish tabs', function () {
+it('separates recitations across the pipeline stages', function () {
     $admin = User::factory()->create()->assignRole('admin');
-    readyTilawa($admin, 'none')->update(['title_ar' => 'تلاوة قيد الإنشاء']);
-    readyTilawa($admin, 'ready')->update(['title_ar' => 'تلاوة جاهزة للنشر']);
+    readyTilawa($admin, 'none', 'preparing')->update(['title_ar' => 'تلاوة قيد التجهيز']);
+    readyTilawa($admin, 'ready', 'publishing')->update(['title_ar' => 'تلاوة قيد النشر']);
+    readyTilawa($admin, 'ready', 'published')->update(['title_ar' => 'تلاوة منشورة']);
 
     $this->actingAs($admin);
 
     Livewire::test(ProductionQueue::class)
-        ->assertSet('tab', 'create')
-        ->assertSee('تلاوة قيد الإنشاء')
-        ->assertDontSee('تلاوة جاهزة للنشر')
-        ->set('tab', 'publish')
-        ->assertSee('تلاوة جاهزة للنشر')
-        ->assertDontSee('تلاوة قيد الإنشاء');
-});
-
-it('filters the publish tab by published state', function () {
-    $admin = User::factory()->create()->assignRole('admin');
-    readyTilawa($admin, 'ready')->update(['title_ar' => 'تلاوة أولى']);
-    $published = readyTilawa($admin, 'ready');
-    $published->update(['title_ar' => 'تلاوة ثانية']);
-    Publication::factory()->podcast()->completed()->create(['tilawa_id' => $published->id]);
-
-    $this->actingAs($admin);
-
-    Livewire::test(ProductionQueue::class)
-        ->set('tab', 'publish')
-        ->set('publishFilter', 'published')
-        ->assertSee('تلاوة ثانية')
-        ->assertDontSee('تلاوة أولى')
-        ->set('publishFilter', 'unpublished')
-        ->assertSee('تلاوة أولى')
-        ->assertDontSee('تلاوة ثانية');
+        ->set('tab', 'preparation')
+        ->assertSee('تلاوة قيد التجهيز')
+        ->assertDontSee('تلاوة قيد النشر')
+        ->set('tab', 'publishing')
+        ->assertSee('تلاوة قيد النشر')
+        ->assertDontSee('تلاوة منشورة')
+        ->set('tab', 'published')
+        ->assertSee('تلاوة منشورة')
+        ->assertDontSee('تلاوة قيد التجهيز');
 });
 
 it('prefills the card editor from the recitation and its saved settings', function () {
     $creator = User::factory()->create()->assignRole('creator');
-    $tilawa = readyTilawa($creator);
+    $tilawa = readyTilawa($creator, 'none', 'preparing');
     $tilawa->update(['description_ar' => 'وصف التلاوة']);
 
     $this->actingAs($creator);
@@ -233,7 +258,7 @@ it('prefills the card editor from the recitation and its saved settings', functi
 
 it('saves the card settings on the recitation', function () {
     $creator = User::factory()->create()->assignRole('creator');
-    $tilawa = readyTilawa($creator);
+    $tilawa = readyTilawa($creator, 'none', 'preparing');
 
     $this->actingAs($creator);
 
@@ -258,7 +283,7 @@ it('saves the card settings on the recitation', function () {
 it('saves and dispatches the render chain from the editor', function () {
     Bus::fake();
     $creator = User::factory()->create()->assignRole('creator');
-    $tilawa = readyTilawa($creator);
+    $tilawa = readyTilawa($creator, 'none', 'preparing');
 
     $this->actingAs($creator);
 
@@ -283,7 +308,7 @@ it('saves and dispatches the render chain from the editor', function () {
 it('does not re-dispatch the chain while a render is already processing', function () {
     Bus::fake();
     $creator = User::factory()->create()->assignRole('creator');
-    $tilawa = readyTilawa($creator, 'processing');
+    $tilawa = readyTilawa($creator, 'processing', 'preparing');
 
     $this->actingAs($creator);
 
@@ -292,20 +317,21 @@ it('does not re-dispatch the chain while a render is already processing', functi
     Bus::assertNotDispatched(AlignSubtitles::class);
 });
 
-it('deletes a recitation through the confirmation modal', function () {
+it('drops a recitation from production without deleting it from the site', function () {
     $creator = User::factory()->create()->assignRole('creator');
-    $tilawa = readyTilawa($creator);
+    $tilawa = readyTilawa($creator, 'ready', 'preparing');
 
     $this->actingAs($creator);
 
     Livewire::test(ProductionQueue::class)
-        ->call('confirmDelete', $tilawa->id)
-        ->assertSet('confirmingDeleteId', $tilawa->id)
-        ->call('performDelete')
-        ->assertSet('confirmingDeleteId', null);
+        ->call('confirmRemove', $tilawa->id)
+        ->assertSet('confirmingRemoveId', $tilawa->id)
+        ->call('performRemove')
+        ->assertSet('confirmingRemoveId', null);
 
-    expect(Tilawa::find($tilawa->id))->toBeNull()
-        ->and(TilawatSource::where('tilawa_id', $tilawa->id)->count())->toBe(0);
+    expect(Tilawa::find($tilawa->id))->not->toBeNull()
+        ->and($tilawa->fresh()->production_stage)->toBeNull()
+        ->and(TilawatSource::where('tilawa_id', $tilawa->id)->count())->toBe(1);
 });
 
 it('serves completed podcast items in the RSS feed', function () {

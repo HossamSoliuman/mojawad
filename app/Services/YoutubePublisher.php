@@ -43,9 +43,11 @@ class YoutubePublisher
         $client = $this->client();
         $service = new YouTube($client);
 
+        $meta = $publication->meta ?? [];
+
         $snippet = new VideoSnippet;
-        $snippet->setTitle($tilawa->title_ar);
-        $snippet->setDescription($this->description($tilawa));
+        $snippet->setTitle(filled($meta['title'] ?? null) ? $meta['title'] : $tilawa->title_ar);
+        $snippet->setDescription(filled($meta['description'] ?? null) ? $meta['description'] : $this->description($tilawa));
         $snippet->setCategoryId((string) config('publishing.youtube.category_id'));
 
         $status = new VideoStatus;

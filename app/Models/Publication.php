@@ -20,6 +20,7 @@ class Publication extends Model
         'external_id',
         'external_url',
         'error',
+        'meta',
         'published_at',
         'created_by',
     ];
@@ -28,6 +29,7 @@ class Publication extends Model
     {
         return [
             'published_at' => 'datetime',
+            'meta' => 'array',
         ];
     }
 

@@ -42,6 +42,21 @@ class PublishToYoutube implements ShouldQueue
             'published_at' => now(),
             'error' => null,
         ]);
+
+        $this->advanceToPublished($publication);
+    }
+
+    /**
+     * A successful upload is the recitation's first live platform, so move it
+     * out of the Publishing stage into Published.
+     */
+    private function advanceToPublished(Publication $publication): void
+    {
+        $tilawa = $publication->tilawa;
+
+        if ($tilawa !== null && $tilawa->production_stage === 'publishing') {
+            $tilawa->update(['production_stage' => 'published']);
+        }
     }
 
     public function failed(Throwable $exception): void

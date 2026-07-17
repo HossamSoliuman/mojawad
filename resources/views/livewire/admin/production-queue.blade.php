@@ -1,52 +1,111 @@
 <div x-data="brandPreview()" @if($this->hasActive) wire:poll.5s @endif>
 
-    {{-- Tab bar: Create videos ↔ Publish & track --}}
+    {{-- Pipeline tabs: Selection → Preparation → Publishing → Published --}}
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;gap:1rem;flex-wrap:wrap">
-        <div class="range-pills" style="display:inline-flex;gap:.15rem">
-            <button type="button" wire:click="$set('tab', 'create')"
-                    class="range-pill {{ $tab === 'create' ? 'active' : '' }}"
-                    style="border:0;cursor:pointer;padding:.45rem 1rem;{{ $tab === 'create' ? '' : 'background:transparent' }}">
-                <i class="fas fa-clapperboard"></i> {{ __('Create videos') }} ({{ $this->createCount }})
+        <div class="range-pills" style="display:inline-flex;gap:.15rem;flex-wrap:wrap">
+            @foreach([
+                'selection'   => ['fa-hand-pointer',     __('Selection'),   $this->selectionCount],
+                'preparation' => ['fa-wand-magic-sparkles', __('Preparation'), $this->preparationCount],
+                'publishing'  => ['fa-tower-broadcast',  __('Publishing'),  $this->publishingCount],
+                'published'   => ['fa-circle-check',      __('Published'),   $this->publishedCount],
+            ] as $key => $meta)
+            <button type="button" wire:click="$set('tab', '{{ $key }}')"
+                    class="range-pill {{ $tab === $key ? 'active' : '' }}"
+                    style="border:0;cursor:pointer;padding:.45rem 1rem;{{ $tab === $key ? '' : 'background:transparent' }}">
+                <i class="fas {{ $meta[0] }}"></i> {{ $meta[1] }} ({{ $meta[2] }})
             </button>
-            <button type="button" wire:click="$set('tab', 'publish')"
-                    class="range-pill {{ $tab === 'publish' ? 'active' : '' }}"
-                    style="border:0;cursor:pointer;padding:.45rem 1rem;{{ $tab === 'publish' ? '' : 'background:transparent' }}">
-                <i class="fas fa-tower-broadcast"></i> {{ __('Publish & track') }} ({{ $this->publishCount }})
-            </button>
+            @endforeach
         </div>
-        <div style="display:flex;gap:.5rem;align-items:center">
-            @if($tab === 'create' && count($selected) > 0)
-            <button type="button" wire:click="bulkPrepare" class="btn btn-primary btn-sm">
-                <i class="fas fa-gears"></i> {{ __('Prepare selected') }} ({{ count($selected) }})
-            </button>
-            @endif
-            @if($this->hasActive)
-            <span class="badge badge-amber"><i class="fas fa-spinner fa-spin"></i> {{ __('Working…') }}</span>
-            @endif
-        </div>
+        @if($this->hasActive)
+        <span class="badge badge-amber"><i class="fas fa-spinner fa-spin"></i> {{ __('Working…') }}</span>
+        @endif
     </div>
 
-    @if($tab === 'create')
-        {{-- ══════════ CREATE TAB: design the card, render the animated video ══════════ --}}
-        @if($this->createList->isEmpty())
+    @if($tab === 'selection')
+        {{-- ══════════ SELECTION: browse qaris, pick recitations into the pipeline ══════════ --}}
+        <p style="color:var(--text2);font-size:.84rem;margin:0 0 1rem">{{ __('Pick a qari to see their recitations, then add the ones you want to produce. Adding a recitation moves it to Preparation.') }}</p>
+
+        @if($this->selectionQaris->isEmpty())
             <div style="text-align:center;padding:3rem 1rem;color:var(--text2)">
-                <i class="fas fa-clapperboard" style="font-size:2.2rem;display:block;margin-bottom:.7rem;opacity:.4"></i>
-                <div style="font-size:.95rem">{{ __('Nothing to create yet. Ingest a source in the Factory first.') }}</div>
+                <i class="fas fa-hand-pointer" style="font-size:2.2rem;display:block;margin-bottom:.7rem;opacity:.4"></i>
+                <div style="font-size:.95rem">{{ __('Every recitation is already in the pipeline. Nothing left to select.') }}</div>
+            </div>
+        @else
+            <div style="display:flex;gap:1rem;align-items:flex-start;flex-wrap:wrap">
+                {{-- Qari list --}}
+                <div style="flex:0 0 280px;max-width:100%;display:flex;flex-direction:column;gap:.35rem">
+                    @foreach($this->selectionQaris as $qari)
+                    <button type="button" wire:key="sel-q-{{ $qari->id }}" wire:click="selectQari({{ $qari->id }})"
+                            style="display:flex;align-items:center;gap:.7rem;text-align:start;border:1px solid var(--border);border-radius:10px;padding:.55rem .7rem;cursor:pointer;background:{{ $selectedQariId === $qari->id ? 'var(--bg3,#1e1e35)' : 'transparent' }}">
+                        <span style="width:40px;height:40px;border-radius:8px;overflow:hidden;flex-shrink:0;background:var(--bg3,#1e1e35);display:flex;align-items:center;justify-content:center;color:var(--text3)">
+                            <img src="{{ $qari->image_url }}" style="width:100%;height:100%;object-fit:cover" alt="">
+                        </span>
+                        <span style="min-width:0;flex:1">
+                            <span style="display:block;font-weight:600;font-size:.86rem">{{ $qari->name }}</span>
+                            <span style="display:block;font-size:.72rem;color:var(--text3)">{{ $qari->selectable_count }} {{ __('recitations') }}</span>
+                        </span>
+                        <i class="fas fa-chevron-{{ $selectedQariId === $qari->id ? 'down' : 'left' }}" style="font-size:.7rem;color:var(--text3)"></i>
+                    </button>
+                    @endforeach
+                </div>
+
+                {{-- Recitations of the opened qari --}}
+                <div style="flex:1;min-width:300px">
+                    @if($selectedQariId === null)
+                        <div style="text-align:center;padding:3rem 1rem;color:var(--text3);border:1px dashed var(--border);border-radius:12px">
+                            <i class="fas fa-arrow-{{ app()->getLocale() === 'en' ? 'left' : 'right' }}" style="opacity:.5;margin-inline-end:.4rem"></i>
+                            {{ __('Choose a qari to list their recitations.') }}
+                        </div>
+                    @elseif($this->selectionTilawat->isEmpty())
+                        <div style="text-align:center;padding:3rem 1rem;color:var(--text3)">{{ __('No recitations left for this qari.') }}</div>
+                    @else
+                        <div class="tbl-wrap">
+                            <table class="tbl">
+                                <thead><tr>
+                                    <th>{{ __('Recitation') }}</th>
+                                    <th style="width:1%"></th>
+                                </tr></thead>
+                                <tbody>
+                                    @foreach($this->selectionTilawat as $tilawa)
+                                    <tr wire:key="sel-t-{{ $tilawa->id }}">
+                                        <td>
+                                            <div style="font-weight:600;font-size:.86rem">{{ $tilawa->title_ar }}</div>
+                                            <div style="font-size:.72rem;color:var(--text3)">{{ $tilawa->surah_label }} · {{ $tilawa->formatted_duration }}</div>
+                                        </td>
+                                        <td>
+                                            <button type="button" wire:click="addToProduction({{ $tilawa->id }})" class="btn btn-primary btn-xs" style="white-space:nowrap">
+                                                <i class="fas fa-plus"></i> {{ __('Add to production') }}
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        @endif
+
+    @elseif($tab === 'preparation')
+        {{-- ══════════ PREPARATION: design the card, render the animated video ══════════ --}}
+        @if($this->preparationList->isEmpty())
+            <div style="text-align:center;padding:3rem 1rem;color:var(--text2)">
+                <i class="fas fa-wand-magic-sparkles" style="font-size:2.2rem;display:block;margin-bottom:.7rem;opacity:.4"></i>
+                <div style="font-size:.95rem">{{ __('Nothing here yet. Add recitations from the Selection tab.') }}</div>
             </div>
         @else
             <div class="tbl-wrap">
                 <table class="tbl">
                     <thead><tr>
-                        <th style="width:32px"></th>
                         <th>{{ __('Recitation') }}</th>
                         <th>{{ __('Video card') }}</th>
                         <th>{{ __('Status') }}</th>
                         <th>{{ __('Actions') }}</th>
                     </tr></thead>
                     <tbody>
-                        @foreach($this->createList as $tilawa)
-                        <tr wire:key="prod-c-{{ $tilawa->id }}">
-                            <td><input type="checkbox" value="{{ $tilawa->id }}" wire:model.live="selected" @disabled($tilawa->brand_status === 'processing')></td>
+                        @foreach($this->preparationList as $tilawa)
+                        <tr wire:key="prep-{{ $tilawa->id }}">
                             <td>
                                 <div style="display:flex;align-items:center;gap:.72rem">
                                     <span style="width:44px;height:44px;border-radius:8px;background:var(--bg3,#1e1e35);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text3);overflow:hidden">
@@ -73,6 +132,7 @@
                                 @php($bmap = [
                                     'none'       => ['badge-muted', __('Not prepared'), 'fa-circle-dashed'],
                                     'processing' => ['badge-amber', __('Preparing…'),   'fa-spinner fa-spin'],
+                                    'ready'      => ['badge-green', __('Video ready'),   'fa-circle-check'],
                                     'failed'     => ['badge-red',   __('Failed'),       'fa-circle-exclamation'],
                                 ])
                                 @php([$bcls, $blabel, $bicon] = $bmap[$tilawa->brand_status] ?? ['badge-muted', $tilawa->brand_status, 'fa-question'])
@@ -91,8 +151,13 @@
                                         <i class="fas fa-gears"></i> {{ $tilawa->brand_status === 'failed' ? __('Retry') : __('Quick render') }}
                                     </button>
                                     @endif
-                                    <button type="button" wire:click="confirmDelete({{ $tilawa->id }})"
-                                            class="btn-icon" style="color:var(--red)" title="{{ __('Remove') }}"><i class="fas fa-trash"></i></button>
+                                    @if($tilawa->brand_status === 'ready')
+                                    <button type="button" wire:click="moveToPublishing({{ $tilawa->id }})" class="btn btn-ghost btn-xs" style="color:var(--gold,#c9a153)">
+                                        <i class="fas fa-arrow-right"></i> {{ __('Move to publishing') }}
+                                    </button>
+                                    @endif
+                                    <button type="button" wire:click="confirmRemove({{ $tilawa->id }})"
+                                            class="btn-icon" style="color:var(--red)" title="{{ __('Remove from production') }}"><i class="fas fa-xmark"></i></button>
                                 </div>
                             </td>
                         </tr>
@@ -101,19 +166,13 @@
                 </table>
             </div>
         @endif
-    @else
-        {{-- ══════════ PUBLISH TAB: publish ready videos, manage & track them ══════════ --}}
-        <div style="display:flex;gap:.3rem;margin-bottom:.9rem;flex-wrap:wrap">
-            @foreach(['all' => __('All'), 'unpublished' => __('Awaiting publish'), 'published' => __('Published')] as $filter => $flabel)
-            <button type="button" wire:click="$set('publishFilter', '{{ $filter }}')"
-                    class="btn {{ $publishFilter === $filter ? 'btn-primary' : 'btn-ghost' }} btn-xs">{{ $flabel }}</button>
-            @endforeach
-        </div>
 
-        @if($this->publishList->isEmpty())
+    @elseif($tab === 'publishing')
+        {{-- ══════════ PUBLISHING: compose per-platform meta, upload to platforms ══════════ --}}
+        @if($this->publishingList->isEmpty())
             <div style="text-align:center;padding:3rem 1rem;color:var(--text2)">
                 <i class="fas fa-tower-broadcast" style="font-size:2.2rem;display:block;margin-bottom:.7rem;opacity:.4"></i>
-                <div style="font-size:.95rem">{{ __('No videos here yet. Render one in the Create tab first.') }}</div>
+                <div style="font-size:.95rem">{{ __('No videos here yet. Move a ready recitation from Preparation.') }}</div>
             </div>
         @else
             <div class="tbl-wrap">
@@ -124,8 +183,64 @@
                         <th>{{ __('Actions') }}</th>
                     </tr></thead>
                     <tbody>
-                        @foreach($this->publishList as $tilawa)
-                        <tr wire:key="prod-p-{{ $tilawa->id }}">
+                        @foreach($this->publishingList as $tilawa)
+                        <tr wire:key="pub-{{ $tilawa->id }}">
+                            <td>
+                                <div style="display:flex;align-items:center;gap:.72rem">
+                                    @php($thumb = $tilawa->brand_card_image_url ?? $tilawa->brand_cover_url)
+                                    @if($thumb)
+                                    <img src="{{ $thumb }}" style="width:78px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0;background:#000" alt="">
+                                    @else
+                                    <span style="width:78px;height:44px;border-radius:8px;background:var(--bg3,#1e1e35);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text3)"><i class="fas fa-film"></i></span>
+                                    @endif
+                                    <div style="min-width:0">
+                                        <div style="font-weight:600;font-size:.86rem">{{ $tilawa->title_ar }}</div>
+                                        <div style="font-size:.72rem;color:var(--text3)">{{ $tilawa->qari?->name }} · {{ $tilawa->formatted_duration }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>@include('livewire.admin.partials.publication-tracking', ['tilawa' => $tilawa])</td>
+                            <td>
+                                <div style="display:flex;gap:.2rem;align-items:center;flex-wrap:wrap">
+                                    <button type="button" class="btn btn-ghost btn-xs"
+                                            @click="show(@js($tilawa->brand_video_url), @js($tilawa->brand_card_image_url ?? $tilawa->brand_cover_url), @js($tilawa->title_ar))">
+                                        <i class="fas fa-eye"></i> {{ __('Preview') }}
+                                    </button>
+                                    <button type="button" wire:click="openPublish({{ $tilawa->id }})" class="btn btn-primary btn-xs">
+                                        <i class="fas fa-tower-broadcast"></i> {{ __('Compose & publish') }}
+                                    </button>
+                                    <button type="button" wire:click="moveToPreparation({{ $tilawa->id }})" class="btn-icon" title="{{ __('Back to preparation') }}">
+                                        <i class="fas fa-arrow-{{ app()->getLocale() === 'en' ? 'left' : 'right' }}"></i>
+                                    </button>
+                                    <button type="button" wire:click="confirmRemove({{ $tilawa->id }})"
+                                            class="btn-icon" style="color:var(--red)" title="{{ __('Remove from production') }}"><i class="fas fa-xmark"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
+
+    @else
+        {{-- ══════════ PUBLISHED: the finished, live recitations ══════════ --}}
+        @if($this->publishedList->isEmpty())
+            <div style="text-align:center;padding:3rem 1rem;color:var(--text2)">
+                <i class="fas fa-circle-check" style="font-size:2.2rem;display:block;margin-bottom:.7rem;opacity:.4"></i>
+                <div style="font-size:.95rem">{{ __('Nothing published yet.') }}</div>
+            </div>
+        @else
+            <div class="tbl-wrap">
+                <table class="tbl">
+                    <thead><tr>
+                        <th>{{ __('Recitation') }}</th>
+                        <th>{{ __('Where it went live') }}</th>
+                        <th>{{ __('Actions') }}</th>
+                    </tr></thead>
+                    <tbody>
+                        @foreach($this->publishedList as $tilawa)
+                        <tr wire:key="done-{{ $tilawa->id }}">
                             <td>
                                 <div style="display:flex;align-items:center;gap:.72rem">
                                     @php($thumb = $tilawa->brand_card_image_url ?? $tilawa->brand_cover_url)
@@ -143,57 +258,20 @@
                                     </div>
                                 </div>
                             </td>
-                            <td>
-                                @php($pubs = $tilawa->publications->keyBy('platform'))
-                                <div style="display:flex;flex-direction:column;gap:.3rem">
-                                    @foreach(['podcast' => __('Podcast (Spotify / Anghami)'), 'youtube' => __('YouTube'), 'facebook' => __('Facebook')] as $platform => $plabel)
-                                        @php($pub = $pubs->get($platform))
-                                        @if($pub)
-                                        @php($pmap = [
-                                            'pending'    => ['badge-muted', __('Pending'),     'fa-clock'],
-                                            'processing' => ['badge-amber', __('Publishing…'), 'fa-spinner fa-spin'],
-                                            'completed'  => ['badge-green', __('Published'),   'fa-circle-check'],
-                                            'failed'     => ['badge-red',   __('Failed'),      'fa-circle-exclamation'],
-                                        ])
-                                        @php([$pcls, $plbl, $pic] = $pmap[$pub->status] ?? ['badge-muted', $pub->status, 'fa-question'])
-                                        <div style="display:flex;align-items:center;gap:.3rem;flex-wrap:wrap">
-                                            <span style="font-size:.72rem;color:var(--text3);width:112px">{{ $plabel }}</span>
-                                            @if($pub->status === 'completed' && $pub->external_url)
-                                            <a href="{{ $pub->external_url }}" target="_blank" rel="noopener" class="badge {{ $pcls }}" style="text-decoration:none"><i class="fas {{ $pic }}"></i> {{ $plbl }} <i class="fas fa-arrow-up-right-from-square" style="font-size:.6rem"></i></a>
-                                            @else
-                                            <span class="badge {{ $pcls }}"><i class="fas {{ $pic }}"></i> {{ $plbl }}</span>
-                                            @endif
-                                            @if($pub->status === 'completed' && $pub->published_at)
-                                            <span style="font-size:.7rem;color:var(--text3)">{{ $pub->published_at->diffForHumans() }}</span>
-                                            @endif
-                                            @if($pub->status === 'failed')
-                                            <button type="button" wire:click="retryPublication({{ $pub->id }})" class="btn-icon" title="{{ __('Retry') }}"><i class="fas fa-rotate-right"></i></button>
-                                            @if($pub->error)
-                                            <span style="font-size:.7rem;color:#e86060;max-width:180px" title="{{ $pub->error }}">{{ Str::limit($pub->error, 40) }}</span>
-                                            @endif
-                                            @endif
-                                        </div>
-                                        @endif
-                                    @endforeach
-                                    @if($pubs->isEmpty())
-                                    <span style="font-size:.74rem;color:var(--text3)">{{ __('Not published yet') }}</span>
-                                    @endif
-                                </div>
-                            </td>
+                            <td>@include('livewire.admin.partials.publication-tracking', ['tilawa' => $tilawa])</td>
                             <td>
                                 <div style="display:flex;gap:.2rem;align-items:center;flex-wrap:wrap">
+                                    @if($tilawa->brand_video_url)
                                     <button type="button" class="btn btn-ghost btn-xs"
                                             @click="show(@js($tilawa->brand_video_url), @js($tilawa->brand_card_image_url ?? $tilawa->brand_cover_url), @js($tilawa->title_ar))">
                                         <i class="fas fa-eye"></i> {{ __('Preview') }}
                                     </button>
-                                    <button type="button" wire:click="openPublish({{ $tilawa->id }})" class="btn btn-primary btn-xs">
-                                        <i class="fas fa-tower-broadcast"></i> {{ __('Publish') }}
+                                    @endif
+                                    <button type="button" wire:click="openPublish({{ $tilawa->id }})" class="btn btn-ghost btn-xs">
+                                        <i class="fas fa-tower-broadcast"></i> {{ __('Publish elsewhere') }}
                                     </button>
-                                    <button type="button" wire:click="prepare({{ $tilawa->id }})" class="btn-icon" title="{{ __('Re-render the video') }}">
-                                        <i class="fas fa-rotate"></i>
-                                    </button>
-                                    <button type="button" wire:click="confirmDelete({{ $tilawa->id }})"
-                                            class="btn-icon" style="color:var(--red)" title="{{ __('Remove') }}"><i class="fas fa-trash"></i></button>
+                                    <button type="button" wire:click="confirmRemove({{ $tilawa->id }})"
+                                            class="btn-icon" style="color:var(--red)" title="{{ __('Remove from production') }}"><i class="fas fa-xmark"></i></button>
                                 </div>
                             </td>
                         </tr>
@@ -257,42 +335,68 @@
     </div>
     @endif
 
-    {{-- Publish platform picker --}}
+    {{-- Publish composer: per-platform title + description, then upload --}}
     @if($publishFor !== null)
     <div class="modal-backdrop" wire:click.self="cancelPublish" x-data @keydown.escape.window="$wire.cancelPublish()">
-        <div class="modal" style="max-width:420px">
-            <div class="modal-title" style="margin-bottom:.8rem"><i class="fas fa-tower-broadcast"></i> {{ __('Select platforms') }}</div>
-            <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;margin-bottom:.45rem;cursor:pointer">
-                <input type="checkbox" value="podcast" wire:model="platforms"> {{ __('Podcast (Spotify / Anghami)') }}
-            </label>
-            <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;margin-bottom:.45rem;cursor:pointer">
-                <input type="checkbox" value="youtube" wire:model="platforms"> {{ __('YouTube') }}
-                @unless($youtubeEnabled)<span style="font-size:.72rem;color:var(--text3)">({{ __('Not configured') }})</span>@endunless
-            </label>
-            <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;margin-bottom:1rem;cursor:pointer">
-                <input type="checkbox" value="facebook" wire:model="platforms"> {{ __('Facebook') }}
-                @unless($facebookEnabled)<span style="font-size:.72rem;color:var(--text3)">({{ __('Not configured') }})</span>@endunless
-            </label>
-            <div style="display:flex;gap:.6rem">
+        <div class="modal" style="max-width:560px;width:96vw;max-height:92vh;overflow:auto">
+            <div class="modal-title" style="margin-bottom:.4rem"><i class="fas fa-tower-broadcast"></i> {{ __('Compose & publish') }}</div>
+            <p style="color:var(--text3);font-size:.8rem;margin:0 0 1rem">{{ __('Pick the platforms and write the title & description that will go live on each one.') }}</p>
+
+            <div style="display:flex;flex-direction:column;gap:.9rem">
+                {{-- Podcast --}}
+                <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;cursor:pointer">
+                    <input type="checkbox" value="podcast" wire:model.live="platforms"> {{ __('Podcast (Spotify / Anghami)') }}
+                </label>
+
+                {{-- YouTube --}}
+                <div style="border:1px solid var(--border);border-radius:10px;padding:.7rem">
+                    <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;cursor:pointer;font-weight:600">
+                        <input type="checkbox" value="youtube" wire:model.live="platforms"> {{ __('YouTube') }}
+                        @unless($youtubeEnabled)<span style="font-size:.72rem;color:var(--text3);font-weight:400">({{ __('Not configured') }})</span>@endunless
+                    </label>
+                    @if(in_array('youtube', $platforms, true))
+                    <div style="display:flex;flex-direction:column;gap:.5rem;margin-top:.6rem">
+                        <input type="text" wire:model="ytTitle" class="form-control" style="width:100%" placeholder="{{ __('Title') }}">
+                        <textarea wire:model="ytDescription" rows="3" class="form-control" style="width:100%;resize:vertical" placeholder="{{ __('Description') }}"></textarea>
+                    </div>
+                    @endif
+                </div>
+
+                {{-- Facebook --}}
+                <div style="border:1px solid var(--border);border-radius:10px;padding:.7rem">
+                    <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;cursor:pointer;font-weight:600">
+                        <input type="checkbox" value="facebook" wire:model.live="platforms"> {{ __('Facebook') }}
+                        @unless($facebookEnabled)<span style="font-size:.72rem;color:var(--text3);font-weight:400">({{ __('Not configured') }})</span>@endunless
+                    </label>
+                    @if(in_array('facebook', $platforms, true))
+                    <div style="display:flex;flex-direction:column;gap:.5rem;margin-top:.6rem">
+                        <input type="text" wire:model="fbTitle" class="form-control" style="width:100%" placeholder="{{ __('Title') }}">
+                        <textarea wire:model="fbDescription" rows="3" class="form-control" style="width:100%;resize:vertical" placeholder="{{ __('Description') }}"></textarea>
+                    </div>
+                    @endif
+                </div>
+            </div>
+
+            <div style="display:flex;gap:.6rem;margin-top:1.2rem">
                 <button type="button" wire:click="cancelPublish" class="btn btn-ghost" style="flex:1;justify-content:center">{{ __('Cancel') }}</button>
-                <button type="button" wire:click="doPublish" class="btn btn-primary" style="flex:1;justify-content:center"><i class="fas fa-check"></i> {{ __('Publish') }}</button>
+                <button type="button" wire:click="doPublish" wire:loading.attr="disabled" class="btn btn-primary" style="flex:1;justify-content:center"><i class="fas fa-check"></i> {{ __('Publish') }}</button>
             </div>
         </div>
     </div>
     @endif
 
-    {{-- Delete confirmation — an in-page HTML modal, never the browser's confirm() dialog --}}
-    @if($confirmingDeleteId !== null)
-    <div class="modal-backdrop" wire:click.self="cancelDelete" x-data @keydown.escape.window="$wire.cancelDelete()">
-        <div class="modal" style="max-width:400px">
-            <div class="modal-title"><i class="fas fa-trash" style="color:var(--red)"></i> {{ __('Confirm deletion') }}</div>
+    {{-- Remove-from-pipeline confirmation — an in-page modal, never the browser's confirm() --}}
+    @if($confirmingRemoveId !== null)
+    <div class="modal-backdrop" wire:click.self="cancelRemove" x-data @keydown.escape.window="$wire.cancelRemove()">
+        <div class="modal" style="max-width:420px">
+            <div class="modal-title"><i class="fas fa-xmark" style="color:var(--red)"></i> {{ __('Remove from production') }}</div>
             <p style="color:var(--text2);font-size:.9rem;margin:0 0 1.4rem">
-                {{ __('Delete this recitation and all its assets?') }}
+                {{ __('Drop this recitation out of the production pipeline? It stays on the site and its assets are kept — you can add it again from Selection.') }}
             </p>
             <div style="display:flex;gap:.6rem">
-                <button type="button" wire:click="cancelDelete" class="btn btn-ghost" style="flex:1;justify-content:center">{{ __('Cancel') }}</button>
-                <button type="button" wire:click="performDelete" class="btn btn-primary" style="flex:1;justify-content:center;background:var(--red);border-color:var(--red)">
-                    <i class="fas fa-trash"></i> {{ __('Delete') }}
+                <button type="button" wire:click="cancelRemove" class="btn btn-ghost" style="flex:1;justify-content:center">{{ __('Cancel') }}</button>
+                <button type="button" wire:click="performRemove" class="btn btn-primary" style="flex:1;justify-content:center;background:var(--red);border-color:var(--red)">
+                    <i class="fas fa-xmark"></i> {{ __('Remove') }}
                 </button>
             </div>
         </div>

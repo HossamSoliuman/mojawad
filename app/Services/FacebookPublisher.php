@@ -36,12 +36,14 @@ class FacebookPublisher
         $pageId = config('publishing.facebook.page_id');
         $endpoint = "https://graph-video.facebook.com/{$version}/{$pageId}/videos";
 
+        $meta = $publication->meta ?? [];
+
         $response = Http::timeout((int) config('publishing.render_timeout'))
             ->attach('source', file_get_contents($videoAbs) ?: '', basename($videoAbs))
             ->post($endpoint, [
                 'access_token' => config('publishing.facebook.access_token'),
-                'title' => $tilawa->title_ar,
-                'description' => $this->description($tilawa),
+                'title' => filled($meta['title'] ?? null) ? $meta['title'] : $tilawa->title_ar,
+                'description' => filled($meta['description'] ?? null) ? $meta['description'] : $this->description($tilawa),
             ]);
 
         if ($response->failed()) {

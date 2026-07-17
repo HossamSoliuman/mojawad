@@ -37,16 +37,24 @@ class PublishingPipeline
     /**
      * Create/refresh a Publication row per selected platform and dispatch the
      * matching publisher. Podcast has no upload API — "publishing" just completes
-     * the row so the RSS feed picks it up on its next poll.
+     * the row so the RSS feed picks it up on its next poll. The per-platform meta
+     * (title, description) is stored on the row so the publishers ship exactly
+     * what the admin composed in the Publishing tab.
      *
      * @param  list<string>  $platforms
+     * @param  array<string, array{title?: string, description?: string}>  $meta
      */
-    public function publish(Tilawa $tilawa, array $platforms, ?int $userId): void
+    public function publish(Tilawa $tilawa, array $platforms, ?int $userId, array $meta = []): void
     {
         foreach (array_intersect($platforms, self::PLATFORMS) as $platform) {
             $publication = Publication::updateOrCreate(
                 ['tilawa_id' => $tilawa->id, 'platform' => $platform],
-                ['status' => 'pending', 'error' => null, 'created_by' => $userId],
+                [
+                    'status' => 'pending',
+                    'error' => null,
+                    'created_by' => $userId,
+                    'meta' => $meta[$platform] ?? null,
+                ],
             );
 
             match ($platform) {
@@ -66,8 +74,13 @@ class PublishingPipeline
             'error' => null,
         ]);
 
-        // The recitation is now public: surface it on the site and in the feed.
-        $tilawa->update(['status' => 'active', 'review_status' => 'approved']);
+        // The recitation is now public: surface it on the site and in the feed,
+        // and move it into the final Published stage of the production pipeline.
+        $tilawa->update([
+            'status' => 'active',
+            'review_status' => 'approved',
+            'production_stage' => 'published',
+        ]);
 
         Cache::forget('homepage_data');
     }

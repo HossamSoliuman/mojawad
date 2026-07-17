@@ -5,8 +5,8 @@ namespace App\Livewire\Admin;
 use App\Jobs\PublishToFacebook;
 use App\Jobs\PublishToYoutube;
 use App\Models\Publication;
+use App\Models\Qari;
 use App\Models\Tilawa;
-use App\Models\TilawatSource;
 use App\Services\FacebookPublisher;
 use App\Services\PublishingPipeline;
 use App\Services\VideoCardService;
@@ -14,7 +14,6 @@ use App\Services\YoutubePublisher;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -22,12 +21,12 @@ use Livewire\Component;
 class ProductionQueue extends Component
 {
     #[Url]
-    public string $tab = 'create';
+    public string $tab = 'selection';
 
-    /** @var list<int> */
-    public array $selected = [];
+    // ── Selection tab ────────────────────────────────────────────────
+    public ?int $selectedQariId = null;
 
-    // ── Card editor (Create tab) ─────────────────────────────────────
+    // ── Card editor (Preparation tab) ────────────────────────────────
     public ?int $editingId = null;
 
     public string $cardQariName = '';
@@ -40,20 +39,26 @@ class ProductionQueue extends Component
 
     public bool $cardAnimateText = true;
 
-    // ── Publish tab ──────────────────────────────────────────────────
+    // ── Publishing tab ───────────────────────────────────────────────
     public ?int $publishFor = null;
 
     /** @var list<string> */
     public array $platforms = ['podcast'];
 
-    #[Url]
-    public string $publishFilter = 'all';
+    public string $ytTitle = '';
 
-    public ?int $confirmingDeleteId = null;
+    public string $ytDescription = '';
+
+    public string $fbTitle = '';
+
+    public string $fbDescription = '';
 
     public bool $youtubeEnabled = false;
 
     public bool $facebookEnabled = false;
+
+    // ── Remove-from-production confirmation ──────────────────────────
+    public ?int $confirmingRemoveId = null;
 
     public function mount(): void
     {
@@ -61,61 +66,121 @@ class ProductionQueue extends Component
         $this->facebookEnabled = FacebookPublisher::enabled();
     }
 
+    // ── Selection: browse qaris, then pick their recitations ─────────
+
     /**
-     * Create tab: everything that still needs its video made (or remade).
+     * Qaris that still have at least one recitation outside the production
+     * pipeline, each carrying its count of pickable recitations.
      *
-     * @return Collection<int, Tilawa>
+     * @return Collection<int, Qari>
      */
     #[Computed]
-    public function createList()
+    public function selectionQaris()
     {
-        return $this->baseQuery()
-            ->whereIn('brand_status', ['none', 'processing', 'failed'])
-            ->latest()
-            ->limit(50)
+        return Qari::query()
+            ->whereHas('tilawat', fn (Builder $q) => $this->scopeSelectable($q))
+            ->withCount(['tilawat as selectable_count' => fn (Builder $q) => $this->scopeSelectable($q)])
+            ->orderBy('name_ar')
             ->get();
     }
 
     /**
-     * Publish tab: videos that are ready — publish them, then track where and
-     * when each one went out.
+     * Recitations of the opened qari that are not yet in the pipeline.
      *
      * @return Collection<int, Tilawa>
      */
     #[Computed]
-    public function publishList()
+    public function selectionTilawat()
     {
-        return $this->baseQuery()
-            ->where('brand_status', 'ready')
-            ->when($this->publishFilter === 'published', fn ($q) => $q->whereHas('publications', fn ($p) => $p->where('status', 'completed')))
-            ->when($this->publishFilter === 'unpublished', fn ($q) => $q->whereDoesntHave('publications', fn ($p) => $p->where('status', 'completed')))
+        if ($this->selectedQariId === null) {
+            return collect();
+        }
+
+        return $this->scopeSelectable(Tilawa::query())
+            ->where('qari_id', $this->selectedQariId)
+            ->with('qari')
             ->latest()
-            ->limit(50)
+            ->limit(200)
             ->get();
     }
 
-    #[Computed]
-    public function createCount(): int
+    public function selectQari(int $qariId): void
     {
-        return $this->createList->count();
+        $this->selectedQariId = $this->selectedQariId === $qariId ? null : $qariId;
+    }
+
+    public function addToProduction(int $tilawaId): void
+    {
+        $tilawa = $this->ownedTilawa($tilawaId);
+
+        if ($tilawa->production_stage === null) {
+            $tilawa->update(['production_stage' => 'preparing']);
+        }
+    }
+
+    // ── Stage lists ──────────────────────────────────────────────────
+
+    /**
+     * @return Collection<int, Tilawa>
+     */
+    #[Computed]
+    public function preparationList()
+    {
+        return $this->stageQuery('preparing')->latest()->limit(50)->get();
+    }
+
+    /**
+     * @return Collection<int, Tilawa>
+     */
+    #[Computed]
+    public function publishingList()
+    {
+        return $this->stageQuery('publishing')->latest()->limit(50)->get();
+    }
+
+    /**
+     * @return Collection<int, Tilawa>
+     */
+    #[Computed]
+    public function publishedList()
+    {
+        return $this->stageQuery('published')->latest()->limit(50)->get();
     }
 
     #[Computed]
-    public function publishCount(): int
+    public function selectionCount(): int
     {
-        return $this->baseQuery()->where('brand_status', 'ready')->count();
+        return $this->scopeSelectable(Tilawa::query())->count();
+    }
+
+    #[Computed]
+    public function preparationCount(): int
+    {
+        return $this->stageQuery('preparing')->count();
+    }
+
+    #[Computed]
+    public function publishingCount(): int
+    {
+        return $this->stageQuery('publishing')->count();
+    }
+
+    #[Computed]
+    public function publishedCount(): int
+    {
+        return $this->stageQuery('published')->count();
     }
 
     #[Computed]
     public function hasActive(): bool
     {
-        return $this->createList->contains(fn (Tilawa $t) => $t->brand_status === 'processing')
-            || $this->publishList->contains(fn (Tilawa $t) => $t->publications->contains(
+        return $this->preparationList->contains(fn (Tilawa $t) => $t->brand_status === 'processing')
+            || $this->publishingList->contains(fn (Tilawa $t) => $t->publications->contains(
                 fn (Publication $p) => in_array($p->status, ['pending', 'processing'], true)
             ));
     }
 
-    // ── Card editor ──────────────────────────────────────────────────
+    // ── Card editor (Preparation) ────────────────────────────────────
 
     public function openEditor(int $tilawaId, VideoCardService $cards): void
     {
@@ -197,7 +262,7 @@ class ProductionQueue extends Component
         ])]);
     }
 
-    // ── Rendering & publishing ───────────────────────────────────────
+    // ── Rendering the video (Preparation) ────────────────────────────
 
     public function prepare(int $tilawaId, PublishingPipeline $pipeline): void
     {
@@ -210,27 +275,42 @@ class ProductionQueue extends Component
         $pipeline->prepare($tilawa);
     }
 
-    public function bulkPrepare(PublishingPipeline $pipeline): void
+    public function moveToPublishing(int $tilawaId): void
     {
-        foreach ($this->createList->whereIn('id', $this->selected) as $tilawa) {
-            if (in_array($tilawa->brand_status, ['none', 'failed'], true)) {
-                $pipeline->prepare($tilawa);
-            }
-        }
+        $tilawa = $this->ownedTilawa($tilawaId);
 
-        $this->selected = [];
+        if ($tilawa->production_stage === 'preparing' && $tilawa->brand_status === 'ready') {
+            $tilawa->update(['production_stage' => 'publishing']);
+        }
     }
+
+    public function moveToPreparation(int $tilawaId): void
+    {
+        $tilawa = $this->ownedTilawa($tilawaId);
+
+        if ($tilawa->production_stage === 'publishing') {
+            $tilawa->update(['production_stage' => 'preparing']);
+        }
+    }
+
+    // ── Publishing: compose per-platform meta, then upload ───────────
 
     public function openPublish(int $tilawaId): void
     {
         $tilawa = $this->ownedTilawa($tilawaId);
 
-        if ($tilawa->brand_status !== 'ready') {
+        if (! $this->canPublish($tilawa)) {
             return;
         }
 
+        $pubs = $tilawa->publications->keyBy('platform');
+
         $this->publishFor = $tilawaId;
         $this->platforms = ['podcast'];
+        $this->ytTitle = $pubs['youtube']->meta['title'] ?? $tilawa->title_ar;
+        $this->ytDescription = $pubs['youtube']->meta['description'] ?? $this->defaultDescription($tilawa);
+        $this->fbTitle = $pubs['facebook']->meta['title'] ?? $tilawa->title_ar;
+        $this->fbDescription = $pubs['facebook']->meta['description'] ?? $this->defaultDescription($tilawa);
     }
 
     public function cancelPublish(): void
@@ -246,11 +326,33 @@ class ProductionQueue extends Component
 
         $tilawa = $this->ownedTilawa($this->publishFor);
 
-        if ($tilawa->brand_status === 'ready' && $this->platforms !== []) {
-            $pipeline->publish($tilawa, $this->platforms, Auth::id());
+        if ($this->canPublish($tilawa) && $this->platforms !== []) {
+            $pipeline->publish($tilawa, $this->platforms, Auth::id(), [
+                'youtube' => ['title' => trim($this->ytTitle), 'description' => trim($this->ytDescription)],
+                'facebook' => ['title' => trim($this->fbTitle), 'description' => trim($this->fbDescription)],
+            ]);
         }
 
         $this->publishFor = null;
+    }
+
+    /**
+     * A recitation can be published (or re-published to another platform) once
+     * its video is ready and it has reached the Publishing or Published stage.
+     */
+    private function canPublish(Tilawa $tilawa): bool
+    {
+        return in_array($tilawa->production_stage, ['publishing', 'published'], true)
+            && $tilawa->brand_status === 'ready';
+    }
+
+    public function moveToPublished(int $tilawaId): void
+    {
+        $tilawa = $this->ownedTilawa($tilawaId);
+
+        if ($tilawa->production_stage === 'publishing') {
+            $tilawa->update(['production_stage' => 'published']);
+        }
     }
 
     public function retryPublication(int $publicationId): void
@@ -267,48 +369,32 @@ class ProductionQueue extends Component
         };
     }
 
-    // ── Deletion (in-page modal, never the browser confirm) ─────────
+    // ── Remove from the pipeline (keeps the recitation on the site) ──
 
-    public function confirmDelete(int $tilawaId): void
+    public function confirmRemove(int $tilawaId): void
     {
-        $this->confirmingDeleteId = $tilawaId;
+        $this->confirmingRemoveId = $tilawaId;
     }
 
-    public function cancelDelete(): void
+    public function cancelRemove(): void
     {
-        $this->confirmingDeleteId = null;
+        $this->confirmingRemoveId = null;
     }
 
-    public function performDelete(): void
+    /**
+     * Drop the recitation out of the production pipeline. This only clears its
+     * production stage — the tilawa, its source, and all its assets stay put so
+     * it remains available on the site (and pickable again in Selection).
+     */
+    public function performRemove(): void
     {
-        if ($this->confirmingDeleteId === null) {
+        if ($this->confirmingRemoveId === null) {
             return;
         }
 
-        $tilawa = $this->ownedTilawa($this->confirmingDeleteId);
-        $disk = Storage::disk(config('publishing.disk'));
+        $this->ownedTilawa($this->confirmingRemoveId)->update(['production_stage' => null]);
 
-        $paths = [
-            $tilawa->audio_path,
-            $tilawa->master_audio_path,
-            $tilawa->brand_cover_path,
-            $tilawa->brand_video_path,
-            $tilawa->subtitle_path,
-            $tilawa->brand_card['card_image'] ?? null,
-            $tilawa->source?->source_url,
-        ];
-
-        foreach ($paths as $path) {
-            if ($path) {
-                $disk->delete($path);
-            }
-        }
-
-        $tilawa->source?->delete();
-        $tilawa->delete();
-
-        $this->selected = array_values(array_diff($this->selected, [$tilawa->id]));
-        $this->confirmingDeleteId = null;
+        $this->confirmingRemoveId = null;
     }
 
     public function render()
@@ -316,25 +402,40 @@ class ProductionQueue extends Component
         return view('livewire.admin.production-queue');
     }
 
-    private function baseQuery(): Builder
+    // ── Query helpers ────────────────────────────────────────────────
+
+    private function stageQuery(string $stage): Builder
     {
-        return Tilawa::query()
-            ->whereHas('source', fn ($q) => $q->whereIn('source_type', TilawatSource::FACTORY_TYPES))
-            ->when(! Auth::user()->hasRole('admin'), fn ($q) => $q->where('uploaded_by', Auth::id()))
+        return $this->applyOwnership(Tilawa::query())
+            ->where('production_stage', $stage)
             ->with(['qari', 'publications']);
+    }
+
+    private function scopeSelectable(Builder $query): Builder
+    {
+        return $this->applyOwnership($query)->whereNull('production_stage');
+    }
+
+    private function applyOwnership(Builder $query): Builder
+    {
+        return $query->when(
+            ! Auth::user()->hasRole('admin'),
+            fn (Builder $q) => $q->where('uploaded_by', Auth::id()),
+        );
     }
 
     private function ownedTilawa(int $tilawaId): Tilawa
     {
-        return Tilawa::query()
-            ->whereHas('source', fn ($q) => $q->whereIn('source_type', TilawatSource::FACTORY_TYPES))
-            ->when(! Auth::user()->hasRole('admin'), fn ($q) => $q->where('uploaded_by', Auth::id()))
-            ->findOrFail($tilawaId);
+        return $this->applyOwnership(Tilawa::query())->findOrFail($tilawaId);
     }
 
-    private function scopeOwned($query): void
+    private function scopeOwned(Builder $query): void
     {
-        $query->whereHas('source', fn ($q) => $q->whereIn('source_type', TilawatSource::FACTORY_TYPES))
-            ->when(! Auth::user()->hasRole('admin'), fn ($q) => $q->where('uploaded_by', Auth::id()));
+        $this->applyOwnership($query);
+    }
+
+    private function defaultDescription(Tilawa $tilawa): string
+    {
+        return trim(($tilawa->qari?->name ? $tilawa->qari->name."\n" : '').'https://mojawad.org');
     }
 }
