@@ -3,8 +3,10 @@
 namespace App\Jobs;
 
 use App\Models\Tilawa;
+use App\Services\CardVideoRenderer;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -20,13 +22,13 @@ class RenderBrandedVideo implements ShouldQueue
     public function __construct(public int $tilawaId) {}
 
     /**
-     * Landscape full-length video: a still branded cover over the mastered audio,
-     * logo overlay, and (when available) burned-in ayah subtitles. Because the
-     * picture is a single looped image, even an hour-long recitation renders fast
-     * and stays small. This is the last link of the brand chain, so on success it
-     * flips brand_status to 'ready'.
+     * Landscape full-length video over the mastered audio. The primary path
+     * composites the animated video card (drifting qari photo, rising extra
+     * text); when Chrome/Browsershot is unavailable it falls back to the old
+     * still-cover render so the pipeline never dead-ends. This is the last
+     * link of the brand chain, so on success it flips brand_status to 'ready'.
      */
-    public function handle(): void
+    public function handle(CardVideoRenderer $renderer): void
     {
         $tilawa = Tilawa::with('qari')->find($this->tilawaId);
 
@@ -34,6 +36,47 @@ class RenderBrandedVideo implements ShouldQueue
             return;
         }
 
+        try {
+            $result = $renderer->render($tilawa);
+
+            $this->replaceArtifacts($tilawa, $result['video'], $result['card_image']);
+
+            return;
+        } catch (Throwable $e) {
+            Log::warning("Card video render failed for tilawa {$tilawa->id}, falling back to the still cover: {$e->getMessage()}");
+        }
+
+        $this->renderStillCoverVideo($tilawa);
+    }
+
+    private function replaceArtifacts(Tilawa $tilawa, string $videoRelative, ?string $cardRelative): void
+    {
+        $disk = Storage::disk(config('publishing.disk'));
+
+        foreach ([$tilawa->brand_video_path, $tilawa->brand_card['card_image'] ?? null] as $stale) {
+            if ($stale && $stale !== $cardRelative) {
+                $disk->delete($stale);
+            }
+        }
+
+        $card = $tilawa->brand_card ?? [];
+
+        if ($cardRelative !== null) {
+            $card['card_image'] = $cardRelative;
+        } else {
+            unset($card['card_image']);
+        }
+
+        $tilawa->update([
+            'brand_video_path' => $videoRelative,
+            'brand_status' => 'ready',
+            'brand_error' => null,
+            'brand_card' => $card ?: null,
+        ]);
+    }
+
+    private function renderStillCoverVideo(Tilawa $tilawa): void
+    {
         $disk = Storage::disk(config('publishing.disk'));
 
         $audioAbs = $disk->path($tilawa->master_audio_path ?: $tilawa->audio_path);
@@ -64,11 +107,7 @@ class RenderBrandedVideo implements ShouldQueue
             config('youtube.ffmpeg_path'), '-y', '-ss', '1', '-i', $videoAbs, '-frames:v', '1', '-q:v', '3', $posterAbs,
         ]);
 
-        $tilawa->update([
-            'brand_video_path' => $videoRelative,
-            'brand_status' => 'ready',
-            'brand_error' => null,
-        ]);
+        $this->replaceArtifacts($tilawa, $videoRelative, null);
     }
 
     /**

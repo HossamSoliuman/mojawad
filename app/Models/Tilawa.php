@@ -16,9 +16,9 @@ class Tilawa extends Model
 
     protected $table = 'tilawat';
 
-    protected $fillable = ['qari_id', 'title_ar', 'title_en', 'slug', 'description_ar', 'description_en', 'recorded_at', 'recorded_place', 'surah_number', 'surahs', 'audio_path', 'duration', 'cover_image', 'uploaded_by', 'is_featured', 'downloads_count', 'plays_count', 'likes_count', 'status', 'review_status', 'rejection_note', 'reviewed_by', 'reviewed_at', 'ayah_from', 'ayah_to', 'ayah_confidence', 'subtitle_path', 'master_audio_path', 'brand_cover_path', 'brand_video_path', 'brand_status', 'brand_error'];
+    protected $fillable = ['qari_id', 'title_ar', 'title_en', 'slug', 'description_ar', 'description_en', 'recorded_at', 'recorded_place', 'surah_number', 'surahs', 'audio_path', 'duration', 'cover_image', 'uploaded_by', 'is_featured', 'downloads_count', 'plays_count', 'likes_count', 'status', 'review_status', 'rejection_note', 'reviewed_by', 'reviewed_at', 'ayah_from', 'ayah_to', 'ayah_confidence', 'subtitle_path', 'master_audio_path', 'brand_cover_path', 'brand_video_path', 'brand_status', 'brand_error', 'brand_card'];
 
-    protected $casts = ['is_featured' => 'boolean', 'recorded_at' => 'date', 'reviewed_at' => 'datetime', 'ayah_from' => 'integer', 'ayah_to' => 'integer', 'surahs' => 'array'];
+    protected $casts = ['is_featured' => 'boolean', 'recorded_at' => 'date', 'reviewed_at' => 'datetime', 'ayah_from' => 'integer', 'ayah_to' => 'integer', 'surahs' => 'array', 'brand_card' => 'array'];
 
     public function qari()
     {
@@ -159,6 +159,17 @@ class Tilawa extends Model
     public function getBrandCoverUrlAttribute(): ?string
     {
         return $this->brand_cover_path ? Storage::disk('public')->url($this->brand_cover_path) : null;
+    }
+
+    /**
+     * The last rendered 16:9 video card image (stored inside brand_card so no
+     * extra column is needed) — used as the video poster and list thumbnail.
+     */
+    public function getBrandCardImageUrlAttribute(): ?string
+    {
+        $path = $this->brand_card['card_image'] ?? null;
+
+        return $path ? Storage::disk('public')->url($path) : null;
     }
 
     public function getMasterAudioUrlAttribute(): ?string

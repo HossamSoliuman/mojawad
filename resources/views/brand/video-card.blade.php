@@ -5,14 +5,29 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@600;700&display=swap">
+{{--
+  $layer selects what gets painted so ffmpeg can composite the card in motion:
+  - full:    the whole card (previews, posters, static covers)
+  - overlay: everything except the qari photo — the photo window is transparent
+             and the fade gradients stay, so they darken the moving photo below
+  - text:    only the extra-text block, same layout → aligns at overlay=0:0
+  $holdTextSpace keeps the extra text's layout slot while hiding it (the text
+  animates in as its own layer). $animatePreview adds CSS motion that mirrors
+  the ffmpeg animation for the admin live preview.
+--}}
+@php($layer = $layer ?? 'full')
+@php($holdTextSpace = $holdTextSpace ?? false)
+@php($animatePreview = $animatePreview ?? false)
+@php($animatePhoto = $animatePhoto ?? true)
+@php($animateText = $animateText ?? true)
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body { width: {{ $width }}px; height: {{ $height }}px; background: #000; }
+  html, body { width: {{ $width }}px; height: {{ $height }}px; background: {{ $layer === 'full' ? '#000' : 'transparent' }}; }
   .card {
     direction: ltr;
     display: flex; flex-direction: column;
     width: {{ $width }}px; height: {{ $height }}px;
-    background: #000;
+    background: {{ $layer === 'full' ? '#000' : 'transparent' }};
     overflow: hidden;
     font-family: 'Cairo', sans-serif;
     color: #fff;
@@ -24,6 +39,7 @@
     display: flex; flex-direction: column; justify-content: center;
     text-align: right;
     padding: {{ (int) round($height * 0.06) }}px {{ (int) round($width * 0.05) }}px;
+    background: {{ $layer === 'overlay' ? '#000' : 'transparent' }};
   }
   .surah {
     font-family: 'Amiri', serif; font-weight: 700;
@@ -47,7 +63,7 @@
     margin-top: {{ (int) round($height * 0.03) }}px;
     line-height: 1.6;
   }
-  .photo { position: relative; width: 48%; background: #000; }
+  .photo { position: relative; width: 48%; background: {{ $layer === 'full' ? '#000' : 'transparent' }}; }
   .photo img {
     position: absolute; inset: 0;
     width: 100%; height: 100%;
@@ -78,6 +94,21 @@
     font-size: {{ (int) round($height * 0.028) }}px;
   }
   .soc svg { width: {{ (int) round($height * 0.034) }}px; height: {{ (int) round($height * 0.034) }}px; fill: #e9c46a; }
+  @if($layer === 'text')
+  .surah, .rule, .qari, .photo, .footer { visibility: hidden; }
+  @elseif($layer === 'overlay' && $holdTextSpace)
+  .extra { visibility: hidden; }
+  @endif
+  @if($animatePreview && $layer === 'full')
+  @if($animatePhoto)
+  @keyframes cardPhotoDrift { 0%, 100% { transform: translateY(-{{ (int) round($height * 0.022) }}px); } 50% { transform: translateY({{ (int) round($height * 0.022) }}px); } }
+  .photo img { animation: cardPhotoDrift 12s ease-in-out infinite; }
+  @endif
+  @if($animateText)
+  @keyframes cardTextRise { from { opacity: 0; transform: translateY({{ (int) round($height * 0.083) }}px); } to { opacity: 1; transform: translateY(0); } }
+  .extra { animation: cardTextRise 2.4s cubic-bezier(.22,.61,.36,1) both; animation-delay: .3s; }
+  @endif
+  @endif
 </style>
 </head>
 <body>
@@ -96,7 +127,7 @@
         @endif
       </div>
       <div class="photo">
-        @if($qariImage)
+        @if($qariImage && $layer !== 'overlay')
           <img src="{{ $qariImage }}" alt="">
         @endif
         <div class="fade"></div>

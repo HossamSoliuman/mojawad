@@ -83,6 +83,16 @@ return [
     // ── Visual branding ────────────────────────────────────────────────
     'video' => ['width' => 1920, 'height' => 1080, 'fps' => 25],
     'card_lab_dir' => 'published/card-lab',
+    'cards_dir' => 'published/cards',
+
+    // Card video motion: the qari photo drifts on a slow sine wave and the
+    // optional extra text rises + fades in. Fractions are of frame height.
+    'animation' => [
+        'photo_drift' => 0.022,   // drift amplitude
+        'photo_period' => 12.0,   // seconds per full up-down cycle
+        'text_rise' => 0.083,     // how far below its slot the text starts
+        'text_seconds' => 3.0,    // duration of the text entrance
+    ],
     'social' => [
         'youtube' => env('SOCIAL_YOUTUBE', 'mojawad.net'),
         'facebook' => env('SOCIAL_FACEBOOK', 'mojawad.net'),

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Tilawa;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\View;
@@ -11,6 +12,27 @@ use Spatie\Browsershot\Browsershot;
 
 class VideoCardService
 {
+    /**
+     * The card texts and animation switches for a recitation: saved editor
+     * settings win, otherwise sensible defaults from the recitation itself.
+     * The extra text is the optional description/info line the admin can
+     * animate into the video.
+     *
+     * @return array{qariName: ?string, surahName: ?string, extraText: ?string, animate_photo: bool, animate_text: bool}
+     */
+    public function dataFor(Tilawa $tilawa): array
+    {
+        $saved = $tilawa->brand_card ?? [];
+
+        return [
+            'qariName' => $saved['qari_name'] ?? $tilawa->qari?->name,
+            'surahName' => $saved['surah_name'] ?? $tilawa->surah_label,
+            'extraText' => $saved['extra_text'] ?? $tilawa->description_ar,
+            'animate_photo' => (bool) ($saved['animate_photo'] ?? true),
+            'animate_text' => (bool) ($saved['animate_text'] ?? true),
+        ];
+    }
+
     /**
      * The Card Lab flow: render the landscape HTML card to a PNG with headless
      * Chrome. Unlike BrandCoverService there is deliberately no ffmpeg fallback —
@@ -24,29 +46,46 @@ class VideoCardService
         $disk->makeDirectory(config('publishing.card_lab_dir'));
 
         $relative = config('publishing.card_lab_dir').'/'.Str::uuid()->toString().'.png';
-        $outAbs = $disk->path($relative);
 
-        Browsershot::html($this->html($data))
-            ->windowSize((int) config('publishing.video.width'), (int) config('publishing.video.height'))
-            ->deviceScaleFactor(1)
-            ->waitUntilNetworkIdle()
-            ->setScreenshotType('png')
-            ->save($outAbs);
+        $this->capture($this->html($data), $disk->path($relative), false);
 
-        if (! is_file($outAbs)) {
-            throw new RuntimeException('Browsershot produced no card image.');
-        }
+        return $relative;
+    }
+
+    /**
+     * One compositing layer of the card (full | overlay | text) rendered to a
+     * PNG — overlay and text layers keep transparency so ffmpeg can animate the
+     * qari photo and the extra text underneath/above them.
+     *
+     * @param  array{qariName?: ?string, surahName?: ?string, extraText?: ?string, qariImage?: ?string}  $data
+     * @param  array{holdTextSpace?: bool}  $options
+     */
+    public function renderLayer(array $data, string $layer, array $options = []): string
+    {
+        $disk = Storage::disk(config('publishing.disk'));
+        $disk->makeDirectory(config('publishing.cards_dir'));
+
+        $relative = config('publishing.cards_dir').'/'.Str::uuid()->toString().'-'.$layer.'.png';
+
+        $html = $this->html($data, [
+            'layer' => $layer,
+            'holdTextSpace' => (bool) ($options['holdTextSpace'] ?? false),
+        ]);
+
+        $this->capture($html, $disk->path($relative), $layer !== 'full');
 
         return $relative;
     }
 
     /**
      * The exact markup Browsershot captures — also embedded in the admin lab
-     * as a live preview so what you see is what gets rendered.
+     * and the Production card editor as a live preview so what you see is what
+     * gets rendered.
      *
      * @param  array{qariName?: ?string, surahName?: ?string, extraText?: ?string, qariImage?: ?string}  $data
+     * @param  array{layer?: string, holdTextSpace?: bool, animatePreview?: bool, animatePhoto?: bool, animateText?: bool}  $options
      */
-    public function html(array $data): string
+    public function html(array $data, array $options = []): string
     {
         return View::make('brand.video-card', [
             'qariName' => $data['qariName'] ?? null,
@@ -56,6 +95,11 @@ class VideoCardService
             'social' => array_filter(config('publishing.social')),
             'width' => (int) config('publishing.video.width'),
             'height' => (int) config('publishing.video.height'),
+            'layer' => $options['layer'] ?? 'full',
+            'holdTextSpace' => (bool) ($options['holdTextSpace'] ?? false),
+            'animatePreview' => (bool) ($options['animatePreview'] ?? false),
+            'animatePhoto' => (bool) ($options['animatePhoto'] ?? true),
+            'animateText' => (bool) ($options['animateText'] ?? true),
         ])->render();
     }
 
@@ -116,5 +160,24 @@ class VideoCardService
         $mime = mime_content_type($path) ?: 'image/jpeg';
 
         return 'data:'.$mime.';base64,'.base64_encode((string) file_get_contents($path));
+    }
+
+    private function capture(string $html, string $outAbs, bool $transparent): void
+    {
+        $shot = Browsershot::html($html)
+            ->windowSize((int) config('publishing.video.width'), (int) config('publishing.video.height'))
+            ->deviceScaleFactor(1)
+            ->waitUntilNetworkIdle()
+            ->setScreenshotType('png');
+
+        if ($transparent) {
+            $shot->hideBackground();
+        }
+
+        $shot->save($outAbs);
+
+        if (! is_file($outAbs)) {
+            throw new RuntimeException('Browsershot produced no card image.');
+        }
     }
 }

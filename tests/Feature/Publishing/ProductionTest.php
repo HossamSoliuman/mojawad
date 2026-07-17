@@ -179,6 +179,135 @@ it('only shows a creator their own recitations in production', function () {
         ->assertDontSee('تلاوة الآخر');
 });
 
+it('splits recitations between the create and publish tabs', function () {
+    $admin = User::factory()->create()->assignRole('admin');
+    readyTilawa($admin, 'none')->update(['title_ar' => 'تلاوة قيد الإنشاء']);
+    readyTilawa($admin, 'ready')->update(['title_ar' => 'تلاوة جاهزة للنشر']);
+
+    $this->actingAs($admin);
+
+    Livewire::test(ProductionQueue::class)
+        ->assertSet('tab', 'create')
+        ->assertSee('تلاوة قيد الإنشاء')
+        ->assertDontSee('تلاوة جاهزة للنشر')
+        ->set('tab', 'publish')
+        ->assertSee('تلاوة جاهزة للنشر')
+        ->assertDontSee('تلاوة قيد الإنشاء');
+});
+
+it('filters the publish tab by published state', function () {
+    $admin = User::factory()->create()->assignRole('admin');
+    readyTilawa($admin, 'ready')->update(['title_ar' => 'تلاوة أولى']);
+    $published = readyTilawa($admin, 'ready');
+    $published->update(['title_ar' => 'تلاوة ثانية']);
+    Publication::factory()->podcast()->completed()->create(['tilawa_id' => $published->id]);
+
+    $this->actingAs($admin);
+
+    Livewire::test(ProductionQueue::class)
+        ->set('tab', 'publish')
+        ->set('publishFilter', 'published')
+        ->assertSee('تلاوة ثانية')
+        ->assertDontSee('تلاوة أولى')
+        ->set('publishFilter', 'unpublished')
+        ->assertSee('تلاوة أولى')
+        ->assertDontSee('تلاوة ثانية');
+});
+
+it('prefills the card editor from the recitation and its saved settings', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+    $tilawa = readyTilawa($creator);
+    $tilawa->update(['description_ar' => 'وصف التلاوة']);
+
+    $this->actingAs($creator);
+
+    Livewire::test(ProductionQueue::class)
+        ->call('openEditor', $tilawa->id)
+        ->assertSet('editingId', $tilawa->id)
+        ->assertSet('cardQariName', $tilawa->fresh()->qari->name)
+        ->assertSet('cardSurahName', $tilawa->fresh()->surah_label)
+        ->assertSet('cardExtraText', 'وصف التلاوة')
+        ->assertSet('cardAnimatePhoto', true)
+        ->assertSet('cardAnimateText', true);
+});
+
+it('saves the card settings on the recitation', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+    $tilawa = readyTilawa($creator);
+
+    $this->actingAs($creator);
+
+    Livewire::test(ProductionQueue::class)
+        ->call('openEditor', $tilawa->id)
+        ->set('cardQariName', 'قارئ مخصص')
+        ->set('cardSurahName', 'الفاتحة')
+        ->set('cardExtraText', 'تلاوة نادرة من الستينات')
+        ->set('cardAnimateText', false)
+        ->call('saveCard')
+        ->assertSet('editingId', null);
+
+    expect($tilawa->fresh()->brand_card)->toMatchArray([
+        'qari_name' => 'قارئ مخصص',
+        'surah_name' => 'الفاتحة',
+        'extra_text' => 'تلاوة نادرة من الستينات',
+        'animate_photo' => true,
+        'animate_text' => false,
+    ]);
+});
+
+it('saves and dispatches the render chain from the editor', function () {
+    Bus::fake();
+    $creator = User::factory()->create()->assignRole('creator');
+    $tilawa = readyTilawa($creator);
+
+    $this->actingAs($creator);
+
+    Livewire::test(ProductionQueue::class)
+        ->call('openEditor', $tilawa->id)
+        ->set('cardExtraText', 'نص متحرك')
+        ->call('saveAndPrepare')
+        ->assertSet('editingId', null);
+
+    $fresh = $tilawa->fresh();
+    expect($fresh->brand_status)->toBe('processing')
+        ->and($fresh->brand_card['extra_text'])->toBe('نص متحرك');
+
+    Bus::assertChained([
+        AlignSubtitles::class,
+        RenderBrandCover::class,
+        MasterTilawaAudio::class,
+        RenderBrandedVideo::class,
+    ]);
+});
+
+it('does not re-dispatch the chain while a render is already processing', function () {
+    Bus::fake();
+    $creator = User::factory()->create()->assignRole('creator');
+    $tilawa = readyTilawa($creator, 'processing');
+
+    $this->actingAs($creator);
+
+    Livewire::test(ProductionQueue::class)->call('prepare', $tilawa->id);
+
+    Bus::assertNotDispatched(AlignSubtitles::class);
+});
+
+it('deletes a recitation through the confirmation modal', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+    $tilawa = readyTilawa($creator);
+
+    $this->actingAs($creator);
+
+    Livewire::test(ProductionQueue::class)
+        ->call('confirmDelete', $tilawa->id)
+        ->assertSet('confirmingDeleteId', $tilawa->id)
+        ->call('performDelete')
+        ->assertSet('confirmingDeleteId', null);
+
+    expect(Tilawa::find($tilawa->id))->toBeNull()
+        ->and(TilawatSource::where('tilawa_id', $tilawa->id)->count())->toBe(0);
+});
+
 it('serves completed podcast items in the RSS feed', function () {
     $qari = Qari::factory()->create(['name_ar' => 'الشيخ محمود']);
     $tilawa = Tilawa::factory()->create([

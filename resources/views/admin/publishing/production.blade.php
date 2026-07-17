@@ -6,7 +6,7 @@
 
 <div style="margin-bottom:1.6rem;max-width:760px">
   <h2 style="font-size:1.1rem;font-weight:700;margin:0 0 .25rem">{{ __('Prepare & publish') }}</h2>
-  <p style="color:var(--text2);font-size:.86rem;margin:0">{{ __('Master the audio, build the branded cover and video, then publish to YouTube, Facebook, and the podcast feed for Spotify & Anghami.') }}</p>
+  <p style="color:var(--text2);font-size:.86rem;margin:0">{{ __('Design the animated video card and render the video, then publish it to YouTube, Facebook, and the podcast feed — and track every published recitation.') }}</p>
 </div>
 
 <livewire:admin.production-queue />

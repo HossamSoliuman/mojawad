@@ -61,13 +61,15 @@ class BrandCoverService
 
     private function html(Tilawa $tilawa): string
     {
+        $disk = Storage::disk(config('publishing.disk'));
+
         return View::make('brand.cover', [
             'surahName' => $tilawa->surah_name,
             'qariName' => $tilawa->qari?->name,
             'ayahFrom' => $tilawa->ayah_from,
             'ayahTo' => $tilawa->ayah_to,
-            'qariImage' => $this->fileUri($tilawa->qari?->image_url),
-            'logo' => $this->fileUri(config('publishing.logo_path')),
+            'qariImage' => $tilawa->qari?->image ? $this->embeddable($disk->path($tilawa->qari->image)) : null,
+            'logo' => $this->embeddable(config('publishing.logo_path')),
             'size' => (int) config('publishing.cover.size'),
         ])->render();
     }
@@ -121,16 +123,20 @@ class BrandCoverService
         }
     }
 
-    private function fileUri(?string $pathOrUrl): ?string
+    /**
+     * Browsershot rejects HTML containing file:// URLs, so local images must
+     * be inlined as base64 data URIs (remote URLs pass through untouched).
+     */
+    private function embeddable(?string $pathOrUrl): ?string
     {
         if (! $pathOrUrl) {
             return null;
         }
 
-        if (Str::startsWith($pathOrUrl, ['http://', 'https://', 'file://', 'data:'])) {
+        if (Str::startsWith($pathOrUrl, ['http://', 'https://', 'data:'])) {
             return $pathOrUrl;
         }
 
-        return 'file:///'.str_replace('\\', '/', ltrim($pathOrUrl, '/'));
+        return app(VideoCardService::class)->dataUri($pathOrUrl);
     }
 }
