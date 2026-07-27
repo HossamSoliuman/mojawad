@@ -35,6 +35,8 @@ class ProductionQueue extends Component
 
     public string $cardExtraText = '';
 
+    public string $cardRareBadge = '';
+
     public bool $cardAnimatePhoto = true;
 
     public bool $cardAnimateText = true;
@@ -196,6 +198,7 @@ class ProductionQueue extends Component
         $this->cardQariName = $data['qariName'] ?? '';
         $this->cardSurahName = $data['surahName'] ?? '';
         $this->cardExtraText = $data['extraText'] ?? '';
+        $this->cardRareBadge = $data['rareBadge'];
         $this->cardAnimatePhoto = $data['animate_photo'];
         $this->cardAnimateText = $data['animate_text'];
     }
@@ -215,9 +218,11 @@ class ProductionQueue extends Component
         $tilawa = Tilawa::with('qari')->find($this->editingId);
 
         return app(VideoCardService::class)->html([
+            'tilawaTitle' => $tilawa?->title_ar,
             'qariName' => $this->cardQariName,
             'surahName' => $this->cardSurahName,
             'extraText' => $this->cardExtraText,
+            'rareBadge' => $this->cardRareBadge,
             'qariImage' => $tilawa?->qari?->image_url,
         ], [
             'animatePreview' => true,
@@ -257,6 +262,7 @@ class ProductionQueue extends Component
             'qari_name' => trim($this->cardQariName) ?: null,
             'surah_name' => trim($this->cardSurahName) ?: null,
             'extra_text' => trim($this->cardExtraText) ?: null,
+            'rare_badge' => trim($this->cardRareBadge),
             'animate_photo' => $this->cardAnimatePhoto,
             'animate_text' => $this->cardAnimateText,
         ])]);

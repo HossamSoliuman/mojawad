@@ -88,6 +88,22 @@ it('shows the typed names in the live card preview', function () {
         ->assertSee('تلاوة نادرة');
 });
 
+it('turns the selected recitation into a clear viewer hook', function () {
+    $html = app(VideoCardService::class)->html([
+        'tilawaTitle' => 'عنوان أرشيفي طويل يتضمن بيانات مكررة',
+        'surahName' => 'نوح',
+        'qariName' => 'محمد رفعت',
+        'rareBadge' => 'تلاوة نادرة',
+    ]);
+
+    expect($html)
+        ->toContain('<div class="badge">تلاوة نادرة</div>')
+        ->toContain('ما تيسر من سورة نوح')
+        ->toContain('لأسطورة التلاوة')
+        ->toContain('الشيخ محمد رفعت')
+        ->not->toContain('عنوان أرشيفي طويل يتضمن بيانات مكررة');
+});
+
 it('stores the rendered card path and timing', function () {
     $admin = User::factory()->create()->assignRole('admin');
     mock(VideoCardService::class)

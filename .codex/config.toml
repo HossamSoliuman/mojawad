@@ -3,6 +3,9 @@ command = "php"
 args = ["artisan", "boost:mcp"]
 cwd = "D:\\projects\\mojawad"
 
+[mcp_servers.laravel-boost.tools.tinker]
+approval_mode = "approve"
+
 [mcp_servers.herd]
 command = "php"
 args = ["C:/Users/El-Wattaneya/.config/herd/bin/herd-mcp.phar"]

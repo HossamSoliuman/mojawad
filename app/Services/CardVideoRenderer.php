@@ -39,9 +39,11 @@ class CardVideoRenderer
         $animateText = $data['animate_text'] && filled($data['extraText']);
 
         $htmlData = [
+            'tilawaTitle' => $data['tilawaTitle'],
             'qariName' => $data['qariName'],
             'surahName' => $data['surahName'],
             'extraText' => $data['extraText'],
+            'rareBadge' => $data['rareBadge'],
             'qariImage' => $this->cards->dataUri($photoAbs),
         ];
 

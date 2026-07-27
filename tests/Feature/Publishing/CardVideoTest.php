@@ -27,9 +27,11 @@ it('builds default card data from the recitation', function () {
 
     $data = app(VideoCardService::class)->dataFor($tilawa->load('qari'));
 
-    expect($data['qariName'])->toBe('الشيخ مصطفى إسماعيل')
+    expect($data['tilawaTitle'])->toBe($tilawa->title_ar)
+        ->and($data['qariName'])->toBe('الشيخ مصطفى إسماعيل')
         ->and($data['surahName'])->toBe($tilawa->surah_label)
         ->and($data['extraText'])->toBe('تلاوة من حفل عام 1962')
+        ->and($data['rareBadge'])->toBe('تلاوة نادرة')
         ->and($data['animate_photo'])->toBeTrue()
         ->and($data['animate_text'])->toBeTrue();
 });
@@ -37,13 +39,14 @@ it('builds default card data from the recitation', function () {
 it('prefers saved card settings over the recitation defaults', function () {
     $tilawa = Tilawa::factory()->create([
         'description_ar' => 'الوصف الأصلي',
-        'brand_card' => ['qari_name' => 'اسم مخصص', 'extra_text' => 'نص مخصص', 'animate_text' => false],
+        'brand_card' => ['qari_name' => 'اسم مخصص', 'extra_text' => 'نص مخصص', 'rare_badge' => '', 'animate_text' => false],
     ]);
 
     $data = app(VideoCardService::class)->dataFor($tilawa->load('qari'));
 
     expect($data['qariName'])->toBe('اسم مخصص')
         ->and($data['extraText'])->toBe('نص مخصص')
+        ->and($data['rareBadge'])->toBe('')
         ->and($data['animate_text'])->toBeFalse()
         ->and($data['animate_photo'])->toBeTrue();
 });

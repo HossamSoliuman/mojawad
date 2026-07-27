@@ -17,9 +17,9 @@
         </div>
 
         <div>
-            <label style="display:block;font-size:.8rem;font-weight:600;margin-bottom:.3rem">{{ __('Rare recitation badge') }}</label>
+            <label style="display:block;font-size:.8rem;font-weight:600;margin-bottom:.3rem">{{ __('Rare recitation text') }}</label>
             <input type="text" wire:model.live.debounce.400ms="rareBadge" class="form-control" style="width:100%" placeholder="{{ __('rare recitation') }}">
-            <div style="font-size:.72rem;color:var(--text3);margin-top:.25rem">{{ __('Leave empty to hide the badge.') }}</div>
+            <div style="font-size:.72rem;color:var(--text3);margin-top:.25rem">{{ __('Leave empty to hide the text.') }}</div>
         </div>
 
         <div style="display:flex;flex-direction:column;gap:.5rem">

@@ -17,102 +17,136 @@
 --}}
 @php($layer = $layer ?? 'full')
 @php($tilawaTitle = trim((string) ($tilawaTitle ?? '')))
+@php($surahName = trim((string) ($surahName ?? '')))
+@php($qariName = trim((string) ($qariName ?? '')))
 @php($rareBadge = trim((string) ($rareBadge ?? '')))
+@php($headline = $surahName !== '' ? 'ما تيسر من سورة '.$surahName : $tilawaTitle)
+@php($qariDisplayName = $qariName !== '' && ! str_starts_with($qariName, 'الشيخ') ? 'الشيخ '.$qariName : $qariName)
 @php($holdTextSpace = $holdTextSpace ?? false)
 @php($animatePreview = $animatePreview ?? false)
 @php($animatePhoto = $animatePhoto ?? true)
 @php($animateText = $animateText ?? true)
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body { width: {{ $width }}px; height: {{ $height }}px; background: {{ $layer === 'full' ? '#000' : 'transparent' }}; }
+  html, body { width: {{ $width }}px; height: {{ $height }}px; background: {{ $layer === 'full' ? '#070705' : 'transparent' }}; }
   .card {
     position: relative;
     direction: ltr;
     display: flex; flex-direction: column;
     width: {{ $width }}px; height: {{ $height }}px;
-    background: {{ $layer === 'full' ? '#000' : 'transparent' }};
+    background: {{ $layer === 'full' ? '#070705' : 'transparent' }};
     overflow: hidden;
     font-family: 'Tajawal', sans-serif;
     color: #fff;
   }
-  .badge {
-    position: absolute; z-index: 5;
-    top: {{ (int) round($height * 0.06) }}px;
-    right: {{ (int) round($width * 0.035) }}px;
-    direction: rtl;
-    display: flex; align-items: center;
-    gap: {{ (int) round($height * 0.013) }}px;
-    padding: {{ (int) round($height * 0.015) }}px {{ (int) round($width * 0.019) }}px;
-    background: linear-gradient(135deg, #f6d989 0%, #e9c46a 55%, #d4a942 100%);
-    color: #1c1405;
-    font-family: 'Reem Kufi', sans-serif; font-weight: 700;
-    font-size: {{ (int) round($height * 0.028) }}px;
-    line-height: 1;
-    border-radius: 999px;
-    box-shadow: 0 {{ (int) round($height * 0.008) }}px {{ (int) round($height * 0.022) }}px rgba(0,0,0,.5);
+  .card::before {
+    content: '';
+    position: absolute; z-index: 0; inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 23% 34%, rgba(210,166,58,.13), transparent 29%),
+      linear-gradient(115deg, rgba(255,255,255,.035) 0%, transparent 22%, transparent 78%, rgba(210,166,58,.055) 100%);
   }
-  .badge svg { width: {{ (int) round($height * 0.033) }}px; height: {{ (int) round($height * 0.033) }}px; fill: #1c1405; }
-  .main { display: flex; flex: 1; min-height: 0; }
-  .text {
+  .badge {
+    position: relative; z-index: 5;
+    align-self: flex-start;
     direction: rtl;
-    width: 52%;
+    display: block;
+    color: #e1b84f;
+    font-family: 'Reem Kufi', sans-serif; font-weight: 700;
+    font-size: {{ (int) round($height * 0.052) }}px;
+    line-height: 1.25;
+    text-shadow: 0 0 {{ (int) round($height * 0.022) }}px rgba(225,184,79,.18);
+  }
+  .main { position: relative; z-index: 1; display: flex; flex: 1; min-height: 0; }
+  .text {
+    position: relative; z-index: 3;
+    direction: rtl;
+    width: 57%;
     display: flex; flex-direction: column; justify-content: center;
+    gap: {{ (int) round($height * 0.025) }}px;
     text-align: right;
-    padding: {{ (int) round($height * 0.07) }}px {{ (int) round($width * 0.05) }}px;
-    background: {{ $layer === 'overlay' ? '#000' : 'transparent' }};
+    padding: {{ (int) round($height * 0.07) }}px {{ (int) round($width * 0.058) }}px {{ (int) round($height * 0.065) }}px {{ (int) round($width * 0.035) }}px;
+    background: {{ $layer === 'overlay' ? '#070705' : 'transparent' }};
   }
   .title {
-    font-family: 'Reem Kufi', sans-serif; font-weight: 700;
-    font-size: {{ (int) round($height * 0.032) }}px;
-    line-height: 1.5;
-    color: #e9c46a;
-    margin-bottom: {{ (int) round($height * 0.028) }}px;
-  }
-  .surah {
+    max-width: {{ (int) round($width * 0.47) }}px;
     font-family: 'Aref Ruqaa', serif; font-weight: 700;
-    font-size: {{ (int) round($height * 0.125) }}px;
-    line-height: 1.32;
+    font-size: {{ (int) round($height * 0.102) }}px;
+    line-height: 1.3;
+    color: #fffdf7;
+    text-wrap: balance;
+    text-shadow: 0 {{ (int) round($height * 0.008) }}px {{ (int) round($height * 0.025) }}px rgba(0,0,0,.68);
   }
   .rule {
-    width: {{ (int) round($width * 0.07) }}px; height: 5px;
-    background: #e9c46a; border-radius: 4px;
-    margin: {{ (int) round($height * 0.03) }}px 0;
+    position: relative;
+    width: {{ (int) round($width * 0.12) }}px; height: 3px;
+    background: linear-gradient(90deg, transparent, #d8ad43); border-radius: 4px;
+  }
+  .rule::after {
+    content: '';
+    position: absolute; right: 0; top: 50%;
+    width: {{ (int) round($height * 0.013) }}px; height: {{ (int) round($height * 0.013) }}px;
+    border-radius: 50%; background: #f0d27d;
+    transform: translate(50%, -50%);
+    box-shadow: 0 0 {{ (int) round($height * 0.018) }}px rgba(240,210,125,.65);
+  }
+  .qari-block {
+    display: flex; flex-direction: column;
+    gap: {{ (int) round($height * 0.006) }}px;
+  }
+  .qari-kicker {
+    font-family: 'Tajawal', sans-serif; font-weight: 500;
+    font-size: {{ (int) round($height * 0.034) }}px;
+    color: #d8ad43;
   }
   .qari {
     font-family: 'Reem Kufi', sans-serif; font-weight: 700;
-    font-size: {{ (int) round($height * 0.056) }}px;
-    line-height: 1.3;
-    color: #1DB954;
+    font-size: {{ (int) round($height * 0.06) }}px;
+    line-height: 1.35;
+    color: #fff;
   }
   .extra {
     font-family: 'Tajawal', sans-serif; font-weight: 400;
-    font-size: {{ (int) round($height * 0.038) }}px;
-    color: rgba(255,255,255,.82);
-    margin-top: {{ (int) round($height * 0.034) }}px;
-    line-height: 1.85;
+    max-width: {{ (int) round($width * 0.43) }}px;
+    font-size: {{ (int) round($height * 0.03) }}px;
+    color: rgba(255,255,255,.68);
+    line-height: 1.7;
   }
-  .photo { position: relative; width: 48%; background: {{ $layer === 'full' ? '#000' : 'transparent' }}; }
+  .photo {
+    position: relative; width: 43%;
+    background: {{ $layer === 'full' ? '#0a0a08' : 'transparent' }};
+    border-left: 1px solid rgba(216,173,67,.24);
+  }
+  .photo::before {
+    content: '';
+    position: absolute; z-index: 3;
+    top: {{ (int) round($height * 0.038) }}px; right: {{ (int) round($height * 0.038) }}px; bottom: {{ (int) round($height * 0.038) }}px; left: {{ (int) round($height * 0.038) }}px;
+    border: 1px solid rgba(236,204,116,.36);
+    pointer-events: none;
+  }
   .photo img {
     position: absolute; inset: 0;
     width: 100%; height: 100%;
-    object-fit: contain;
-    object-position: center;
-    filter: saturate(1.05);
+    object-fit: cover;
+    object-position: center top;
+    filter: grayscale(1) sepia(.12) contrast(1.12) brightness(.82);
   }
   .photo .fade {
-    position: absolute; inset: 0;
+    position: absolute; z-index: 2; inset: 0;
     background:
-      linear-gradient(90deg, #000 0%, rgba(0,0,0,.72) 10%, rgba(0,0,0,0) 42%),
-      linear-gradient(0deg, rgba(0,0,0,.85) 0%, rgba(0,0,0,0) 22%);
+      linear-gradient(90deg, #070705 0%, rgba(7,7,5,.62) 12%, rgba(7,7,5,0) 38%),
+      linear-gradient(0deg, rgba(7,7,5,.9) 0%, rgba(7,7,5,0) 32%),
+      linear-gradient(180deg, rgba(7,7,5,.42) 0%, transparent 24%);
   }
   .footer {
-    direction: rtl;
+    position: relative; z-index: 4; direction: rtl;
     height: {{ (int) round($height * 0.1) }}px;
     flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
     gap: {{ (int) round($width * 0.028) }}px;
-    border-top: 1px solid rgba(255,255,255,.14);
-    background: #000;
+    border-top: 1px solid rgba(216,173,67,.22);
+    background: #050504;
   }
   .soc {
     display: flex; align-items: center;
@@ -126,7 +160,8 @@
   .soc.fb svg { fill: #1877F2; }
   .soc.ig svg { fill: url(#igGrad); }
   @if($layer === 'text')
-  .title, .surah, .rule, .qari, .photo, .footer, .badge { visibility: hidden; }
+  .card::before { display: none; }
+  .title, .rule, .qari-block, .photo, .footer, .badge { visibility: hidden; }
   @elseif($layer === 'overlay' && $holdTextSpace)
   .extra { visibility: hidden; }
   @endif
@@ -144,20 +179,20 @@
 </head>
 <body>
   <div class="card">
-    @if($rareBadge !== '')
-      <div class="badge"><svg viewBox="0 0 576 512"><path d="M259.3 17.8L194 150.2 47.9 171.5c-26.2 3.8-36.7 36.1-17.7 54.6l105.7 103-25 145.5c-4.5 26.3 23.2 46 46.4 33.7L288 439.6l130.7 68.7c23.2 12.2 50.9-7.4 46.4-33.7l-25-145.5 105.7-103c19-18.5 8.5-50.8-17.7-54.6L382 150.2 316.7 17.8c-11.7-23.6-45.6-23.6-57.4 0z"/></svg>{{ $rareBadge }}</div>
-    @endif
     <div class="main">
       <div class="text">
-        @if($tilawaTitle !== '')
-          <div class="title">{{ $tilawaTitle }}</div>
+        @if($rareBadge !== '')
+          <div class="badge">{{ $rareBadge }}</div>
         @endif
-        @if($surahName)
-          <div class="surah">{{ __('سورة') }} {{ $surahName }}</div>
+        @if($headline !== '')
+          <div class="title">{{ $headline }}</div>
         @endif
         <div class="rule"></div>
-        @if($qariName)
-          <div class="qari">{{ $qariName }}</div>
+        @if($qariDisplayName !== '')
+          <div class="qari-block">
+            <div class="qari-kicker">لأسطورة التلاوة</div>
+            <div class="qari">{{ $qariDisplayName }}</div>
+          </div>
         @endif
         @if($extraText)
           <div class="extra">{{ $extraText }}</div>

@@ -306,6 +306,11 @@
                         <input type="text" wire:model.live.debounce.400ms="cardSurahName" class="form-control" style="width:100%">
                     </div>
                     <div>
+                        <label style="display:block;font-size:.8rem;font-weight:600;margin-bottom:.3rem">{{ __('Rare recitation text') }}</label>
+                        <input type="text" wire:model.live.debounce.400ms="cardRareBadge" class="form-control" style="width:100%" placeholder="{{ __('rare recitation') }}">
+                        <div style="font-size:.72rem;color:var(--text3);margin-top:.25rem">{{ __('Leave empty to hide the text.') }}</div>
+                    </div>
+                    <div>
                         <label style="display:block;font-size:.8rem;font-weight:600;margin-bottom:.3rem">{{ __('Description / info (optional)') }}</label>
                         <textarea wire:model.live.debounce.400ms="cardExtraText" rows="4" class="form-control" style="width:100%;resize:vertical"
                                   placeholder="{{ __('e.g. where and when the tilawa was recorded') }}"></textarea>

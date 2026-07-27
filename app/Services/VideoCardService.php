@@ -50,16 +50,18 @@ class VideoCardService
      * The extra text is the optional description/info line the admin can
      * animate into the video.
      *
-     * @return array{qariName: ?string, surahName: ?string, extraText: ?string, animate_photo: bool, animate_text: bool}
+     * @return array{tilawaTitle: string, qariName: ?string, surahName: ?string, extraText: ?string, rareBadge: string, animate_photo: bool, animate_text: bool}
      */
     public function dataFor(Tilawa $tilawa): array
     {
         $saved = $tilawa->brand_card ?? [];
 
         return [
+            'tilawaTitle' => $tilawa->title_ar,
             'qariName' => $saved['qari_name'] ?? $tilawa->qari?->name,
             'surahName' => $saved['surah_name'] ?? $tilawa->surah_label,
             'extraText' => $saved['extra_text'] ?? $tilawa->description_ar,
+            'rareBadge' => array_key_exists('rare_badge', $saved) ? (string) $saved['rare_badge'] : __('rare recitation'),
             'animate_photo' => (bool) ($saved['animate_photo'] ?? true),
             'animate_text' => (bool) ($saved['animate_text'] ?? true),
         ];

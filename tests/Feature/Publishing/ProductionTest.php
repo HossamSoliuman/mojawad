@@ -11,6 +11,7 @@ use App\Models\Qari;
 use App\Models\Tilawa;
 use App\Models\TilawatSource;
 use App\Models\User;
+use App\Services\AudioMasteringService;
 use App\Services\YoutubePublisher;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Storage;
@@ -252,6 +253,9 @@ it('prefills the card editor from the recitation and its saved settings', functi
         ->assertSet('cardQariName', $tilawa->fresh()->qari->name)
         ->assertSet('cardSurahName', $tilawa->fresh()->surah_label)
         ->assertSet('cardExtraText', 'وصف التلاوة')
+        ->assertSet('cardRareBadge', 'تلاوة نادرة')
+        ->assertSee('ما تيسر من سورة '.$tilawa->fresh()->surah_label)
+        ->assertSee('لأسطورة التلاوة')
         ->assertSet('cardAnimatePhoto', true)
         ->assertSet('cardAnimateText', true);
 });
@@ -267,6 +271,7 @@ it('saves the card settings on the recitation', function () {
         ->set('cardQariName', 'قارئ مخصص')
         ->set('cardSurahName', 'الفاتحة')
         ->set('cardExtraText', 'تلاوة نادرة من الستينات')
+        ->set('cardRareBadge', 'نسخة إذاعية نادرة')
         ->set('cardAnimateText', false)
         ->call('saveCard')
         ->assertSet('editingId', null);
@@ -275,6 +280,7 @@ it('saves the card settings on the recitation', function () {
         'qari_name' => 'قارئ مخصص',
         'surah_name' => 'الفاتحة',
         'extra_text' => 'تلاوة نادرة من الستينات',
+        'rare_badge' => 'نسخة إذاعية نادرة',
         'animate_photo' => true,
         'animate_text' => false,
     ]);
@@ -354,7 +360,7 @@ it('reuses an existing master instead of re-mastering on retry', function () {
     $tilawa->update(['master_audio_path' => 'published/audio/existing.mp3']);
     Storage::disk('public')->put('published/audio/existing.mp3', 'audio');
 
-    $mastering = Mockery::mock(App\Services\AudioMasteringService::class);
+    $mastering = Mockery::mock(AudioMasteringService::class);
     $mastering->shouldNotReceive('master');
 
     (new MasterTilawaAudio($tilawa->id))->handle($mastering);
