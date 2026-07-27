@@ -5,6 +5,7 @@ use App\Models\Qari;
 use App\Models\Tilawa;
 use App\Models\User;
 use App\Services\VideoCardService;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Role;
@@ -16,6 +17,7 @@ beforeEach(function () {
         Role::firstOrCreate(['name' => $role, 'guard_name' => 'web']);
     }
     Storage::fake('public');
+    Cache::flush();
 });
 
 it('lets an admin open the card lab page', function () {
@@ -39,8 +41,37 @@ it('autofills the qari and surah names when a recitation is picked', function ()
 
     Livewire::test(CardLab::class)
         ->set('tilawaId', $tilawa->id)
+        ->assertSet('tilawaTitle', $tilawa->title_ar)
         ->assertSet('qariName', 'الشيخ محمود خليل الحصري')
-        ->assertSet('surahName', $tilawa->surah_name);
+        ->assertSet('surahName', $tilawa->surah_label);
+});
+
+it('shows the recitation title as the top text of the card', function () {
+    $admin = User::factory()->create()->assignRole('admin');
+
+    $this->actingAs($admin);
+
+    Livewire::test(CardLab::class)
+        ->set('tilawaTitle', 'ما تيسر من سورة يوسف')
+        ->assertSee('ما تيسر من سورة يوسف');
+
+    $html = app(VideoCardService::class)->html(['tilawaTitle' => 'ما تيسر من سورة يوسف']);
+
+    expect($html)
+        ->toContain('class="title"')
+        ->toContain('ما تيسر من سورة يوسف');
+});
+
+it('shows the rare recitation badge by default and hides it when cleared', function () {
+    $admin = User::factory()->create()->assignRole('admin');
+
+    $this->actingAs($admin);
+
+    Livewire::test(CardLab::class)
+        ->assertSet('rareBadge', 'تلاوة نادرة')
+        ->assertSee('تلاوة نادرة')
+        ->set('rareBadge', '')
+        ->assertDontSee('class="badge"', false);
 });
 
 it('shows the typed names in the live card preview', function () {
@@ -111,11 +142,39 @@ it('renders the card html with the social footer', function () {
     $html = app(VideoCardService::class)->html([
         'qariName' => 'الشيخ الحصري',
         'surahName' => 'البقرة',
+        'rareBadge' => 'تلاوة نادرة',
     ]);
 
     expect($html)
         ->toContain('الشيخ الحصري')
         ->toContain('البقرة')
         ->toContain('@mojawad')
-        ->toContain('mojawad.net');
+        ->toContain('mojawad.net')
+        ->toContain('class="badge"')
+        ->toContain('تلاوة نادرة');
+});
+
+it('colours the footer icons per platform', function () {
+    config(['publishing.social' => [
+        'youtube' => 'mojawad.net',
+        'facebook' => 'mojawad.net',
+        'website' => 'mojawad.net',
+        'instagram' => 'mojawad.net',
+    ]]);
+
+    $html = app(VideoCardService::class)->html(['surahName' => 'البقرة']);
+
+    expect($html)
+        ->toContain('.soc.yt svg { fill: #FF0000; }')
+        ->toContain('.soc.fb svg { fill: #1877F2; }')
+        ->toContain('igGrad');
+});
+
+it('omits the badge markup when no rare label is given', function () {
+    $html = app(VideoCardService::class)->html([
+        'qariName' => 'الشيخ الحصري',
+        'surahName' => 'البقرة',
+    ]);
+
+    expect($html)->not->toContain('class="badge"');
 });

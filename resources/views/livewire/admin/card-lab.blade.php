@@ -12,18 +12,14 @@
         </div>
 
         <div>
-            <label style="display:block;font-size:.8rem;font-weight:600;margin-bottom:.3rem">{{ __('Qari name') }}</label>
-            <input type="text" wire:model.live.debounce.400ms="qariName" class="form-control" style="width:100%">
-        </div>
-
-        <div>
-            <label style="display:block;font-size:.8rem;font-weight:600;margin-bottom:.3rem">{{ __('Surah name') }}</label>
-            <input type="text" wire:model.live.debounce.400ms="surahName" class="form-control" style="width:100%">
-        </div>
-
-        <div>
             <label style="display:block;font-size:.8rem;font-weight:600;margin-bottom:.3rem">{{ __('Extra text (optional)') }}</label>
             <textarea wire:model.live.debounce.400ms="extraText" rows="3" class="form-control" style="width:100%;resize:vertical"></textarea>
+        </div>
+
+        <div>
+            <label style="display:block;font-size:.8rem;font-weight:600;margin-bottom:.3rem">{{ __('Rare recitation badge') }}</label>
+            <input type="text" wire:model.live.debounce.400ms="rareBadge" class="form-control" style="width:100%" placeholder="{{ __('rare recitation') }}">
+            <div style="font-size:.72rem;color:var(--text3);margin-top:.25rem">{{ __('Leave empty to hide the badge.') }}</div>
         </div>
 
         <div style="display:flex;flex-direction:column;gap:.5rem">

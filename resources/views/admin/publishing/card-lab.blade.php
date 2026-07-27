@@ -11,4 +11,6 @@
 
 <livewire:admin.card-lab />
 
+<livewire:admin.card-social-settings />
+
 @endsection

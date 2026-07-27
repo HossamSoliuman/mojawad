@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Setting;
 use App\Models\Tilawa;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
@@ -12,6 +13,37 @@ use Spatie\Browsershot\Browsershot;
 
 class VideoCardService
 {
+    /**
+     * Settings key holding the site-wide social handles shown in every card
+     * footer, so they are edited once and shared across all cards.
+     */
+    public const SOCIAL_KEY = 'card.social';
+
+    /**
+     * The social handles for the footer form: the config defaults with any
+     * saved global overrides layered on top. A saved empty string is kept so
+     * clearing a handle hides that platform on every card.
+     *
+     * @return array<string, string>
+     */
+    public function socialHandles(): array
+    {
+        $saved = array_filter((array) Setting::get(self::SOCIAL_KEY, []), fn ($value): bool => $value !== null);
+
+        return array_merge(config('publishing.social'), $saved);
+    }
+
+    /**
+     * The handles actually printed on a card — the editable set with blanks
+     * dropped so empty platforms disappear from the footer.
+     *
+     * @return array<string, string>
+     */
+    public function social(): array
+    {
+        return array_filter($this->socialHandles(), fn ($value): bool => $value !== null && $value !== '');
+    }
+
     /**
      * The card texts and animation switches for a recitation: saved editor
      * settings win, otherwise sensible defaults from the recitation itself.
@@ -38,7 +70,7 @@ class VideoCardService
      * Chrome. Unlike BrandCoverService there is deliberately no ffmpeg fallback —
      * the lab exists to prove the HTML path works, so failures must surface.
      *
-     * @param  array{qariName?: ?string, surahName?: ?string, extraText?: ?string, qariImage?: ?string}  $data
+     * @param  array{tilawaTitle?: ?string, qariName?: ?string, surahName?: ?string, extraText?: ?string, rareBadge?: ?string, qariImage?: ?string}  $data
      */
     public function render(array $data): string
     {
@@ -57,7 +89,7 @@ class VideoCardService
      * PNG — overlay and text layers keep transparency so ffmpeg can animate the
      * qari photo and the extra text underneath/above them.
      *
-     * @param  array{qariName?: ?string, surahName?: ?string, extraText?: ?string, qariImage?: ?string}  $data
+     * @param  array{tilawaTitle?: ?string, qariName?: ?string, surahName?: ?string, extraText?: ?string, qariImage?: ?string}  $data
      * @param  array{holdTextSpace?: bool}  $options
      */
     public function renderLayer(array $data, string $layer, array $options = []): string
@@ -82,17 +114,19 @@ class VideoCardService
      * and the Production card editor as a live preview so what you see is what
      * gets rendered.
      *
-     * @param  array{qariName?: ?string, surahName?: ?string, extraText?: ?string, qariImage?: ?string}  $data
+     * @param  array{tilawaTitle?: ?string, qariName?: ?string, surahName?: ?string, extraText?: ?string, rareBadge?: ?string, qariImage?: ?string}  $data
      * @param  array{layer?: string, holdTextSpace?: bool, animatePreview?: bool, animatePhoto?: bool, animateText?: bool}  $options
      */
     public function html(array $data, array $options = []): string
     {
         return View::make('brand.video-card', [
+            'tilawaTitle' => $data['tilawaTitle'] ?? null,
             'qariName' => $data['qariName'] ?? null,
             'surahName' => $data['surahName'] ?? null,
             'extraText' => $data['extraText'] ?? null,
+            'rareBadge' => $data['rareBadge'] ?? null,
             'qariImage' => $data['qariImage'] ?? null,
-            'social' => array_filter(config('publishing.social')),
+            'social' => $this->social(),
             'width' => (int) config('publishing.video.width'),
             'height' => (int) config('publishing.video.height'),
             'layer' => $options['layer'] ?? 'full',

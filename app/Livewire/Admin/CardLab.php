@@ -14,11 +14,15 @@ class CardLab extends Component
 {
     public ?int $tilawaId = null;
 
+    public string $tilawaTitle = '';
+
     public string $qariName = '';
 
     public string $surahName = '';
 
     public string $extraText = '';
+
+    public string $rareBadge = '';
 
     public ?string $cardPath = null;
 
@@ -29,6 +33,11 @@ class CardLab extends Component
     public ?int $videoMs = null;
 
     public ?string $error = null;
+
+    public function mount(): void
+    {
+        $this->rareBadge = __('rare recitation');
+    }
 
     #[Computed]
     public function tilawat()
@@ -51,17 +60,20 @@ class CardLab extends Component
             return;
         }
 
+        $this->tilawaTitle = $tilawa->title_ar ?? '';
         $this->qariName = $tilawa->qari?->name ?? '';
-        $this->surahName = $tilawa->surah_name ?? '';
+        $this->surahName = $tilawa->surah_label ?? '';
     }
 
     #[Computed]
     public function previewHtml(): string
     {
         return app(VideoCardService::class)->html([
+            'tilawaTitle' => $this->tilawaTitle,
             'qariName' => $this->qariName,
             'surahName' => $this->surahName,
             'extraText' => $this->extraText,
+            'rareBadge' => $this->rareBadge,
             'qariImage' => $this->selectedTilawa()?->qari?->image_url,
         ]);
     }
@@ -77,9 +89,11 @@ class CardLab extends Component
 
         try {
             $this->cardPath = $cards->render([
+                'tilawaTitle' => $this->tilawaTitle,
                 'qariName' => $this->qariName,
                 'surahName' => $this->surahName,
                 'extraText' => $this->extraText,
+                'rareBadge' => $this->rareBadge,
                 'qariImage' => $cards->dataUri($qariImage ? $disk->path($qariImage) : null),
             ]);
             $this->cardMs = (int) round((microtime(true) - $started) * 1000);
