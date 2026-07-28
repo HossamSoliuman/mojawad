@@ -39,6 +39,9 @@ function readyTilawa(User $owner, string $brandStatus = 'none', ?string $stage =
         'ayah_from' => 1,
         'ayah_to' => 7,
         'brand_status' => $brandStatus,
+        'brand_card' => $brandStatus === 'ready'
+            ? ['card_image' => 'published/cards/ready.png']
+            : null,
         'production_stage' => $stage,
     ]);
     TilawatSource::create([
@@ -105,14 +108,19 @@ it('only shows a creator their own recitations in selection', function () {
         ->assertDontSee('قارئ الآخر');
 });
 
-it('dispatches the full brand chain when preparing', function () {
+it('removes quick render and dispatches the full brand chain from the card editor', function () {
     Bus::fake();
     $creator = User::factory()->create()->assignRole('creator');
     $tilawa = readyTilawa($creator, 'none', 'preparing');
 
     $this->actingAs($creator);
 
-    Livewire::test(ProductionQueue::class)->call('prepare', $tilawa->id);
+    Livewire::test(ProductionQueue::class)
+        ->set('tab', 'preparation')
+        ->assertSeeHtml('wire:click="openEditor('.$tilawa->id.')"')
+        ->assertDontSeeHtml('wire:click="prepare('.$tilawa->id.')"')
+        ->call('openEditor', $tilawa->id)
+        ->call('saveAndPrepare');
 
     expect($tilawa->fresh()->brand_status)->toBe('processing');
 
@@ -128,15 +136,19 @@ it('moves a ready recitation from preparation to publishing', function () {
     $creator = User::factory()->create()->assignRole('creator');
     $ready = readyTilawa($creator, 'ready', 'preparing');
     $notReady = readyTilawa($creator, 'none', 'preparing');
+    $legacyReady = readyTilawa($creator, 'ready', 'preparing');
+    $legacyReady->update(['brand_card' => null]);
 
     $this->actingAs($creator);
 
     Livewire::test(ProductionQueue::class)
         ->call('moveToPublishing', $ready->id)
-        ->call('moveToPublishing', $notReady->id);
+        ->call('moveToPublishing', $notReady->id)
+        ->call('moveToPublishing', $legacyReady->id);
 
     expect($ready->fresh()->production_stage)->toBe('publishing')
-        ->and($notReady->fresh()->production_stage)->toBe('preparing');
+        ->and($notReady->fresh()->production_stage)->toBe('preparing')
+        ->and($legacyReady->fresh()->production_stage)->toBe('preparing');
 });
 
 it('publishes to the podcast feed inline and moves the recitation to published', function () {
@@ -195,9 +207,10 @@ it('can push an already published recitation to another platform', function () {
     expect(Publication::where('tilawa_id', $tilawa->id)->where('platform', 'youtube')->exists())->toBeTrue();
 });
 
-it('does not publish when the brand assets are not ready', function () {
+it('does not publish without a rendered customized card', function () {
     $creator = User::factory()->create()->assignRole('creator');
-    $tilawa = readyTilawa($creator, 'none', 'publishing');
+    $tilawa = readyTilawa($creator, 'ready', 'publishing');
+    $tilawa->update(['brand_card' => null]);
 
     $this->actingAs($creator);
 
@@ -318,7 +331,10 @@ it('does not re-dispatch the chain while a render is already processing', functi
 
     $this->actingAs($creator);
 
-    Livewire::test(ProductionQueue::class)->call('prepare', $tilawa->id);
+    Livewire::test(ProductionQueue::class)
+        ->call('openEditor', $tilawa->id)
+        ->assertSet('editingId', null)
+        ->call('saveAndPrepare');
 
     Bus::assertNotDispatched(AlignSubtitles::class);
 });

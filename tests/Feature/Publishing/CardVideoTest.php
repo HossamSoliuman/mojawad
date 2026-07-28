@@ -7,6 +7,7 @@ use App\Services\CardVideoRenderer;
 use App\Services\VideoCardService;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
+use Spatie\Browsershot\Browsershot;
 
 use function Pest\Laravel\mock;
 
@@ -49,6 +50,24 @@ it('prefers saved card settings over the recitation defaults', function () {
         ->and($data['rareBadge'])->toBe('')
         ->and($data['animate_text'])->toBeFalse()
         ->and($data['animate_photo'])->toBeTrue();
+});
+
+it('configures Browsershot to use the installed Chrome executable', function () {
+    $chromePath = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
+    config(['publishing.browsershot.chrome_path' => $chromePath]);
+
+    $cards = new class extends VideoCardService
+    {
+        public function makeBrowsershot(string $html): Browsershot
+        {
+            return $this->browsershot($html);
+        }
+    };
+
+    $shot = $cards->makeBrowsershot('<html></html>');
+    $options = (fn (): array => $this->additionalOptions)->call($shot);
+
+    expect($options['executablePath'])->toBe($chromePath);
 });
 
 // ── Motion filter graph ────────────────────────────────────────────
@@ -132,7 +151,7 @@ it('stores the card video, keeps the card image, and drops stale artifacts', fun
     Storage::disk('public')->assertMissing('published/cards/old.png');
 });
 
-it('falls back to the still-cover render when the card path fails', function () {
+it('fails without falling back to the old still-cover video when the card render fails', function () {
     $tilawa = Tilawa::factory()->create([
         'brand_status' => 'processing',
         'audio_path' => 'tilawat/a.mp3',
@@ -146,15 +165,17 @@ it('falls back to the still-cover render when the card path fails', function () 
         ->shouldReceive('render')->once()
         ->andThrow(new RuntimeException('Chrome not found'));
 
+    $job = new RenderBrandedVideo($tilawa->id);
+
     try {
-        (new RenderBrandedVideo($tilawa->id))->handle(app(CardVideoRenderer::class));
-    } catch (RuntimeException) {
-        // Process::fake() writes no file, so the fallback's output check throws.
+        $job->handle(app(CardVideoRenderer::class));
+    } catch (RuntimeException $exception) {
+        $job->failed($exception);
     }
 
-    Process::assertRan(function ($process) {
-        $joined = implode(' ', (array) $process->command);
+    Process::assertDidntRun(fn () => true);
 
-        return str_contains($joined, '-loop') && str_contains($joined, 'a.mp3');
-    });
+    expect($tilawa->fresh()->brand_status)->toBe('failed')
+        ->and($tilawa->fresh()->brand_video_path)->toBeNull()
+        ->and($tilawa->fresh()->brand_error)->toContain('Chrome not found');
 });

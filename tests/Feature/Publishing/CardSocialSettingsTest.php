@@ -31,6 +31,18 @@ it('prefills the footer handles with the config defaults', function () {
         ->assertSet('social.website', 'mojawad.net');
 });
 
+it('shows the footer links form at the top of the production page', function () {
+    $admin = User::factory()->create()->assignRole('admin');
+
+    $this->actingAs($admin)
+        ->get(route('admin.publishing.production'))
+        ->assertOk()
+        ->assertSeeLivewire('admin.card-social-settings');
+
+    Livewire::test(CardSocialSettings::class)
+        ->assertSeeHtml('wire:submit="save"');
+});
+
 it('saves the footer handles globally for every card', function () {
     $admin = User::factory()->create()->assignRole('admin');
     $this->actingAs($admin);
@@ -57,4 +69,14 @@ it('hides a platform on every card when its handle is cleared', function () {
         ->call('save');
 
     expect(app(VideoCardService::class)->social())->not->toHaveKey('instagram');
+});
+
+it('validates footer links before saving them', function () {
+    $admin = User::factory()->create()->assignRole('admin');
+    $this->actingAs($admin);
+
+    Livewire::test(CardSocialSettings::class)
+        ->set('social.youtube', str_repeat('a', 256))
+        ->call('save')
+        ->assertHasErrors(['social.youtube' => 'max']);
 });

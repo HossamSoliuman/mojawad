@@ -672,6 +672,8 @@
     "Leave empty to hide the badge.": "اتركه فارغًا لإخفاء الشارة.",
     "Leave empty to hide the text.": "اتركه فارغًا لإخفاء النص.",
     "Footer handles": "حسابات التذييل",
+    "Card footer links": "روابط تذييل البطاقة",
+    "Set the accounts shown beside the social icons on every generated card. Leave a field empty to hide it.": "حدّد الحسابات التي تظهر بجوار أيقونات التواصل في كل بطاقة يتم إنشاؤها. اترك الحقل فارغًا لإخفائه.",
     "Applies to all cards": "يُطبَّق على جميع البطاقات",
     "These social accounts appear in the footer of every generated card. Leave a field empty to hide that icon.": "تظهر حسابات التواصل هذه في تذييل كل بطاقة يتم توليدها. اترك الحقل فارغًا لإخفاء الأيقونة.",
     "Website": "الموقع",

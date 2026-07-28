@@ -200,7 +200,7 @@ class VideoCardService
 
     private function capture(string $html, string $outAbs, bool $transparent): void
     {
-        $shot = Browsershot::html($html)
+        $shot = $this->browsershot($html)
             ->windowSize((int) config('publishing.video.width'), (int) config('publishing.video.height'))
             ->deviceScaleFactor(1)
             ->waitUntilNetworkIdle()
@@ -215,5 +215,17 @@ class VideoCardService
         if (! is_file($outAbs)) {
             throw new RuntimeException('Browsershot produced no card image.');
         }
+    }
+
+    protected function browsershot(string $html): Browsershot
+    {
+        $shot = Browsershot::html($html);
+        $chromePath = config('publishing.browsershot.chrome_path');
+
+        if (is_string($chromePath) && $chromePath !== '') {
+            $shot->setChromePath($chromePath);
+        }
+
+        return $shot;
     }
 }

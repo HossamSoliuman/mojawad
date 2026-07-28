@@ -105,6 +105,7 @@
                     </tr></thead>
                     <tbody>
                         @foreach($this->preparationList as $tilawa)
+                        @php($hasRenderedCard = filled($tilawa->brand_card['card_image'] ?? null))
                         <tr wire:key="prep-{{ $tilawa->id }}">
                             <td>
                                 <div style="display:flex;align-items:center;gap:.72rem">
@@ -136,7 +137,11 @@
                                     'failed'     => ['badge-red',   __('Failed'),       'fa-circle-exclamation'],
                                 ])
                                 @php([$bcls, $blabel, $bicon] = $bmap[$tilawa->brand_status] ?? ['badge-muted', $tilawa->brand_status, 'fa-question'])
+                                @if($tilawa->brand_status === 'ready' && ! $hasRenderedCard)
+                                <span class="badge badge-amber"><i class="fas fa-wand-magic-sparkles"></i> {{ __('Card required') }}</span>
+                                @else
                                 <span class="badge {{ $bcls }}"><i class="fas {{ $bicon }}"></i> {{ $blabel }}</span>
+                                @endif
                                 @if($tilawa->brand_status === 'failed' && $tilawa->brand_error)
                                 <div style="font-size:.74rem;color:#e86060;margin-top:.35rem;max-width:220px" title="{{ $tilawa->brand_error }}">{{ Str::limit($tilawa->brand_error, 70) }}</div>
                                 @endif
@@ -153,13 +158,9 @@
                                             class="btn btn-ghost btn-xs" style="color:var(--amber,#d9a441)">
                                         <i class="fas fa-rotate-right"></i> {{ __('Retry') }}
                                     </button>
-                                    @else
-                                    <button type="button" wire:click="prepare({{ $tilawa->id }})" class="btn btn-ghost btn-xs">
-                                        <i class="fas fa-gears"></i> {{ __('Quick render') }}
-                                    </button>
                                     @endif
                                     @endif
-                                    @if($tilawa->brand_status === 'ready')
+                                    @if($tilawa->brand_status === 'ready' && $hasRenderedCard)
                                     <button type="button" wire:click="moveToPublishing({{ $tilawa->id }})" class="btn btn-ghost btn-xs" style="color:var(--gold,#c9a153)">
                                         <i class="fas fa-arrow-right"></i> {{ __('Move to publishing') }}
                                     </button>

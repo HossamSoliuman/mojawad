@@ -103,6 +103,12 @@ return [
         'driver' => env('COVER_DRIVER', 'browsershot'),   // browsershot | ffmpeg
         'size' => 3000,
     ],
+    'browsershot' => [
+        'chrome_path' => env(
+            'BROWSERSHOT_CHROME_PATH',
+            PHP_OS_FAMILY === 'Windows' ? 'C:/Program Files/Google/Chrome/Application/chrome.exe' : null,
+        ),
+    ],
     'logo_path' => public_path('images/brand/logo-white.png'),
     'intro_video' => env('BRAND_INTRO_VIDEO'),
     'outro_video' => env('BRAND_OUTRO_VIDEO'),

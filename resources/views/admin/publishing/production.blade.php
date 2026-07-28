@@ -9,6 +9,8 @@
   <p style="color:var(--text2);font-size:.86rem;margin:0">{{ __('Move recitations through four stages: Selection → Preparation (design & render the video) → Publishing (compose each platform’s title & description and upload) → Published.') }}</p>
 </div>
 
+<livewire:admin.card-social-settings />
+
 <livewire:admin.production-queue />
 
 @endsection

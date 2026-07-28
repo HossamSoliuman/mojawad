@@ -270,7 +270,7 @@ class ProductionQueue extends Component
 
     // ── Rendering the video (Preparation) ────────────────────────────
 
-    public function prepare(int $tilawaId, PublishingPipeline $pipeline): void
+    private function prepare(int $tilawaId, PublishingPipeline $pipeline): void
     {
         $tilawa = $this->ownedTilawa($tilawaId);
 
@@ -301,7 +301,9 @@ class ProductionQueue extends Component
     {
         $tilawa = $this->ownedTilawa($tilawaId);
 
-        if ($tilawa->production_stage === 'preparing' && $tilawa->brand_status === 'ready') {
+        if ($tilawa->production_stage === 'preparing'
+            && $tilawa->brand_status === 'ready'
+            && $this->hasRenderedCard($tilawa)) {
             $tilawa->update(['production_stage' => 'publishing']);
         }
     }
@@ -365,7 +367,13 @@ class ProductionQueue extends Component
     private function canPublish(Tilawa $tilawa): bool
     {
         return in_array($tilawa->production_stage, ['publishing', 'published'], true)
-            && $tilawa->brand_status === 'ready';
+            && $tilawa->brand_status === 'ready'
+            && $this->hasRenderedCard($tilawa);
+    }
+
+    private function hasRenderedCard(Tilawa $tilawa): bool
+    {
+        return filled($tilawa->brand_card['card_image'] ?? null);
     }
 
     public function moveToPublished(int $tilawaId): void

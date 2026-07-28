@@ -4,6 +4,7 @@ namespace App\Livewire\Admin;
 
 use App\Models\Setting;
 use App\Services\VideoCardService;
+use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
 class CardSocialSettings extends Component
@@ -30,7 +31,15 @@ class CardSocialSettings extends Component
 
     public function save(): void
     {
-        $social = array_map(fn (string $handle): string => trim($handle), $this->social);
+        $validated = $this->validate([
+            'social' => ['required', 'array:youtube,facebook,website,instagram'],
+            'social.*' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $social = array_map(
+            fn (?string $link): string => trim($link ?? ''),
+            $validated['social'],
+        );
 
         Setting::set(VideoCardService::SOCIAL_KEY, $social);
 
@@ -38,7 +47,7 @@ class CardSocialSettings extends Component
         $this->saved = true;
     }
 
-    public function render()
+    public function render(): View
     {
         return view('livewire.admin.card-social-settings');
     }
