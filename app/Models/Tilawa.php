@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\TilawaStorageService;
 use App\Support\TilawaTitle;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -19,6 +20,19 @@ class Tilawa extends Model
     protected $fillable = ['qari_id', 'title_ar', 'title_en', 'slug', 'description_ar', 'description_en', 'recorded_at', 'recorded_place', 'surah_number', 'surahs', 'audio_path', 'duration', 'cover_image', 'uploaded_by', 'is_featured', 'downloads_count', 'plays_count', 'likes_count', 'status', 'review_status', 'rejection_note', 'reviewed_by', 'reviewed_at', 'ayah_from', 'ayah_to', 'ayah_confidence', 'subtitle_path', 'master_audio_path', 'brand_cover_path', 'brand_video_path', 'brand_status', 'brand_error', 'brand_card', 'production_stage'];
 
     protected $casts = ['is_featured' => 'boolean', 'recorded_at' => 'date', 'reviewed_at' => 'datetime', 'ayah_from' => 'integer', 'ayah_to' => 'integer', 'surahs' => 'array', 'brand_card' => 'array'];
+
+    protected static function booted(): void
+    {
+        static::created(function (Tilawa $tilawa): void {
+            app(TilawaStorageService::class)->organize($tilawa);
+        });
+
+        static::updated(function (Tilawa $tilawa): void {
+            if ($tilawa->wasChanged(['qari_id', 'title_ar', 'audio_path', 'master_audio_path'])) {
+                app(TilawaStorageService::class)->organize($tilawa);
+            }
+        });
+    }
 
     public function qari()
     {
