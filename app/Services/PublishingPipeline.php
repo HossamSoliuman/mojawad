@@ -42,7 +42,7 @@ class PublishingPipeline
      * what the admin composed in the Publishing tab.
      *
      * @param  list<string>  $platforms
-     * @param  array<string, array{title?: string, description?: string}>  $meta
+     * @param  array<string, array{hook?: string, title?: string, description?: string}>  $meta
      */
     public function publish(Tilawa $tilawa, array $platforms, ?int $userId, array $meta = []): void
     {

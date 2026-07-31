@@ -55,6 +55,8 @@ class ProductionQueue extends Component
 
     public string $fbDescription = '';
 
+    public string $hookText = '';
+
     public bool $youtubeEnabled = false;
 
     public bool $facebookEnabled = false;
@@ -328,13 +330,16 @@ class ProductionQueue extends Component
         }
 
         $pubs = $tilawa->publications->keyBy('platform');
+        $youtubeMeta = $pubs->get('youtube')?->meta ?? [];
+        $facebookMeta = $pubs->get('facebook')?->meta ?? [];
 
         $this->publishFor = $tilawaId;
         $this->platforms = ['podcast'];
-        $this->ytTitle = $pubs['youtube']->meta['title'] ?? $tilawa->title_ar;
-        $this->ytDescription = $pubs['youtube']->meta['description'] ?? $this->defaultDescription($tilawa);
-        $this->fbTitle = $pubs['facebook']->meta['title'] ?? $tilawa->title_ar;
-        $this->fbDescription = $pubs['facebook']->meta['description'] ?? $this->defaultDescription($tilawa);
+        $this->hookText = $youtubeMeta['hook'] ?? $facebookMeta['hook'] ?? $this->defaultHook($tilawa);
+        $this->ytTitle = $youtubeMeta['title'] ?? $this->defaultTitle($tilawa);
+        $this->ytDescription = $youtubeMeta['description'] ?? $this->defaultDescription($tilawa, 'youtube');
+        $this->fbTitle = $facebookMeta['title'] ?? $this->defaultTitle($tilawa);
+        $this->fbDescription = $facebookMeta['description'] ?? $this->defaultDescription($tilawa, 'facebook');
     }
 
     public function cancelPublish(): void
@@ -352,8 +357,8 @@ class ProductionQueue extends Component
 
         if ($this->canPublish($tilawa) && $this->platforms !== []) {
             $pipeline->publish($tilawa, $this->platforms, Auth::id(), [
-                'youtube' => ['title' => trim($this->ytTitle), 'description' => trim($this->ytDescription)],
-                'facebook' => ['title' => trim($this->fbTitle), 'description' => trim($this->fbDescription)],
+                'youtube' => ['hook' => trim($this->hookText), 'title' => trim($this->ytTitle), 'description' => trim($this->ytDescription)],
+                'facebook' => ['hook' => trim($this->hookText), 'title' => trim($this->fbTitle), 'description' => trim($this->fbDescription)],
             ]);
         }
 
@@ -432,6 +437,42 @@ class ProductionQueue extends Component
         return view('livewire.admin.production-queue');
     }
 
+    /**
+     * @return array<int, array{hook: string, youtube_title: string, youtube_description: string, facebook_title: string, facebook_description: string, all: string}>
+     */
+    #[Computed]
+    public function publishingCopy(): array
+    {
+        return $this->publishingList
+            ->mapWithKeys(function (Tilawa $tilawa): array {
+                $publications = $tilawa->publications->keyBy('platform');
+                $youtubeMeta = $publications->get('youtube')?->meta ?? [];
+                $facebookMeta = $publications->get('facebook')?->meta ?? [];
+
+                $hook = $youtubeMeta['hook'] ?? $facebookMeta['hook'] ?? $this->defaultHook($tilawa);
+                $youtubeTitle = $youtubeMeta['title'] ?? $this->defaultTitle($tilawa);
+                $youtubeDescription = $youtubeMeta['description'] ?? $this->defaultDescription($tilawa, 'youtube');
+                $facebookTitle = $facebookMeta['title'] ?? $this->defaultTitle($tilawa);
+                $facebookDescription = $facebookMeta['description'] ?? $this->defaultDescription($tilawa, 'facebook');
+
+                return [$tilawa->id => [
+                    'hook' => $hook,
+                    'youtube_title' => $youtubeTitle,
+                    'youtube_description' => $youtubeDescription,
+                    'facebook_title' => $facebookTitle,
+                    'facebook_description' => $facebookDescription,
+                    'all' => implode("\n\n", [
+                        __('Hook').":\n".$hook,
+                        __('YouTube title').":\n".$youtubeTitle,
+                        __('YouTube description').":\n".$youtubeDescription,
+                        __('Facebook post title').":\n".$facebookTitle,
+                        __('Facebook post text').":\n".$facebookDescription,
+                    ]),
+                ]];
+            })
+            ->all();
+    }
+
     // ── Query helpers ────────────────────────────────────────────────
 
     private function stageQuery(string $stage): Builder
@@ -464,8 +505,29 @@ class ProductionQueue extends Component
         $this->applyOwnership($query);
     }
 
-    private function defaultDescription(Tilawa $tilawa): string
+    private function defaultHook(Tilawa $tilawa): string
     {
-        return trim(($tilawa->qari?->name ? $tilawa->qari->name."\n" : '').'https://mojawad.org');
+        return __('A moving recitation from :title, in the voice of :qari. Listen with your heart. ✨', [
+            'title' => $tilawa->title_ar,
+            'qari' => $tilawa->qari?->name ?? __('an outstanding reciter'),
+        ]);
+    }
+
+    private function defaultTitle(Tilawa $tilawa): string
+    {
+        return trim($tilawa->title_ar.($tilawa->qari?->name ? ' | '.$tilawa->qari->name : ''));
+    }
+
+    private function defaultDescription(Tilawa $tilawa, string $platform): string
+    {
+        $link = 'https://mojawad.org/tilawa/'.$tilawa->slug
+            .'?utm_source='.$platform.'&utm_medium=video&utm_campaign=publishing';
+
+        return implode("\n\n", array_filter([
+            $this->defaultHook($tilawa),
+            trim($tilawa->title_ar."\n".($tilawa->qari?->name ?? '')),
+            __('Listen to more recitations on Mojawad:')."\n".$link,
+            '#القرآن_الكريم #تلاوة #مجود',
+        ]));
     }
 }

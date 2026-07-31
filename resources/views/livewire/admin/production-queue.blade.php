@@ -193,6 +193,7 @@
                     </tr></thead>
                     <tbody>
                         @foreach($this->publishingList as $tilawa)
+                        @php($copy = $this->publishingCopy[$tilawa->id])
                         <tr wire:key="pub-{{ $tilawa->id }}">
                             <td>
                                 <div style="display:flex;align-items:center;gap:.72rem">
@@ -218,12 +219,78 @@
                                     <button type="button" wire:click="openPublish({{ $tilawa->id }})" class="btn btn-primary btn-xs">
                                         <i class="fas fa-tower-broadcast"></i> {{ __('Compose & publish') }}
                                     </button>
+                                    @if($tilawa->brand_video_path)
+                                    <a href="{{ route('admin.publishing.production.download', $tilawa) }}" class="btn btn-ghost btn-xs">
+                                        <i class="fas fa-download"></i> {{ __('Download video') }}
+                                    </a>
+                                    @endif
                                     <button type="button" wire:click="moveToPreparation({{ $tilawa->id }})" class="btn-icon" title="{{ __('Back to preparation') }}">
                                         <i class="fas fa-arrow-{{ app()->getLocale() === 'en' ? 'left' : 'right' }}"></i>
                                     </button>
                                     <button type="button" wire:click="confirmRemove({{ $tilawa->id }})"
                                             class="btn-icon" style="color:var(--red)" title="{{ __('Remove from production') }}"><i class="fas fa-xmark"></i></button>
                                 </div>
+                            </td>
+                        </tr>
+                        <tr wire:key="pub-copy-{{ $tilawa->id }}" class="publishing-copy-row">
+                            <td colspan="3">
+                                <section class="sharing-kit" aria-label="{{ __('Ready-to-share copy') }}">
+                                    <div class="sharing-kit-header">
+                                        <div>
+                                            <span class="sharing-kit-eyebrow"><i class="fas fa-bolt"></i> {{ __('Ready-to-share copy') }}</span>
+                                            <p>{{ __('Copy each field separately, or copy the complete publishing pack at once.') }}</p>
+                                        </div>
+                                        <button type="button" class="btn btn-primary btn-xs"
+                                                @click="copyText(@js($copy['all']), 'all-{{ $tilawa->id }}')">
+                                            <i class="fas" :class="copied === 'all-{{ $tilawa->id }}' ? 'fa-check' : 'fa-copy'"></i>
+                                            <span x-text="copied === 'all-{{ $tilawa->id }}' ? @js(__('Copied')) : @js(__('Copy all'))"></span>
+                                        </button>
+                                    </div>
+
+                                    <div class="sharing-hook">
+                                        <div class="sharing-field-heading">
+                                            <span><i class="fas fa-fire"></i> {{ __('Hook') }}</span>
+                                            <button type="button" @click="copyText(@js($copy['hook']), 'hook-{{ $tilawa->id }}')">
+                                                <i class="fas" :class="copied === 'hook-{{ $tilawa->id }}' ? 'fa-check' : 'fa-copy'"></i>
+                                                <span x-text="copied === 'hook-{{ $tilawa->id }}' ? @js(__('Copied')) : @js(__('Copy'))"></span>
+                                            </button>
+                                        </div>
+                                        <div class="sharing-copy-text">{{ $copy['hook'] }}</div>
+                                    </div>
+
+                                    <div class="sharing-platform-grid">
+                                        @foreach([
+                                            'youtube' => ['fab fa-youtube', '#dc2626', __('YouTube'), $copy['youtube_title'], $copy['youtube_description']],
+                                            'facebook' => ['fab fa-facebook', '#1877f2', __('Facebook'), $copy['facebook_title'], $copy['facebook_description']],
+                                        ] as $platform => $content)
+                                        <article wire:key="share-platform-{{ $tilawa->id }}-{{ $platform }}" class="sharing-platform-card">
+                                            <div class="sharing-platform-title" style="--platform-color:{{ $content[1] }}">
+                                                <i class="{{ $content[0] }}"></i> {{ $content[2] }}
+                                            </div>
+                                            <div class="sharing-field">
+                                                <div class="sharing-field-heading">
+                                                    <span>{{ $platform === 'youtube' ? __('Video title') : __('Post title') }}</span>
+                                                    <button type="button" @click="copyText(@js($content[3]), '{{ $platform }}-title-{{ $tilawa->id }}')">
+                                                        <i class="fas" :class="copied === '{{ $platform }}-title-{{ $tilawa->id }}' ? 'fa-check' : 'fa-copy'"></i>
+                                                        <span x-text="copied === '{{ $platform }}-title-{{ $tilawa->id }}' ? @js(__('Copied')) : @js(__('Copy'))"></span>
+                                                    </button>
+                                                </div>
+                                                <div class="sharing-copy-text">{{ $content[3] }}</div>
+                                            </div>
+                                            <div class="sharing-field">
+                                                <div class="sharing-field-heading">
+                                                    <span>{{ $platform === 'youtube' ? __('Video description') : __('Post text') }}</span>
+                                                    <button type="button" @click="copyText(@js($content[4]), '{{ $platform }}-description-{{ $tilawa->id }}')">
+                                                        <i class="fas" :class="copied === '{{ $platform }}-description-{{ $tilawa->id }}' ? 'fa-check' : 'fa-copy'"></i>
+                                                        <span x-text="copied === '{{ $platform }}-description-{{ $tilawa->id }}' ? @js(__('Copied')) : @js(__('Copy'))"></span>
+                                                    </button>
+                                                </div>
+                                                <div class="sharing-copy-text sharing-copy-description">{{ $content[4] }}</div>
+                                            </div>
+                                        </article>
+                                        @endforeach
+                                    </div>
+                                </section>
                             </td>
                         </tr>
                         @endforeach
@@ -357,6 +424,15 @@
             <p style="color:var(--text3);font-size:.8rem;margin:0 0 1rem">{{ __('Pick the platforms and write the title & description that will go live on each one.') }}</p>
 
             <div style="display:flex;flex-direction:column;gap:.9rem">
+                <div class="sharing-hook" style="margin:0">
+                    <label for="publishing-hook" style="display:block;font-size:.8rem;font-weight:700;margin-bottom:.35rem">
+                        <i class="fas fa-fire"></i> {{ __('Hook') }}
+                    </label>
+                    <textarea id="publishing-hook" wire:model="hookText" rows="2" class="form-control" style="width:100%;resize:vertical"
+                              placeholder="{{ __('Opening hook text') }}"></textarea>
+                    <div style="font-size:.72rem;color:var(--text3);margin-top:.3rem">{{ __('Use this as the opening line when you share the video manually.') }}</div>
+                </div>
+
                 {{-- Podcast --}}
                 <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;cursor:pointer">
                     <input type="checkbox" value="podcast" wire:model.live="platforms"> {{ __('Podcast (Spotify / Anghami)') }}
@@ -437,9 +513,31 @@
     <script>
     function brandPreview(){
         return {
-            open:false, url:'', poster:'', title:'',
+            open:false, url:'', poster:'', title:'', copied:null, copyTimer:null,
             show(url, poster, title){ this.url=url; this.poster=poster; this.title=title; this.open=true; },
             close(){ this.open=false; if(this.$refs.vid) this.$refs.vid.pause(); this.url=''; },
+            async copyText(text, key){
+                try {
+                    if (navigator.clipboard && window.isSecureContext) {
+                        await navigator.clipboard.writeText(text);
+                    } else {
+                        const textarea = document.createElement('textarea');
+                        textarea.value = text;
+                        textarea.style.position = 'fixed';
+                        textarea.style.opacity = '0';
+                        document.body.appendChild(textarea);
+                        textarea.select();
+                        document.execCommand('copy');
+                        textarea.remove();
+                    }
+
+                    this.copied = key;
+                    window.clearTimeout(this.copyTimer);
+                    this.copyTimer = window.setTimeout(() => this.copied = null, 1800);
+                } catch (error) {
+                    this.copied = null;
+                }
+            },
         };
     }
     </script>

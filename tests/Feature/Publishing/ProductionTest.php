@@ -69,6 +69,32 @@ it('blocks regular users from the production page', function () {
     $this->actingAs($user)->get(route('admin.publishing.production'))->assertForbidden();
 });
 
+it('downloads the rendered publishing video for its owner', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+    $tilawa = readyTilawa($creator, 'ready', 'publishing');
+    $tilawa->update([
+        'title_en' => 'Surah Al Baqarah',
+        'brand_video_path' => 'published/videos/ready.mp4',
+    ]);
+    Storage::disk('public')->put('published/videos/ready.mp4', 'video-content');
+
+    $this->actingAs($creator)
+        ->get(route('admin.publishing.production.download', $tilawa))
+        ->assertDownload('surah-al-baqarah-'.$tilawa->id.'.mp4');
+});
+
+it('does not let another creator download a rendered publishing video', function () {
+    $owner = User::factory()->create()->assignRole('creator');
+    $otherCreator = User::factory()->create()->assignRole('creator');
+    $tilawa = readyTilawa($owner, 'ready', 'publishing');
+    $tilawa->update(['brand_video_path' => 'published/videos/private.mp4']);
+    Storage::disk('public')->put('published/videos/private.mp4', 'video-content');
+
+    $this->actingAs($otherCreator)
+        ->get(route('admin.publishing.production.download', $tilawa))
+        ->assertForbidden();
+});
+
 it('lists qaris with pickable recitations in the selection tab', function () {
     $creator = User::factory()->create()->assignRole('creator');
     $tilawa = readyTilawa($creator);
@@ -179,16 +205,42 @@ it('stores the composed per-platform meta on the publication', function () {
     Livewire::test(ProductionQueue::class)
         ->call('openPublish', $tilawa->id)
         ->set('platforms', ['youtube'])
+        ->set('hookText', 'Opening hook for sharing')
         ->set('ytTitle', 'عنوان مخصص لليوتيوب')
         ->set('ytDescription', 'وصف مخصص')
         ->call('doPublish');
 
     $publication = Publication::where('tilawa_id', $tilawa->id)->where('platform', 'youtube')->first();
     expect($publication)->not->toBeNull()
+        ->and($publication->meta['hook'])->toBe('Opening hook for sharing')
         ->and($publication->meta['title'])->toBe('عنوان مخصص لليوتيوب')
         ->and($publication->meta['description'])->toBe('وصف مخصص');
 
     Bus::assertDispatched(PublishToYoutube::class);
+});
+
+it('shows a ready-to-share publishing kit with copy and download actions', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+    $tilawa = readyTilawa($creator, 'ready', 'publishing');
+    $tilawa->update([
+        'title_ar' => 'A ready recitation',
+        'brand_video_path' => 'published/videos/share-ready.mp4',
+    ]);
+    Storage::disk('public')->put('published/videos/share-ready.mp4', 'video-content');
+
+    $this->actingAs($creator);
+
+    Livewire::test(ProductionQueue::class)
+        ->set('tab', 'publishing')
+        ->assertSee(__('Ready-to-share copy'))
+        ->assertSee(__('Hook'))
+        ->assertSee(__('Video title'))
+        ->assertSee(__('Video description'))
+        ->assertSee(__('Post title'))
+        ->assertSee(__('Post text'))
+        ->assertSee(__('Copy all'))
+        ->assertSee(__('Download video'))
+        ->assertSee(route('admin.publishing.production.download', $tilawa), false);
 });
 
 it('can push an already published recitation to another platform', function () {

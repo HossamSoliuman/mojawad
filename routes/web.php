@@ -143,6 +143,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
         Route::get('/publishing/factory', [PublishingController::class, 'factory'])->name('publishing.factory');
         Route::post('/publishing/ingest', [PublishingController::class, 'ingest'])->name('publishing.ingest');
         Route::get('/publishing/production', [PublishingController::class, 'production'])->name('publishing.production');
+        Route::get('/publishing/production/{tilawa}/download', [PublishingController::class, 'downloadVideo'])
+            ->name('publishing.production.download')->middleware('can:view,tilawa');
         Route::get('/publishing/card-lab', [PublishingController::class, 'cardLab'])->name('publishing.card-lab');
 
         Route::get('/tilawat', [App\Http\Controllers\Admin\TilawaController::class, 'index'])->name('tilawat.index');
