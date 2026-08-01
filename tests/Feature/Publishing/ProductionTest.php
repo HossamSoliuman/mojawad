@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Js;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Role;
 
@@ -238,6 +239,27 @@ it('moves a ready recitation from preparation to publishing', function () {
         ->and($legacyReady->fresh()->production_stage)->toBe('preparing');
 });
 
+it('deletes the rendered video when moving back to preparation', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+    $tilawa = readyTilawa($creator, 'ready', 'publishing');
+    Storage::disk('public')->put('published/videos/rollback.mp4', 'video');
+    $tilawa->update(['brand_video_path' => 'published/videos/rollback.mp4']);
+    $videoPath = $tilawa->fresh()->brand_video_path;
+
+    $this->actingAs($creator);
+
+    Livewire::test(ProductionQueue::class)
+        ->call('moveToPreparation', $tilawa->id);
+
+    $tilawa->refresh();
+
+    expect($tilawa->production_stage)->toBe('preparing')
+        ->and($tilawa->brand_status)->toBe('none')
+        ->and($tilawa->brand_video_path)->toBeNull();
+
+    Storage::disk('public')->assertMissing($videoPath);
+});
+
 it('publishes to the podcast feed inline and moves the recitation to published', function () {
     $creator = User::factory()->create()->assignRole('creator');
     $tilawa = readyTilawa($creator, 'ready', 'publishing');
@@ -288,6 +310,7 @@ it('shows a ready-to-share publishing kit with copy and download actions', funct
         'brand_video_path' => 'published/videos/share-ready.mp4',
     ]);
     Storage::disk('public')->put('published/videos/share-ready.mp4', 'video-content');
+    $videoFilePath = str_replace('/', DIRECTORY_SEPARATOR, Storage::disk('public')->path($tilawa->brand_video_path));
 
     $this->actingAs($creator);
 
@@ -300,6 +323,10 @@ it('shows a ready-to-share publishing kit with copy and download actions', funct
         ->assertSee(__('Post title'))
         ->assertSee(__('Post text'))
         ->assertSee(__('Copy all'))
+        ->assertSee(__('Copy file path'))
+        ->assertSee(__('Copy the full file path for pasting into a file picker'))
+        ->assertSee(Js::from($videoFilePath)->toHtml(), false)
+        ->assertSee('path-'.$tilawa->id, false)
         ->assertSee(__('Download video'))
         ->assertSee(route('admin.publishing.production.download', $tilawa), false);
 });
@@ -499,7 +526,10 @@ it('reuses an existing master instead of re-mastering on retry', function () {
 
 it('drops a recitation from production without deleting it from the site', function () {
     $creator = User::factory()->create()->assignRole('creator');
-    $tilawa = readyTilawa($creator, 'ready', 'preparing');
+    $tilawa = readyTilawa($creator, 'ready', 'publishing');
+    Storage::disk('public')->put('published/videos/remove.mp4', 'video');
+    $tilawa->update(['brand_video_path' => 'published/videos/remove.mp4']);
+    $videoPath = $tilawa->fresh()->brand_video_path;
 
     $this->actingAs($creator);
 
@@ -511,7 +541,11 @@ it('drops a recitation from production without deleting it from the site', funct
 
     expect(Tilawa::find($tilawa->id))->not->toBeNull()
         ->and($tilawa->fresh()->production_stage)->toBeNull()
+        ->and($tilawa->fresh()->brand_status)->toBe('none')
+        ->and($tilawa->fresh()->brand_video_path)->toBeNull()
         ->and(TilawatSource::where('tilawa_id', $tilawa->id)->count())->toBe(1);
+
+    Storage::disk('public')->assertMissing($videoPath);
 });
 
 it('serves completed podcast items in the RSS feed', function () {

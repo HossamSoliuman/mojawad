@@ -337,8 +337,6 @@ class TilawaController extends Controller
 
     private function deleteTilawa(Tilawa $tilawa): void
     {
-        $this->uploadService->delete($tilawa->audio_path);
-        $this->uploadService->delete($tilawa->cover_image);
         $tilawa->delete();
     }
 }

@@ -341,7 +341,7 @@ class ProductionQueue extends Component
         $tilawa = $this->ownedTilawa($tilawaId);
 
         if ($tilawa->production_stage === 'publishing') {
-            $tilawa->update(['production_stage' => 'preparing']);
+            $this->discardRenderedVideo($tilawa, 'preparing');
         }
     }
 
@@ -443,9 +443,8 @@ class ProductionQueue extends Component
     }
 
     /**
-     * Drop the recitation out of the production pipeline. This only clears its
-     * production stage — the tilawa, its source, and all its assets stay put so
-     * it remains available on the site (and pickable again in Selection).
+     * Drop the recitation out of the production pipeline while keeping the
+     * tilawa, its source, and reusable preparation assets available.
      */
     public function performRemove(): void
     {
@@ -453,9 +452,21 @@ class ProductionQueue extends Component
             return;
         }
 
-        $this->ownedTilawa($this->confirmingRemoveId)->update(['production_stage' => null]);
+        $tilawa = $this->ownedTilawa($this->confirmingRemoveId);
+
+        $this->discardRenderedVideo($tilawa, null);
 
         $this->confirmingRemoveId = null;
+    }
+
+    private function discardRenderedVideo(Tilawa $tilawa, ?string $productionStage): void
+    {
+        $tilawa->update([
+            'production_stage' => $productionStage,
+            'brand_video_path' => null,
+            'brand_status' => 'none',
+            'brand_error' => null,
+        ]);
     }
 
     public function render()

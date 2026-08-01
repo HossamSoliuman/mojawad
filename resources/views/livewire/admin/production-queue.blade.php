@@ -224,6 +224,14 @@
                                     <a href="{{ route('admin.publishing.production.download', $tilawa) }}" class="btn btn-ghost btn-xs">
                                         <i class="fas fa-download"></i> {{ __('Download video') }}
                                     </a>
+                                    @php($brandVideoFilePath = str_replace('/', DIRECTORY_SEPARATOR, \Illuminate\Support\Facades\Storage::disk(config('publishing.disk'))->path($tilawa->brand_video_path)))
+                                    <button type="button" class="btn btn-ghost btn-xs"
+                                            aria-label="{{ __('Copy file path') }}"
+                                            @click="copyText(@js($brandVideoFilePath), 'path-{{ $tilawa->id }}')"
+                                            title="{{ __('Copy the full file path for pasting into a file picker') }}">
+                                        <i class="fas" :class="copied === 'path-{{ $tilawa->id }}' ? 'fa-check' : 'fa-copy'"></i>
+                                        <span x-text="copied === 'path-{{ $tilawa->id }}' ? @js(__('Path copied')) : @js(__('Copy file path'))"></span>
+                                    </button>
                                     <button type="button" wire:click.renderless="revealVideoInExplorer({{ $tilawa->id }})"
                                             wire:loading.attr="disabled" wire:target="revealVideoInExplorer({{ $tilawa->id }})"
                                             class="btn btn-ghost btn-xs" title="{{ __('Show in folder') }}">
@@ -247,6 +255,7 @@
                                             <p>{{ __('Copy each field separately, or copy the complete publishing pack at once.') }}</p>
                                         </div>
                                         <button type="button" class="btn btn-primary btn-xs"
+                                                aria-label="{{ __('Copy all') }}"
                                                 @click="copyText(@js($copy['all']), 'all-{{ $tilawa->id }}')">
                                             <i class="fas" :class="copied === 'all-{{ $tilawa->id }}' ? 'fa-check' : 'fa-copy'"></i>
                                             <span x-text="copied === 'all-{{ $tilawa->id }}' ? @js(__('Copied')) : @js(__('Copy all'))"></span>

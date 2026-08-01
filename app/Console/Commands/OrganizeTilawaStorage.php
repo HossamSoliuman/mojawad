@@ -10,7 +10,7 @@ class OrganizeTilawaStorage extends Command
 {
     protected $signature = 'tilawat:organize-storage {--dry-run : Show the planned file moves without changing storage}';
 
-    protected $description = 'Name stored tilawa audio files and group them into qari folders';
+    protected $description = 'Name stored tilawa audio and video files and group them into qari folders';
 
     public function handle(TilawaStorageService $storage): int
     {
@@ -34,7 +34,7 @@ class OrganizeTilawaStorage extends Command
             });
 
         $action = $dryRun ? 'planned' : 'organized';
-        $this->info("{$moved} audio files {$action}.");
+        $this->info("{$moved} tilawa files {$action}.");
 
         return self::SUCCESS;
     }

@@ -28,9 +28,23 @@ class Tilawa extends Model
         });
 
         static::updated(function (Tilawa $tilawa): void {
-            if ($tilawa->wasChanged(['qari_id', 'title_ar', 'audio_path', 'master_audio_path'])) {
-                app(TilawaStorageService::class)->organize($tilawa);
+            $storage = app(TilawaStorageService::class);
+
+            if ($tilawa->wasChanged('brand_video_path')) {
+                $previousVideoPath = $tilawa->getRawOriginal('brand_video_path');
+
+                if (is_string($previousVideoPath) && $previousVideoPath !== $tilawa->brand_video_path) {
+                    $storage->deletePath($previousVideoPath);
+                }
             }
+
+            if ($tilawa->wasChanged(['qari_id', 'title_ar', 'audio_path', 'master_audio_path', 'brand_video_path'])) {
+                $storage->organize($tilawa);
+            }
+        });
+
+        static::deleting(function (Tilawa $tilawa): void {
+            app(TilawaStorageService::class)->deleteFiles($tilawa);
         });
     }
 
