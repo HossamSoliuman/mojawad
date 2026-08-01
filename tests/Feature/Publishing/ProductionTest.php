@@ -13,7 +13,9 @@ use App\Models\TilawatSource;
 use App\Models\User;
 use App\Services\AudioMasteringService;
 use App\Services\YoutubePublisher;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Role;
@@ -69,6 +71,21 @@ it('blocks regular users from the production page', function () {
     $this->actingAs($user)->get(route('admin.publishing.production'))->assertForbidden();
 });
 
+it('switches production tabs through GET links', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+
+    $this->actingAs($creator);
+
+    Livewire::withQueryParams(['tab' => 'preparation'])
+        ->test(ProductionQueue::class)
+        ->assertSet('tab', 'preparation')
+        ->assertSeeHtml('href="'.route('admin.publishing.production', ['tab' => 'selection']).'"')
+        ->assertSeeHtml('href="'.route('admin.publishing.production', ['tab' => 'preparation']).'"')
+        ->assertSeeHtml('href="'.route('admin.publishing.production', ['tab' => 'publishing']).'"')
+        ->assertSeeHtml('href="'.route('admin.publishing.production', ['tab' => 'published']).'"')
+        ->assertDontSeeHtml('wire:click="$set(\'tab\'');
+});
+
 it('downloads the rendered publishing video for its owner', function () {
     $creator = User::factory()->create()->assignRole('creator');
     $tilawa = readyTilawa($creator, 'ready', 'publishing');
@@ -93,6 +110,50 @@ it('does not let another creator download a rendered publishing video', function
     $this->actingAs($otherCreator)
         ->get(route('admin.publishing.production.download', $tilawa))
         ->assertForbidden();
+});
+
+it('reveals the rendered publishing video in the host file explorer', function () {
+    Process::fake([
+        '*' => Process::describe()->exitCode(PHP_OS_FAMILY === 'Windows' ? 1 : 0),
+    ]);
+    $creator = User::factory()->create()->assignRole('creator');
+    $tilawa = readyTilawa($creator, 'ready', 'publishing');
+    $tilawa->update(['brand_video_path' => 'published/videos/reveal-ready.mp4']);
+    Storage::disk('public')->put($tilawa->brand_video_path, 'video-content');
+
+    $absolutePath = realpath(Storage::disk('public')->path($tilawa->brand_video_path));
+    $expectedCommand = match (PHP_OS_FAMILY) {
+        'Windows' => ['cmd.exe', '/c', 'start', '', 'explorer.exe', '/select,'.$absolutePath],
+        'Darwin' => ['open', '-R', $absolutePath],
+        default => ['xdg-open', dirname($absolutePath)],
+    };
+
+    $this->actingAs($creator);
+
+    Livewire::test(ProductionQueue::class)
+        ->set('tab', 'publishing')
+        ->assertSee(__('Show in folder'))
+        ->assertSeeHtml('wire:click.renderless="revealVideoInExplorer('.$tilawa->id.')"')
+        ->call('revealVideoInExplorer', $tilawa->id);
+
+    Process::assertRan(fn ($process): bool => $process->command === $expectedCommand);
+});
+
+it('does not reveal another creators rendered publishing video', function () {
+    Process::fake();
+    $owner = User::factory()->create()->assignRole('creator');
+    $otherCreator = User::factory()->create()->assignRole('creator');
+    $tilawa = readyTilawa($owner, 'ready', 'publishing');
+    $tilawa->update(['brand_video_path' => 'published/videos/private-reveal.mp4']);
+    Storage::disk('public')->put($tilawa->brand_video_path, 'video-content');
+
+    $this->actingAs($otherCreator);
+
+    expect(fn () => Livewire::test(ProductionQueue::class)
+        ->call('revealVideoInExplorer', $tilawa->id))
+        ->toThrow(ModelNotFoundException::class);
+
+    Process::assertDidntRun(fn (): bool => true);
 });
 
 it('lists qaris with pickable recitations in the selection tab', function () {

@@ -9,11 +9,12 @@
                 'publishing'  => ['fa-tower-broadcast',  __('Publishing'),  $this->publishingCount],
                 'published'   => ['fa-circle-check',      __('Published'),   $this->publishedCount],
             ] as $key => $meta)
-            <button type="button" wire:click="$set('tab', '{{ $key }}')"
+            <a href="{{ route('admin.publishing.production', ['tab' => $key]) }}"
                     class="range-pill {{ $tab === $key ? 'active' : '' }}"
-                    style="border:0;cursor:pointer;padding:.45rem 1rem;{{ $tab === $key ? '' : 'background:transparent' }}">
+                    @if($tab === $key) aria-current="page" @endif
+                    style="border:0;cursor:pointer;padding:.45rem 1rem;text-decoration:none;{{ $tab === $key ? '' : 'background:transparent' }}">
                 <i class="fas {{ $meta[0] }}"></i> {{ $meta[1] }} ({{ $meta[2] }})
-            </button>
+            </a>
             @endforeach
         </div>
         @if($this->hasActive)
@@ -223,6 +224,11 @@
                                     <a href="{{ route('admin.publishing.production.download', $tilawa) }}" class="btn btn-ghost btn-xs">
                                         <i class="fas fa-download"></i> {{ __('Download video') }}
                                     </a>
+                                    <button type="button" wire:click.renderless="revealVideoInExplorer({{ $tilawa->id }})"
+                                            wire:loading.attr="disabled" wire:target="revealVideoInExplorer({{ $tilawa->id }})"
+                                            class="btn btn-ghost btn-xs" title="{{ __('Show in folder') }}">
+                                        <i class="fas fa-folder-open"></i> {{ __('Show in folder') }}
+                                    </button>
                                     @endif
                                     <button type="button" wire:click="moveToPreparation({{ $tilawa->id }})" class="btn-icon" title="{{ __('Back to preparation') }}">
                                         <i class="fas fa-arrow-{{ app()->getLocale() === 'en' ? 'left' : 'right' }}"></i>

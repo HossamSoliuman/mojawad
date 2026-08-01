@@ -14,6 +14,8 @@ use App\Services\YoutubePublisher;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Process;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -308,6 +310,30 @@ class ProductionQueue extends Component
             && $this->hasRenderedCard($tilawa)) {
             $tilawa->update(['production_stage' => 'publishing']);
         }
+    }
+
+    public function revealVideoInExplorer(int $tilawaId): void
+    {
+        $tilawa = $this->ownedTilawa($tilawaId);
+        $disk = Storage::disk(config('publishing.disk'));
+
+        abort_unless($tilawa->brand_video_path && $disk->exists($tilawa->brand_video_path), 404);
+
+        $absolutePath = realpath($disk->path($tilawa->brand_video_path));
+
+        abort_unless($absolutePath !== false, 404);
+
+        if (PHP_OS_FAMILY === 'Windows') {
+            Process::run(['cmd.exe', '/c', 'start', '', 'explorer.exe', '/select,'.$absolutePath]);
+
+            return;
+        }
+
+        $command = PHP_OS_FAMILY === 'Darwin'
+            ? ['open', '-R', $absolutePath]
+            : ['xdg-open', dirname($absolutePath)];
+
+        Process::run($command)->throw();
     }
 
     public function moveToPreparation(int $tilawaId): void
