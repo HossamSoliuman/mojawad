@@ -92,6 +92,9 @@
       <a href="{{ route('admin.publishing.card-lab') }}" class="s-link {{ request()->routeIs('admin.publishing.card-lab') ? 'active':'' }}">
         <i class="fas fa-flask"></i> <span>{{ __('Card Lab') }}</span>
       </a>
+      <a href="{{ route('admin.social.facebook') }}" class="s-link {{ request()->routeIs('admin.social.facebook') ? 'active':'' }}">
+        <i class="fab fa-facebook"></i> <span>{{ __('Facebook Posts') }}</span>
+      </a>
       @endhasanyrole
 
       @role('reviewer')

@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\PublishingController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\ShortController;
+use App\Http\Controllers\Admin\SocialController;
 use App\Http\Controllers\Admin\StudioController;
 use App\Http\Controllers\Admin\TmpUploadController;
 use App\Http\Controllers\Admin\UserController;
@@ -146,6 +147,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
         Route::get('/publishing/production/{tilawa}/download', [PublishingController::class, 'downloadVideo'])
             ->name('publishing.production.download')->middleware('can:view,tilawa');
         Route::get('/publishing/card-lab', [PublishingController::class, 'cardLab'])->name('publishing.card-lab');
+
+        Route::get('/social/facebook', [SocialController::class, 'facebook'])->name('social.facebook');
+        Route::get('/social/facebook/{post}/image', [SocialController::class, 'poster'])->name('social.poster');
+        Route::get('/social/facebook/{post}/image/download', [SocialController::class, 'downloadPoster'])->name('social.poster.download');
 
         Route::get('/tilawat', [App\Http\Controllers\Admin\TilawaController::class, 'index'])->name('tilawat.index');
         Route::put('/tilawat/bulk', [App\Http\Controllers\Admin\TilawaController::class, 'bulkUpdate'])->name('tilawat.bulk')->middleware('role:admin');

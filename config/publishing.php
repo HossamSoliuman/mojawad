@@ -135,6 +135,16 @@ return [
         'made_for_kids' => false,
     ],
 
+    // ── Social campaign ────────────────────────────────────────────────
+    // Hand-written Facebook post library shown in admin › Facebook Posts.
+    // Editors own this file; the app only reads it.
+    'campaign_file' => env('SOCIAL_CAMPAIGN_FILE', base_path('docs/social/facebook-campaign.json')),
+
+    // Where the generated post images are dropped, one file per post named
+    // after its `image_file` key. Nothing writes here — the editor saves the
+    // image ChatGPT produced and the tab picks it up.
+    'campaign_images' => env('SOCIAL_CAMPAIGN_IMAGES', base_path('docs/social/posters')),
+
     // ── Facebook Graph API ─────────────────────────────────────────────
     'facebook' => [
         'page_id' => env('FACEBOOK_PAGE_ID'),
