@@ -124,7 +124,7 @@ it('reveals the rendered publishing video in the host file explorer', function (
 
     $absolutePath = realpath(Storage::disk('public')->path($tilawa->brand_video_path));
     $expectedCommand = match (PHP_OS_FAMILY) {
-        'Windows' => ['cmd.exe', '/c', 'start', '', 'explorer.exe', '/select,'.$absolutePath],
+        'Windows' => 'explorer.exe /select,"'.$absolutePath.'"',
         'Darwin' => ['open', '-R', $absolutePath],
         default => ['xdg-open', dirname($absolutePath)],
     };

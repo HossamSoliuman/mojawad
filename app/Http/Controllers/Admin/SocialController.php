@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Services\SocialCampaign;
+use App\Models\FacebookPost;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -18,24 +18,22 @@ class SocialController extends Controller
      * Stream the generated image so the side card can preview it — the images
      * folder sits outside the public root.
      */
-    public function poster(string $post, SocialCampaign $campaign): BinaryFileResponse
+    public function poster(FacebookPost $post): BinaryFileResponse
     {
-        return response()->file($this->posterPath($post, $campaign));
+        return response()->file($this->posterPath($post));
     }
 
-    public function downloadPoster(string $post, SocialCampaign $campaign): BinaryFileResponse
+    public function downloadPoster(FacebookPost $post): BinaryFileResponse
     {
-        $path = $this->posterPath($post, $campaign);
+        $path = $this->posterPath($post);
 
         return response()->download($path, basename($path));
     }
 
-    private function posterPath(string $post, SocialCampaign $campaign): string
+    private function posterPath(FacebookPost $post): string
     {
-        $found = $campaign->find($post);
+        abort_unless($post->hasImage(), 404);
 
-        abort_unless($found !== null && $found['image_ready'], 404);
-
-        return $found['image_path'];
+        return $post->imagePath();
     }
 }

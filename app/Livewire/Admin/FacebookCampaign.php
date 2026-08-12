@@ -2,76 +2,443 @@
 
 namespace App\Livewire\Admin;
 
-use App\Services\SocialCampaign;
+use App\Models\FacebookCampaign as Campaign;
+use App\Models\FacebookPost;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Facades\Process;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 class FacebookCampaign extends Component
 {
-    private ?SocialCampaign $campaign = null;
+    use WithPagination;
+
+    #[Url]
+    public string $stage = 'creation';
+
+    #[Url]
+    public string $campaign = 'all';
+
+    #[Url]
+    public string $status = 'all';
 
     #[Url]
     public string $category = 'all';
 
     #[Url]
-    public string $length = 'all';
-
-    #[Url]
-    public string $visual = 'all';
-
-    #[Url]
     public string $search = '';
 
-    #[Url]
-    public bool $needsImage = false;
+    public ?int $expandedPostId = null;
+
+    public ?int $deletePostId = null;
+
+    public ?int $deleteCampaignId = null;
+
+    public bool $showPostForm = false;
+
+    public ?int $editingPostId = null;
+
+    public string $postCampaignId = '';
+
+    public string $postTitle = '';
+
+    public string $postCategory = '';
+
+    public string $postStatus = 'draft';
+
+    public string $postLength = 'short';
+
+    public string $postHook = '';
+
+    public string $postBody = '';
+
+    public string $postCta = '';
+
+    public string $postHashtags = '';
+
+    public string $postVisualBrief = '';
+
+    public string $postImagePrompt = '';
+
+    public string $postAspectRatio = '1:1';
+
+    public string $postImageFile = '';
+
+    public string $postVisualText = '';
+
+    public string $postAltText = '';
+
+    public string $postReviewNotes = '';
+
+    public string $postPublishSlot = '';
+
+    public string $postScheduledFor = '';
+
+    public bool $showCampaignForm = false;
+
+    public ?int $editingCampaignId = null;
+
+    public string $campaignName = '';
+
+    public string $campaignGoal = '';
+
+    public string $campaignAudience = '';
+
+    public string $campaignCadence = '';
+
+    public string $campaignTone = '';
+
+    public string $campaignHashtags = '';
+
+    public string $campaignImageWorkflow = '';
+
+    public bool $campaignIsActive = true;
+
+    public ?string $notice = null;
+
+    /** @return EloquentCollection<int, Campaign> */
+    #[Computed]
+    public function campaigns(): EloquentCollection
+    {
+        return Campaign::query()
+            ->withCount('posts')
+            ->orderByDesc('is_active')
+            ->orderBy('name')
+            ->get();
+    }
+
+    /**
+     * Post counts per workspace tab, ignoring the in-tab filters so the tabs
+     * always report the whole stage.
+     *
+     * @return array<string, int>
+     */
+    #[Computed]
+    public function stageCounts(): array
+    {
+        $counts = FacebookPost::query()
+            ->forCampaign($this->campaign)
+            ->selectRaw('status, count(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
+
+        return collect(FacebookPost::STAGES)
+            ->map(fn (array $statuses): int => (int) $counts->only($statuses)->sum())
+            ->all();
+    }
+
+    /** @return list<array{key: string, label: string, icon: string, color: string, count: int}> */
+    #[Computed]
+    public function categoryCards(): array
+    {
+        $counts = FacebookPost::query()
+            ->forCampaign($this->campaign)
+            ->inStage($this->stage)
+            ->selectRaw('category, count(*) as aggregate')
+            ->groupBy('category')
+            ->pluck('aggregate', 'category');
+
+        $keys = collect(array_keys(FacebookPost::CATEGORIES))
+            ->merge($counts->keys()->map(fn (?string $key): string => (string) $key))
+            ->map(fn (string $key): string => $key !== '' ? $key : FacebookPost::UNCATEGORIZED)
+            ->unique()
+            ->values();
+
+        return $keys
+            ->map(fn (string $key): array => FacebookPost::categoryMeta($key) + [
+                'key' => $key,
+                'count' => (int) $counts->get($key === FacebookPost::UNCATEGORIZED ? '' : $key, 0),
+            ])
+            ->reject(fn (array $card): bool => $card['key'] === FacebookPost::UNCATEGORIZED && $card['count'] === 0)
+            ->values()
+            ->all();
+    }
+
+    /** @return list<string> */
+    #[Computed]
+    public function statusOptions(): array
+    {
+        return FacebookPost::stageStatuses($this->stage);
+    }
+
+    #[Computed]
+    public function posts(): LengthAwarePaginator
+    {
+        $needle = trim($this->search);
+
+        return FacebookPost::query()
+            ->with('campaign')
+            ->forCampaign($this->campaign)
+            ->inStage($this->stage)
+            ->forCategory($this->category)
+            ->when($this->status !== 'all', fn ($query) => $query->where('status', $this->status))
+            ->when($needle !== '', function ($query) use ($needle): void {
+                $query->where(function ($query) use ($needle): void {
+                    $query
+                        ->where('title', 'like', "%{$needle}%")
+                        ->orWhere('hook', 'like', "%{$needle}%")
+                        ->orWhere('body', 'like', "%{$needle}%")
+                        ->orWhere('hashtags', 'like', "%{$needle}%");
+                });
+            })
+            ->orderByRaw("case status when 'scheduled' then 1 when 'ready' then 2 when 'draft' then 3 when 'published' then 4 else 5 end")
+            ->orderByRaw('scheduled_for is null')
+            ->orderBy('scheduled_for')
+            ->orderByDesc('updated_at')
+            ->paginate(12, pageName: 'postsPage');
+    }
+
+    public function mount(): void
+    {
+        if (! array_key_exists($this->stage, FacebookPost::STAGES)) {
+            $this->stage = array_key_first(FacebookPost::STAGES);
+        }
+    }
+
+    public function updated(string $property): void
+    {
+        if (in_array($property, ['campaign', 'status', 'category', 'search'], true)) {
+            $this->resetPage('postsPage');
+        }
+
+        if ($property === 'campaign') {
+            $this->category = 'all';
+        }
+    }
+
+    public function selectStage(string $stage): void
+    {
+        abort_unless(array_key_exists($stage, FacebookPost::STAGES), 404);
+
+        $this->stage = $stage;
+        $this->status = 'all';
+        $this->expandedPostId = null;
+        $this->resetPage('postsPage');
+    }
+
+    public function selectCategory(string $category): void
+    {
+        $this->category = $category;
+        $this->resetPage('postsPage');
+    }
 
     public function resetFilters(): void
     {
-        $this->reset(['category', 'length', 'visual', 'search', 'needsImage']);
+        $this->reset(['status', 'category', 'search']);
+        $this->resetPage('postsPage');
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    #[Computed]
-    public function meta(): array
+    public function togglePost(int $postId): void
     {
-        return $this->campaign()->meta();
+        $this->expandedPostId = $this->expandedPostId === $postId ? null : $postId;
     }
 
-    #[Computed]
-    public function fileMissing(): bool
+    public function createPost(): void
     {
-        return ! $this->campaign()->exists();
+        $this->authorizeAdmin();
+        $this->resetPostForm();
+        $selectedCampaign = $this->campaign !== 'all'
+            ? Campaign::query()->find($this->campaign)
+            : Campaign::query()->active()->orderBy('name')->first();
+        $selectedCampaign ??= Campaign::query()->orderBy('name')->first();
+
+        if ($selectedCampaign === null) {
+            $this->createCampaign();
+
+            return;
+        }
+
+        $this->postCampaignId = (string) $selectedCampaign->id;
+        $this->postStatus = FacebookPost::stageStatuses($this->stage)[0];
+
+        if ($this->category !== 'all' && $this->category !== FacebookPost::UNCATEGORIZED) {
+            $this->postCategory = $this->category;
+        }
+
+        $this->showPostForm = true;
     }
 
-    #[Computed]
-    public function filePath(): string
+    public function editPost(int $postId): void
     {
-        return $this->campaign()->path();
+        $this->authorizeAdmin();
+        $post = FacebookPost::query()->findOrFail($postId);
+
+        $this->editingPostId = $post->id;
+        $this->postCampaignId = (string) $post->facebook_campaign_id;
+        $this->postTitle = $post->title;
+        $this->postCategory = (string) $post->category;
+        $this->postStatus = $post->status;
+        $this->postLength = $post->length;
+        $this->postHook = $post->hook;
+        $this->postBody = $post->body;
+        $this->postCta = (string) $post->cta;
+        $this->postHashtags = (string) $post->hashtags;
+        $this->postVisualBrief = (string) $post->visual_brief;
+        $this->postImagePrompt = (string) $post->image_prompt;
+        $this->postAspectRatio = $post->aspect_ratio;
+        $this->postImageFile = (string) $post->image_file;
+        $this->postVisualText = (string) $post->visual_text;
+        $this->postAltText = (string) $post->alt_text;
+        $this->postReviewNotes = (string) $post->review_notes;
+        $this->postPublishSlot = (string) $post->publish_slot;
+        $this->postScheduledFor = $post->scheduled_for?->format('Y-m-d\TH:i') ?? '';
+        $this->showPostForm = true;
     }
 
-    #[Computed]
-    public function imageDirectory(): string
+    public function savePost(): void
     {
-        return $this->campaign()->imageDirectory();
+        $this->authorizeAdmin();
+        $validated = $this->validate($this->postRules(), $this->postMessages());
+        $post = $this->editingPostId !== null
+            ? FacebookPost::query()->findOrFail($this->editingPostId)
+            : new FacebookPost(['created_by' => auth()->id()]);
+
+        $post->fill([
+            'facebook_campaign_id' => (int) $validated['postCampaignId'],
+            'title' => trim($validated['postTitle']),
+            'category' => filled($validated['postCategory']) ? Str::snake(trim($validated['postCategory'])) : null,
+            'status' => $validated['postStatus'],
+            'length' => $validated['postLength'],
+            'hook' => trim($validated['postHook']),
+            'body' => trim($validated['postBody']),
+            'cta' => $this->nullableText($validated['postCta']),
+            'hashtags' => $this->normaliseHashtags($validated['postHashtags']),
+            'visual_brief' => $this->nullableText($validated['postVisualBrief']),
+            'image_prompt' => $this->nullableText($validated['postImagePrompt']),
+            'aspect_ratio' => $validated['postAspectRatio'],
+            'image_file' => filled($validated['postImageFile']) ? basename(trim($validated['postImageFile'])) : null,
+            'visual_text' => $this->nullableText($validated['postVisualText']),
+            'alt_text' => $this->nullableText($validated['postAltText']),
+            'review_notes' => $this->nullableText($validated['postReviewNotes']),
+            'publish_slot' => $this->nullableText($validated['postPublishSlot']),
+            'scheduled_for' => filled($validated['postScheduledFor']) ? $validated['postScheduledFor'] : null,
+        ]);
+
+        if ($post->status === 'published' && $post->published_at === null) {
+            $post->published_at = now();
+        }
+
+        $post->save();
+
+        $this->notice = $this->editingPostId === null ? __('Post added to the repository.') : __('Post updated.');
+        $this->closePostForm();
+        $this->followPost($post);
     }
 
-    /**
-     * Open the images folder with the post's image selected, so the editor can
-     * drag it straight into the Facebook composer.
-     */
-    public function revealImageInExplorer(string $postId): void
+    public function confirmDeletePost(int $postId): void
     {
-        $post = $this->campaign()->find($postId);
+        $this->authorizeAdmin();
+        FacebookPost::query()->findOrFail($postId);
+        $this->deletePostId = $postId;
+    }
 
-        abort_unless($post !== null && $post['image_ready'], 404);
+    public function deletePost(): void
+    {
+        $this->authorizeAdmin();
+        FacebookPost::query()->findOrFail($this->deletePostId)->delete();
+        $this->deletePostId = null;
+        $this->expandedPostId = null;
+        $this->notice = __('Post deleted from the repository.');
+    }
 
-        $absolutePath = realpath($post['image_path']);
+    public function closePostForm(): void
+    {
+        $this->showPostForm = false;
+        $this->resetPostForm();
+    }
 
+    public function createCampaign(): void
+    {
+        $this->authorizeAdmin();
+        $this->resetCampaignForm();
+        $this->showCampaignForm = true;
+    }
+
+    public function editCampaign(int $campaignId): void
+    {
+        $this->authorizeAdmin();
+        $campaign = Campaign::query()->findOrFail($campaignId);
+
+        $this->editingCampaignId = $campaign->id;
+        $this->campaignName = $campaign->name;
+        $this->campaignGoal = (string) $campaign->goal;
+        $this->campaignAudience = (string) $campaign->audience;
+        $this->campaignCadence = (string) $campaign->cadence;
+        $this->campaignTone = (string) $campaign->tone;
+        $this->campaignHashtags = (string) $campaign->core_hashtags;
+        $this->campaignImageWorkflow = (string) $campaign->image_workflow;
+        $this->campaignIsActive = $campaign->is_active;
+        $this->showCampaignForm = true;
+    }
+
+    public function saveCampaign(): void
+    {
+        $this->authorizeAdmin();
+        $validated = $this->validate($this->campaignRules());
+        $campaign = $this->editingCampaignId !== null
+            ? Campaign::query()->findOrFail($this->editingCampaignId)
+            : new Campaign(['created_by' => auth()->id()]);
+
+        $campaign->fill([
+            'name' => trim($validated['campaignName']),
+            'slug' => $this->uniqueCampaignSlug($validated['campaignName']),
+            'goal' => $this->nullableText($validated['campaignGoal']),
+            'audience' => $this->nullableText($validated['campaignAudience']),
+            'cadence' => $this->nullableText($validated['campaignCadence']),
+            'tone' => $this->nullableText($validated['campaignTone']),
+            'core_hashtags' => $this->normaliseHashtags($validated['campaignHashtags']),
+            'image_workflow' => $this->nullableText($validated['campaignImageWorkflow']),
+            'is_active' => $validated['campaignIsActive'],
+        ])->save();
+
+        $this->campaign = (string) $campaign->id;
+        $this->notice = $this->editingCampaignId === null ? __('Campaign created.') : __('Campaign updated.');
+        $this->closeCampaignForm();
+    }
+
+    public function confirmDeleteCampaign(int $campaignId): void
+    {
+        $this->authorizeAdmin();
+        $campaign = Campaign::query()->withCount('posts')->findOrFail($campaignId);
+
+        if ($campaign->posts_count > 0) {
+            $this->addError('campaignDelete', __('Move or delete the campaign posts first.'));
+
+            return;
+        }
+
+        $this->deleteCampaignId = $campaignId;
+    }
+
+    public function deleteCampaign(): void
+    {
+        $this->authorizeAdmin();
+        $campaign = Campaign::query()->withCount('posts')->findOrFail($this->deleteCampaignId);
+        abort_if($campaign->posts_count > 0, 422);
+        $campaign->delete();
+        $this->deleteCampaignId = null;
+        $this->campaign = 'all';
+        $this->notice = __('Campaign deleted.');
+    }
+
+    public function closeCampaignForm(): void
+    {
+        $this->showCampaignForm = false;
+        $this->resetCampaignForm();
+    }
+
+    public function revealImageInExplorer(int $postId): void
+    {
+        $this->authorizeAdmin();
+        $post = FacebookPost::query()->findOrFail($postId);
+        abort_unless($post->hasImage(), 404);
+        $absolutePath = realpath($post->imagePath());
         abort_unless($absolutePath !== false, 404);
 
         if (PHP_OS_FAMILY === 'Windows') {
@@ -87,91 +454,136 @@ class FacebookCampaign extends Component
         Process::run($command)->throw();
     }
 
-    /**
-     * Category filter chips, each carrying how many posts it holds.
-     *
-     * @return list<array{key: string, label: string, icon: string, color: string, count: int}>
-     */
-    #[Computed]
-    public function categoryChips(): array
-    {
-        $posts = $this->campaign()->posts();
-
-        $chips = [[
-            'key' => 'all',
-            'label' => __('All posts'),
-            'icon' => 'fa-layer-group',
-            'color' => '#334155',
-            'count' => count($posts),
-        ]];
-
-        foreach ($this->campaign()->categories() as $key => $category) {
-            $chips[] = [
-                'key' => $key,
-                'label' => $category['label'],
-                'icon' => $category['icon'],
-                'color' => $category['color'],
-                'count' => count(array_filter($posts, fn (array $post): bool => $post['category'] === $key)),
-            ];
-        }
-
-        return $chips;
-    }
-
-    /**
-     * @return list<array<string, mixed>>
-     */
-    #[Computed]
-    public function posts(): array
-    {
-        $needle = trim($this->search);
-
-        return array_values(array_filter(
-            $this->campaign()->posts(),
-            function (array $post) use ($needle): bool {
-                if ($this->category !== 'all' && $post['category'] !== $this->category) {
-                    return false;
-                }
-
-                if ($this->length !== 'all' && $post['length'] !== $this->length) {
-                    return false;
-                }
-
-                if ($this->visual !== 'all' && $post['visual'] !== $this->visual) {
-                    return false;
-                }
-
-                if ($this->needsImage && $post['image_ready']) {
-                    return false;
-                }
-
-                return $needle === ''
-                    || mb_stripos($post['title'].' '.$post['text'], $needle) !== false;
-            },
-        ));
-    }
-
-    #[Computed]
-    public function hasFilters(): bool
-    {
-        return $this->category !== 'all'
-            || $this->length !== 'all'
-            || $this->visual !== 'all'
-            || $this->needsImage
-            || trim($this->search) !== '';
-    }
-
     public function render(): View
     {
         return view('livewire.admin.facebook-campaign');
     }
 
-    /**
-     * One instance per request keeps the campaign file read once, no matter how
-     * many computed properties reach for it.
-     */
-    private function campaign(): SocialCampaign
+    /** @return array<string, mixed> */
+    private function postRules(): array
     {
-        return $this->campaign ??= app(SocialCampaign::class);
+        return [
+            'postCampaignId' => ['required', 'integer', Rule::exists('facebook_campaigns', 'id')],
+            'postTitle' => ['required', 'string', 'max:255'],
+            'postCategory' => ['nullable', 'string', 'max:100'],
+            'postStatus' => ['required', Rule::in(FacebookPost::STATUSES)],
+            'postLength' => ['required', Rule::in(FacebookPost::LENGTHS)],
+            'postHook' => ['required', 'string', 'max:2000'],
+            'postBody' => ['required', 'string', 'max:20000'],
+            'postCta' => ['nullable', 'string', 'max:2000'],
+            'postHashtags' => ['nullable', 'string', 'max:1000'],
+            'postVisualBrief' => ['nullable', 'string', 'max:5000'],
+            'postImagePrompt' => ['nullable', 'string', 'max:10000'],
+            'postAspectRatio' => ['required', Rule::in(FacebookPost::ASPECT_RATIOS)],
+            'postImageFile' => ['nullable', 'string', 'max:255'],
+            'postVisualText' => ['nullable', 'string', 'max:2000'],
+            'postAltText' => ['nullable', 'string', 'max:2000'],
+            'postReviewNotes' => ['nullable', 'string', 'max:5000'],
+            'postPublishSlot' => ['nullable', 'string', 'max:255'],
+            'postScheduledFor' => ['nullable', 'date', 'required_if:postStatus,scheduled'],
+        ];
+    }
+
+    /** @return array<string, string> */
+    private function postMessages(): array
+    {
+        return [
+            'postScheduledFor.required_if' => __('Choose a publishing date for a scheduled post.'),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function campaignRules(): array
+    {
+        return [
+            'campaignName' => ['required', 'string', 'max:120'],
+            'campaignGoal' => ['nullable', 'string', 'max:5000'],
+            'campaignAudience' => ['nullable', 'string', 'max:3000'],
+            'campaignCadence' => ['nullable', 'string', 'max:255'],
+            'campaignTone' => ['nullable', 'string', 'max:5000'],
+            'campaignHashtags' => ['nullable', 'string', 'max:1000'],
+            'campaignImageWorkflow' => ['nullable', 'string', 'max:5000'],
+            'campaignIsActive' => ['boolean'],
+        ];
+    }
+
+    private function resetPostForm(): void
+    {
+        $this->reset([
+            'editingPostId', 'postCampaignId', 'postTitle', 'postCategory', 'postHook', 'postBody',
+            'postCta', 'postHashtags', 'postVisualBrief', 'postImagePrompt', 'postImageFile',
+            'postVisualText', 'postAltText', 'postReviewNotes', 'postPublishSlot', 'postScheduledFor',
+        ]);
+        $this->postStatus = 'draft';
+        $this->postLength = 'short';
+        $this->postAspectRatio = '1:1';
+        $this->resetValidation();
+    }
+
+    /**
+     * Keep a saved post on screen even when its new status moved it to another
+     * tab or outside the active category filter.
+     */
+    private function followPost(FacebookPost $post): void
+    {
+        $stage = FacebookPost::stageForStatus($post->status);
+
+        if ($stage !== $this->stage) {
+            $this->stage = $stage;
+            $this->status = 'all';
+            $this->resetPage('postsPage');
+        }
+
+        if ($this->category !== 'all' && $this->category !== ($post->category ?? FacebookPost::UNCATEGORIZED)) {
+            $this->category = 'all';
+            $this->resetPage('postsPage');
+        }
+
+        $this->expandedPostId = $post->id;
+    }
+
+    private function resetCampaignForm(): void
+    {
+        $this->reset([
+            'editingCampaignId', 'campaignName', 'campaignGoal', 'campaignAudience', 'campaignCadence',
+            'campaignTone', 'campaignHashtags', 'campaignImageWorkflow',
+        ]);
+        $this->campaignIsActive = true;
+        $this->resetValidation();
+    }
+
+    private function uniqueCampaignSlug(string $name): string
+    {
+        $base = Str::slug($name) ?: 'facebook-campaign';
+        $slug = $base;
+        $suffix = 2;
+
+        while (Campaign::query()
+            ->where('slug', $slug)
+            ->when($this->editingCampaignId !== null, fn ($query) => $query->whereKeyNot($this->editingCampaignId))
+            ->exists()) {
+            $slug = $base.'-'.$suffix++;
+        }
+
+        return $slug;
+    }
+
+    private function normaliseHashtags(?string $hashtags): ?string
+    {
+        $normalised = implode(' ', preg_split('/\s+/', trim((string) $hashtags)) ?: []);
+
+        return $normalised !== '' ? $normalised : null;
+    }
+
+    private function nullableText(?string $value): ?string
+    {
+        $value = trim((string) $value);
+
+        return $value !== '' ? $value : null;
+    }
+
+    private function authorizeAdmin(): void
+    {
+        abort_unless(auth()->user()?->hasAnyRole(['admin', 'creator']), 403);
     }
 }

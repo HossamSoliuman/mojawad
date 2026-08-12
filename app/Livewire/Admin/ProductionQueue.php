@@ -324,7 +324,13 @@ class ProductionQueue extends Component
         abort_unless($absolutePath !== false, 404);
 
         if (PHP_OS_FAMILY === 'Windows') {
-            Process::run(['cmd.exe', '/c', 'start', '', 'explorer.exe', '/select,'.$absolutePath]);
+            /**
+             * Explorer parses its own command line: /select, must stay unquoted with only the path
+             * quoted, so this is a raw string rather than an escaped argument array. An escaped
+             * array makes Explorer ignore the switch and open the default folder instead. Explorer
+             * also exits with code 1 on success, so the result is deliberately not thrown on.
+             */
+            Process::run('explorer.exe /select,"'.$absolutePath.'"');
 
             return;
         }

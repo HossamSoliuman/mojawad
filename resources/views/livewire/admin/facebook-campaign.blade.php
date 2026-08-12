@@ -1,347 +1,312 @@
-<div x-data="campaignCopy()">
-
-    {{-- ══════════ CAMPAIGN BRIEF ══════════ --}}
-    @if($this->meta !== [])
-    <section class="fbc-brief">
-        <div class="fbc-brief-head">
-            <div>
-                <span class="fbc-brief-eyebrow"><i class="fab fa-facebook"></i> {{ $this->meta['name'] ?? __('Facebook campaign') }}</span>
-                <p>{{ $this->meta['goal'] ?? '' }}</p>
-            </div>
-            <div class="fbc-brief-paths">
-                <div class="fbc-brief-file" title="{{ $this->filePath }}">
-                    <i class="fas fa-file-code"></i>
-                    <span>{{ __('Campaign file') }}</span>
-                    <button type="button" @click="copyText(@js($this->filePath), 'campaign-file')">
-                        <i class="fas" :class="copied === 'campaign-file' ? 'fa-check' : 'fa-copy'"></i>
-                        <span x-text="copied === 'campaign-file' ? @js(__('Copied')) : @js(__('Copy path'))"></span>
-                    </button>
-                </div>
-                <div class="fbc-brief-file" title="{{ $this->imageDirectory }}">
-                    <i class="fas fa-images"></i>
-                    <span>{{ __('Images folder') }}</span>
-                    <button type="button" @click="copyText(@js($this->imageDirectory), 'campaign-images')">
-                        <i class="fas" :class="copied === 'campaign-images' ? 'fa-check' : 'fa-copy'"></i>
-                        <span x-text="copied === 'campaign-images' ? @js(__('Copied')) : @js(__('Copy path'))"></span>
-                    </button>
-                </div>
-            </div>
+<div class="fbr" x-data="campaignRepository()">
+    <header class="fbr-hero">
+        <div class="fbr-hero-copy">
+            <span class="fbr-eyebrow"><i class="fab fa-facebook-f"></i> {{ __('Campaign workspace') }}</span>
+            <h2>{{ __('Facebook post repository') }}</h2>
+            <p>{{ __('Plan, review, and reuse campaign posts from one organized library.') }}</p>
         </div>
-
-        <div class="fbc-brief-grid">
-            @if(! empty($this->meta['audience']))
-            <div><span class="fbc-brief-lbl">{{ __('Audience') }}</span>{{ $this->meta['audience'] }}</div>
-            @endif
-            @if(! empty($this->meta['cadence']))
-            <div><span class="fbc-brief-lbl">{{ __('Cadence') }}</span>{{ $this->meta['cadence'] }}</div>
-            @endif
-            @if(! empty($this->meta['core_hashtags']))
-            <div><span class="fbc-brief-lbl">{{ __('Core hashtags') }}</span>{{ implode(' ', $this->meta['core_hashtags']) }}</div>
-            @endif
+        <div class="fbr-hero-actions">
+            <button type="button" wire:click="createCampaign" class="btn btn-ghost btn-sm">
+                <i class="fas fa-folder-plus"></i> {{ __('New campaign') }}
+            </button>
+            <button type="button" wire:click="createPost" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus"></i> {{ __('New post') }}
+            </button>
         </div>
+    </header>
 
-        @if(! empty($this->meta['tone']))
-        <ul class="fbc-tone">
-            @foreach($this->meta['tone'] as $rule)
-            <li><i class="fas fa-check"></i> {{ $rule }}</li>
-            @endforeach
-        </ul>
-        @endif
-
-        @if(! empty($this->meta['image_workflow']))
-        <div class="fbc-workflow">
-            <i class="fas fa-wand-magic-sparkles"></i>
-            <span>{{ $this->meta['image_workflow'] }}</span>
+    @if($notice)
+        <div class="fbr-notice" role="status">
+            <i class="fas fa-circle-check"></i>
+            <span>{{ $notice }}</span>
+            <button type="button" wire:click="$set('notice', null)" aria-label="{{ __('Dismiss') }}"><i class="fas fa-xmark"></i></button>
         </div>
-        @endif
-    </section>
     @endif
 
-    {{-- ══════════ FILTERS ══════════ --}}
-    <div class="fbc-filters">
-        <div class="range-pills" style="display:inline-flex;gap:.15rem;flex-wrap:wrap">
-            @foreach($this->categoryChips as $chip)
-            <button type="button" wire:key="cat-{{ $chip['key'] }}" wire:click="$set('category', '{{ $chip['key'] }}')"
-                    class="range-pill {{ $category === $chip['key'] ? 'active' : '' }}"
-                    style="border:0;cursor:pointer;padding:.45rem 1rem;{{ $category === $chip['key'] ? '' : 'background:transparent' }}">
-                <i class="fas {{ $chip['icon'] }}"></i> {{ $chip['label'] }} ({{ $chip['count'] }})
+    @php($stageMeta = [
+        'creation' => ['label' => __('In creation'), 'hint' => __('Drafts and posts ready to schedule.'), 'icon' => 'fa-pen-ruler'],
+        'scheduled' => ['label' => __('Scheduled to post'), 'hint' => __('Waiting for their publishing slot.'), 'icon' => 'fa-calendar-day'],
+        'posted' => ['label' => __('Posted'), 'hint' => __('Already published on the page.'), 'icon' => 'fa-paper-plane'],
+    ])
+
+    <nav class="fbr-tabs" aria-label="{{ __('Publishing stage') }}">
+        @foreach($stageMeta as $stageKey => $meta)
+            <button type="button" wire:key="stage-{{ $stageKey }}" wire:click="selectStage('{{ $stageKey }}')"
+                    class="fbr-tab fbr-tab-{{ $stageKey }} {{ $stage === $stageKey ? 'is-active' : '' }}"
+                    aria-current="{{ $stage === $stageKey ? 'page' : 'false' }}">
+                <i class="fas {{ $meta['icon'] }}"></i>
+                <span><strong>{{ $meta['label'] }}</strong><small>{{ $meta['hint'] }}</small></span>
+                <em>{{ number_format($this->stageCounts[$stageKey] ?? 0) }}</em>
             </button>
-            @endforeach
-        </div>
+        @endforeach
+    </nav>
 
-        <div class="fbc-filters-row">
-            <label class="fbc-select">
-                <span>{{ __('Length') }}</span>
-                <select wire:model.live="length">
-                    <option value="all">{{ __('Any length') }}</option>
-                    <option value="short">{{ __('Short post') }}</option>
-                    <option value="long">{{ __('Long post') }}</option>
-                </select>
-            </label>
+    <div class="fbr-workspace">
+        <aside class="fbr-side">
+            <div class="fbr-panel-heading">
+                <div>
+                    <span>{{ __('Categories') }}</span>
+                    <small>{{ count($this->categoryCards) }}</small>
+                </div>
+            </div>
 
-            <label class="fbc-select">
-                <span>{{ __('Visual') }}</span>
-                <select wire:model.live="visual">
-                    <option value="all">{{ __('Any visual') }}</option>
-                    <option value="poster">{{ __('Poster') }}</option>
-                    <option value="still">{{ __('Still') }}</option>
-                </select>
-            </label>
-
-            <label class="fbc-select fbc-search">
-                <span>{{ __('Search') }}</span>
-                <input type="search" wire:model.live.debounce.300ms="search" placeholder="{{ __('Search inside the posts…') }}">
-            </label>
-
-            <button type="button" wire:click="$toggle('needsImage')"
-                    class="btn btn-xs {{ $needsImage ? 'btn-primary' : 'btn-ghost' }}"
-                    title="{{ __('Show only the posts whose image still has to be generated') }}">
-                <i class="fas {{ $needsImage ? 'fa-square-check' : 'fa-square' }}"></i> {{ __('Needs an image') }}
+            <button type="button" wire:click="selectCategory('all')" class="fbr-cat {{ $category === 'all' ? 'is-active' : '' }}">
+                <span class="fbr-cat-icon"><i class="fas fa-box-archive"></i></span>
+                <span class="fbr-cat-copy"><strong>{{ __('All categories') }}</strong><small>{{ $stageMeta[$stage]['label'] }}</small></span>
+                <span class="fbr-cat-count">{{ number_format($this->stageCounts[$stage] ?? 0) }}</span>
             </button>
 
-            @if($this->hasFilters)
-            <button type="button" wire:click="resetFilters" class="btn btn-ghost btn-xs">
-                <i class="fas fa-rotate-left"></i> {{ __('Clear filters') }}
-            </button>
-            @endif
-        </div>
-    </div>
+            <div class="fbr-cat-list">
+                @foreach($this->categoryCards as $categoryCard)
+                    <button type="button" wire:key="category-{{ $categoryCard['key'] }}" wire:click="selectCategory('{{ $categoryCard['key'] }}')"
+                            class="fbr-cat {{ $category === $categoryCard['key'] ? 'is-active' : '' }}"
+                            style="--category-color:{{ $categoryCard['color'] }}">
+                        <span class="fbr-cat-icon"><i class="fas {{ $categoryCard['icon'] }}"></i></span>
+                        <span class="fbr-cat-copy"><strong>{{ __($categoryCard['label']) }}</strong></span>
+                        <span class="fbr-cat-count">{{ $categoryCard['count'] }}</span>
+                    </button>
+                @endforeach
+            </div>
 
-    {{-- ══════════ POSTS ══════════ --}}
-    @if($this->fileMissing)
-        <div style="text-align:center;padding:3rem 1rem;color:var(--text2)">
-            <i class="fas fa-file-circle-question" style="font-size:2.2rem;display:block;margin-bottom:.7rem;opacity:.4"></i>
-            <div style="font-size:.95rem">{{ __('The campaign file was not found.') }}</div>
-            <div style="font-size:.8rem;color:var(--text3);margin-top:.35rem">{{ $this->filePath }}</div>
-        </div>
-    @elseif($this->posts === [])
-        <div style="text-align:center;padding:3rem 1rem;color:var(--text2)">
-            <i class="fas fa-magnifying-glass" style="font-size:2.2rem;display:block;margin-bottom:.7rem;opacity:.4"></i>
-            <div style="font-size:.95rem">{{ __('No post matches these filters.') }}</div>
-        </div>
-    @else
-        <div class="fbc-list">
-            @foreach($this->posts as $post)
-            <article wire:key="post-{{ $post['id'] }}" class="sharing-kit fbc-post">
+            @error('campaignDelete')
+                <p class="fbr-side-error">{{ $message }}</p>
+            @enderror
+        </aside>
 
-                {{-- Header: what this post is, and one button that copies the whole thing --}}
-                <div class="sharing-kit-header">
-                    <div style="min-width:0">
-                        <div class="fbc-tags">
-                            <span class="fbc-tag" style="--tag-color:{{ $post['category_color'] }}">
-                                <i class="fas {{ $post['category_icon'] }}"></i> {{ $post['category_label'] }}
-                            </span>
-                            <span class="fbc-tag fbc-tag-{{ $post['length'] }}">
-                                <i class="fas {{ $post['length'] === 'long' ? 'fa-align-left' : 'fa-bolt' }}"></i>
-                                {{ $post['length'] === 'long' ? __('Long post') : __('Short post') }}
-                            </span>
-                            <span class="fbc-tag fbc-tag-{{ $post['visual'] }}">
-                                <i class="fas {{ $post['visual'] === 'poster' ? 'fa-paintbrush' : 'fa-image' }}"></i>
-                                {{ $post['visual'] === 'poster' ? __('Poster') : __('Still') }}
-                            </span>
-                            @if($post['publish_slot'] !== '')
-                            <span class="fbc-tag fbc-tag-slot"><i class="fas fa-clock"></i> {{ $post['publish_slot'] }}</span>
-                            @endif
-                            <span class="fbc-tag fbc-tag-count"><i class="fas fa-text-width"></i> {{ $post['char_count'] }} {{ __('chars') }}</span>
-                        </div>
-                        <h3 class="fbc-title">{{ $post['title'] }}</h3>
+        <main class="fbr-library">
+            @php($activeCampaign = $campaign !== 'all' ? $this->campaigns->firstWhere('id', (int) $campaign) : null)
+            @php($activeCategory = $category !== 'all' ? collect($this->categoryCards)->firstWhere('key', $category) : null)
+            <div class="fbr-library-head">
+                <div>
+                    <h3>{{ $activeCategory ? __($activeCategory['label']) : $stageMeta[$stage]['label'] }}</h3>
+                    <p>{{ $activeCampaign?->goal ?: $stageMeta[$stage]['hint'] }}</p>
+                </div>
+                @if($activeCampaign)
+                    <div class="fbr-head-actions">
+                        <button type="button" wire:click="editCampaign({{ $activeCampaign->id }})" class="btn btn-ghost btn-xs"><i class="fas fa-pen"></i> {{ __('Campaign brief') }}</button>
+                        <button type="button" wire:click="confirmDeleteCampaign({{ $activeCampaign->id }})" class="btn btn-ghost btn-xs" title="{{ __('Delete campaign') }}"><i class="fas fa-trash"></i></button>
                     </div>
-                    <button type="button" class="btn btn-primary btn-xs"
-                            @click="copyText(@js($post['text']), 'post-{{ $post['id'] }}')">
-                        <i class="fas" :class="copied === 'post-{{ $post['id'] }}' ? 'fa-check' : 'fa-copy'"></i>
-                        <span x-text="copied === 'post-{{ $post['id'] }}' ? @js(__('Copied')) : @js(__('Copy post'))"></span>
+                @endif
+            </div>
+
+            <div class="fbr-toolbar">
+                <label class="fbr-search">
+                    <i class="fas fa-magnifying-glass"></i>
+                    <input type="search" wire:model.live.debounce.300ms="search" placeholder="{{ __('Search titles, copy, or hashtags') }}">
+                </label>
+                @if($this->campaigns->count() > 1)
+                    <label>
+                        <span>{{ __('Campaign') }}</span>
+                        <select wire:model.live="campaign">
+                            <option value="all">{{ __('Every campaign') }}</option>
+                            @foreach($this->campaigns as $campaignItem)
+                                <option value="{{ $campaignItem->id }}">{{ $campaignItem->name }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                @endif
+                @if(count($this->statusOptions) > 1)
+                    <label>
+                        <span>{{ __('Status') }}</span>
+                        <select wire:model.live="status">
+                            <option value="all">{{ __('Any status') }}</option>
+                            @foreach($this->statusOptions as $statusOption)
+                                <option value="{{ $statusOption }}">{{ __(str($statusOption)->title()->toString()) }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                @endif
+                @if($status !== 'all' || $category !== 'all' || trim($search) !== '')
+                    <button type="button" wire:click="resetFilters" class="btn btn-ghost btn-xs"><i class="fas fa-rotate-left"></i> {{ __('Clear') }}</button>
+                @endif
+            </div>
+
+            @if($this->posts->isEmpty())
+                <div class="fbr-empty">
+                    <span><i class="fas {{ $this->campaigns->isEmpty() ? 'fa-folder-plus' : 'fa-file-circle-plus' }}"></i></span>
+                    <h3>{{ $this->campaigns->isEmpty() ? __('Create the first campaign') : __('No posts found') }}</h3>
+                    <p>{{ $this->campaigns->isEmpty() ? __('Start with a campaign, then build its publishing queue.') : __('Nothing is in this stage yet. Change the filters or add a post.') }}</p>
+                    <button type="button" wire:click="{{ $this->campaigns->isEmpty() ? 'createCampaign' : 'createPost' }}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus"></i> {{ $this->campaigns->isEmpty() ? __('New campaign') : __('New post') }}
                     </button>
                 </div>
-
-                <div class="fbc-grid">
-
-                    {{-- Left: the post exactly as it will be pasted --}}
-                    <div class="fbc-col">
-                        <div class="sharing-hook">
-                            <div class="sharing-field-heading">
-                                <span><i class="fas fa-fire"></i> {{ __('Hook — first line before “See more”') }}</span>
-                                <button type="button" @click="copyText(@js($post['hook']), 'hook-{{ $post['id'] }}')">
-                                    <i class="fas" :class="copied === 'hook-{{ $post['id'] }}' ? 'fa-check' : 'fa-copy'"></i>
-                                    <span x-text="copied === 'hook-{{ $post['id'] }}' ? @js(__('Copied')) : @js(__('Copy'))"></span>
+            @else
+                <div class="fbr-post-list">
+                    @foreach($this->posts as $post)
+                        @php($categoryMeta = $post->categoryPresentation())
+                        <article wire:key="post-{{ $post->id }}" class="fbr-post {{ $expandedPostId === $post->id ? 'is-expanded' : '' }}">
+                            <div class="fbr-post-summary">
+                                <button type="button" wire:click="togglePost({{ $post->id }})" class="fbr-post-toggle" aria-expanded="{{ $expandedPostId === $post->id ? 'true' : 'false' }}">
+                                    <span class="fbr-status-dot fbr-status-{{ $post->status }}"></span>
+                                    <span class="fbr-post-main">
+                                        <span class="fbr-post-kicker">
+                                            @if($campaign === 'all' && $this->campaigns->count() > 1)<span>{{ $post->campaign->name }}</span>@endif
+                                            <span style="--category-color:{{ $categoryMeta['color'] }}"><i class="fas {{ $categoryMeta['icon'] }}"></i> {{ __($categoryMeta['label']) }}</span>
+                                        </span>
+                                        <strong>{{ $post->title }}</strong>
+                                        <span class="fbr-post-excerpt">{{ $post->hook }}</span>
+                                    </span>
+                                    <span class="fbr-post-meta">
+                                        <span class="fbr-status-label fbr-status-{{ $post->status }}">{{ __(str($post->status)->title()->toString()) }}</span>
+                                        @if($post->scheduled_for)<time datetime="{{ $post->scheduled_for->toIso8601String() }}"><i class="fas fa-calendar"></i> {{ $post->scheduled_for->format('M j, H:i') }}</time>@endif
+                                        <span><i class="fas fa-text-width"></i> {{ mb_strlen($post->fullText()) }}</span>
+                                    </span>
+                                    <i class="fas fa-chevron-down fbr-chevron"></i>
                                 </button>
+                                <div class="fbr-post-actions">
+                                    <button type="button" @click="copyText(@js($post->fullText()), 'post-{{ $post->id }}')" class="btn btn-primary btn-xs">
+                                        <i class="fas" :class="copied === 'post-{{ $post->id }}' ? 'fa-check' : 'fa-copy'"></i>
+                                        <span x-text="copied === 'post-{{ $post->id }}' ? @js(__('Copied')) : @js(__('Copy'))"></span>
+                                    </button>
+                                    <button type="button" wire:click="editPost({{ $post->id }})" class="btn btn-ghost btn-xs"><i class="fas fa-pen"></i> {{ __('Edit') }}</button>
+                                </div>
                             </div>
-                            <div class="sharing-copy-text">{{ $post['hook'] }}</div>
-                        </div>
 
-                        <div class="sharing-field">
-                            <div class="sharing-field-heading">
-                                <span><i class="fas fa-align-right"></i> {{ __('Post text') }}</span>
-                                <button type="button" @click="copyText(@js(implode("\n\n", $post['body'])), 'body-{{ $post['id'] }}')">
-                                    <i class="fas" :class="copied === 'body-{{ $post['id'] }}' ? 'fa-check' : 'fa-copy'"></i>
-                                    <span x-text="copied === 'body-{{ $post['id'] }}' ? @js(__('Copied')) : @js(__('Copy'))"></span>
-                                </button>
-                            </div>
-                            <div class="sharing-copy-text">{{ implode("\n\n", $post['body']) }}</div>
-                        </div>
+                            @if($expandedPostId === $post->id)
+                                <div class="fbr-post-detail">
+                                    <section class="fbr-copy-preview">
+                                        <div class="fbr-detail-heading"><span><i class="fas fa-align-left"></i> {{ __('Publishing copy') }}</span><small>{{ $post->length === 'long' ? __('Long post') : __('Short post') }}</small></div>
+                                        <div class="fbr-copy-body">
+                                            <strong>{{ $post->hook }}</strong>
+                                            <p>{{ $post->body }}</p>
+                                            @if($post->cta)<p class="fbr-cta">{{ $post->cta }}</p>@endif
+                                            @if($post->hashtagList() !== [])
+                                                <div class="fbr-hashtags">@foreach($post->hashtagList() as $hashtag)<span wire:key="post-{{ $post->id }}-tag-{{ $loop->index }}">{{ $hashtag }}</span>@endforeach</div>
+                                            @endif
+                                        </div>
+                                    </section>
 
-                        @if($post['cta'] !== '')
-                        <div class="sharing-field">
-                            <div class="sharing-field-heading">
-                                <span><i class="fas fa-hand-pointer"></i> {{ __('Call to action') }}</span>
-                                <button type="button" @click="copyText(@js($post['cta']), 'cta-{{ $post['id'] }}')">
-                                    <i class="fas" :class="copied === 'cta-{{ $post['id'] }}' ? 'fa-check' : 'fa-copy'"></i>
-                                    <span x-text="copied === 'cta-{{ $post['id'] }}' ? @js(__('Copied')) : @js(__('Copy'))"></span>
-                                </button>
-                            </div>
-                            <div class="sharing-copy-text">{{ $post['cta'] }}</div>
-                        </div>
-                        @endif
+                                    <aside class="fbr-creative">
+                                        <div class="fbr-detail-heading"><span><i class="fas fa-image"></i> {{ __('Creative asset') }}</span><small>{{ $post->aspect_ratio }}</small></div>
+                                        @if($post->hasImage())
+                                            <a href="{{ route('admin.social.poster', $post) }}?v={{ $post->imageVersion() }}" target="_blank" class="fbr-image">
+                                                <img src="{{ route('admin.social.poster', $post) }}?v={{ $post->imageVersion() }}" alt="{{ $post->alt_text }}">
+                                            </a>
+                                            <div class="fbr-asset-actions">
+                                                <a href="{{ route('admin.social.poster.download', $post) }}" class="btn btn-primary btn-xs"><i class="fas fa-download"></i> {{ __('Download') }}</a>
+                                                <button type="button" wire:click.renderless="revealImageInExplorer({{ $post->id }})" class="btn btn-ghost btn-xs"><i class="fas fa-folder-open"></i> {{ __('Show in folder') }}</button>
+                                            </div>
+                                        @else
+                                            <div class="fbr-image-pending">
+                                                <i class="fas fa-image"></i>
+                                                <strong>{{ __('Image pending') }}</strong>
+                                                <span>{{ $post->image_file ?: __('No file name assigned') }}</span>
+                                            </div>
+                                        @endif
 
-                        @if($post['hashtags'] !== [])
-                        <div class="sharing-field">
-                            <div class="sharing-field-heading">
-                                <span><i class="fas fa-hashtag"></i> {{ __('Hashtags') }}</span>
-                                <button type="button" @click="copyText(@js(implode(' ', $post['hashtags'])), 'tags-{{ $post['id'] }}')">
-                                    <i class="fas" :class="copied === 'tags-{{ $post['id'] }}' ? 'fa-check' : 'fa-copy'"></i>
-                                    <span x-text="copied === 'tags-{{ $post['id'] }}' ? @js(__('Copied')) : @js(__('Copy'))"></span>
-                                </button>
-                            </div>
-                            <div class="fbc-hashtags">
-                                @foreach($post['hashtags'] as $hashtag)
-                                <span>{{ $hashtag }}</span>
-                                @endforeach
-                            </div>
-                        </div>
-                        @endif
-                    </div>
-
-                    {{-- Right: the image that ships with the text — generated, then dropped in the folder --}}
-                    <aside class="fbc-col fbc-visual fbc-visual-{{ $post['visual'] }}">
-                        <div class="fbc-visual-head">
-                            <i class="fas {{ $post['visual'] === 'poster' ? 'fa-paintbrush' : 'fa-image' }}"></i>
-                            <span>{{ $post['visual'] === 'poster' ? __('Poster — designed artwork') : __('Still — plain image, no design') }}</span>
-                            @if($post['aspect_ratio'] !== '')
-                            <span class="fbc-ratio">{{ $post['aspect_ratio'] }}</span>
+                                        @if($post->visual_brief || $post->image_prompt || $post->review_notes)
+                                            <details class="fbr-creative-notes">
+                                                <summary>{{ __('Creative brief and review notes') }}</summary>
+                                                @if($post->visual_brief)<div><span>{{ __('Visual brief') }}</span><p>{{ $post->visual_brief }}</p></div>@endif
+                                                @if($post->image_prompt)<div><span>{{ __('Image prompt') }}</span><p dir="ltr">{{ $post->image_prompt }}</p></div>@endif
+                                                @if($post->reviewNoteList() !== [])
+                                                    <div class="fbr-review"><span>{{ __('Check before publishing') }}</span><ul>@foreach($post->reviewNoteList() as $note)<li wire:key="post-{{ $post->id }}-note-{{ $loop->index }}">{{ $note }}</li>@endforeach</ul></div>
+                                                @endif
+                                            </details>
+                                        @endif
+                                    </aside>
+                                </div>
+                                <footer class="fbr-post-footer">
+                                    <span>{{ __('Updated') }} {{ $post->updated_at->diffForHumans() }}</span>
+                                    <button type="button" wire:click="confirmDeletePost({{ $post->id }})" class="fbr-danger-link"><i class="fas fa-trash"></i> {{ __('Delete post') }}</button>
+                                </footer>
                             @endif
-                        </div>
-
-                        {{-- The image space itself: the generated file, or where to put it --}}
-                        <div class="fbc-image-slot">
-                            @if($post['image_ready'])
-                            <a href="{{ route('admin.social.poster', $post['id']) }}?v={{ $post['image_version'] }}" target="_blank"
-                               class="fbc-image-frame" style="aspect-ratio:{{ str_replace(':', '/', $post['aspect_ratio'] ?: '1:1') }}">
-                                <img src="{{ route('admin.social.poster', $post['id']) }}?v={{ $post['image_version'] }}" alt="{{ $post['alt_text'] }}">
-                                <span class="fbc-image-zoom"><i class="fas fa-up-right-and-down-left-from-center"></i></span>
-                            </a>
-
-                            <div class="fbc-image-actions">
-                                <a href="{{ route('admin.social.poster.download', $post['id']) }}" class="btn btn-primary btn-xs">
-                                    <i class="fas fa-download"></i> {{ __('Download image') }}
-                                </a>
-                                <button type="button" class="btn btn-ghost btn-xs"
-                                        title="{{ __('Copy the full file path for pasting into a file picker') }}"
-                                        @click="copyText(@js($post['image_path']), 'imgpath-{{ $post['id'] }}')">
-                                    <i class="fas" :class="copied === 'imgpath-{{ $post['id'] }}' ? 'fa-check' : 'fa-copy'"></i>
-                                    <span x-text="copied === 'imgpath-{{ $post['id'] }}' ? @js(__('Path copied')) : @js(__('Copy image path'))"></span>
-                                </button>
-                                <button type="button" wire:click.renderless="revealImageInExplorer('{{ $post['id'] }}')"
-                                        wire:loading.attr="disabled" wire:target="revealImageInExplorer('{{ $post['id'] }}')"
-                                        class="btn btn-ghost btn-xs">
-                                    <i class="fas fa-folder-open"></i> {{ __('Show in folder') }}
-                                </button>
-                            </div>
-                            <div class="fbc-image-file">{{ $post['image_file'] }}</div>
-                            @else
-                            <div class="fbc-image-empty" style="aspect-ratio:{{ str_replace(':', '/', $post['aspect_ratio'] ?: '1:1') }}">
-                                <i class="fas fa-wand-magic-sparkles"></i>
-                                <strong>{{ __('Image not generated yet') }}</strong>
-                                <span>{{ __('Generate it with the prompt below, then save it in the images folder as:') }}</span>
-                                <code>{{ $post['image_file'] !== '' ? $post['image_file'] : __('— no file name set in the campaign file —') }}</code>
-                            </div>
-                            <div class="fbc-image-actions">
-                                <button type="button" class="btn btn-ghost btn-xs"
-                                        @click="copyText(@js($this->imageDirectory), 'imgdir-{{ $post['id'] }}')">
-                                    <i class="fas" :class="copied === 'imgdir-{{ $post['id'] }}' ? 'fa-check' : 'fa-copy'"></i>
-                                    <span x-text="copied === 'imgdir-{{ $post['id'] }}' ? @js(__('Path copied')) : @js(__('Copy images folder'))"></span>
-                                </button>
-                                @if($post['image_file'] !== '')
-                                <button type="button" class="btn btn-ghost btn-xs"
-                                        @click="copyText(@js($post['image_file']), 'imgname-{{ $post['id'] }}')">
-                                    <i class="fas" :class="copied === 'imgname-{{ $post['id'] }}' ? 'fa-check' : 'fa-copy'"></i>
-                                    <span x-text="copied === 'imgname-{{ $post['id'] }}' ? @js(__('Copied')) : @js(__('Copy file name'))"></span>
-                                </button>
-                                @endif
-                            </div>
-                            @endif
-                        </div>
-
-                        @if($post['image_prompt'] !== '')
-                        <div class="sharing-field">
-                            <div class="sharing-field-heading">
-                                <span><i class="fas fa-robot"></i> {{ __('Image prompt — paste into ChatGPT') }}</span>
-                                <button type="button" @click="copyText(@js($post['image_prompt']), 'prompt-{{ $post['id'] }}')">
-                                    <i class="fas" :class="copied === 'prompt-{{ $post['id'] }}' ? 'fa-check' : 'fa-copy'"></i>
-                                    <span x-text="copied === 'prompt-{{ $post['id'] }}' ? @js(__('Copied')) : @js(__('Copy prompt'))"></span>
-                                </button>
-                            </div>
-                            <div class="sharing-copy-text fbc-prompt" dir="ltr">{{ $post['image_prompt'] }}</div>
-                        </div>
-                        @endif
-
-                        <div class="sharing-field">
-                            <div class="sharing-field-heading">
-                                <span>{{ __('Visual brief') }}</span>
-                                <button type="button" @click="copyText(@js($post['visual_brief']), 'brief-{{ $post['id'] }}')">
-                                    <i class="fas" :class="copied === 'brief-{{ $post['id'] }}' ? 'fa-check' : 'fa-copy'"></i>
-                                    <span x-text="copied === 'brief-{{ $post['id'] }}' ? @js(__('Copied')) : @js(__('Copy'))"></span>
-                                </button>
-                            </div>
-                            <div class="sharing-copy-text">{{ $post['visual_brief'] }}</div>
-                        </div>
-
-                        @if($post['visual_text'] !== '')
-                        <div class="sharing-field">
-                            <div class="sharing-field-heading">
-                                <span>{{ __('Text on the poster') }}</span>
-                                <button type="button" @click="copyText(@js($post['visual_text']), 'vtext-{{ $post['id'] }}')">
-                                    <i class="fas" :class="copied === 'vtext-{{ $post['id'] }}' ? 'fa-check' : 'fa-copy'"></i>
-                                    <span x-text="copied === 'vtext-{{ $post['id'] }}' ? @js(__('Copied')) : @js(__('Copy'))"></span>
-                                </button>
-                            </div>
-                            <div class="sharing-copy-text fbc-poster-text">{{ $post['visual_text'] }}</div>
-                        </div>
-                        @endif
-
-                        @if($post['alt_text'] !== '')
-                        <div class="sharing-field">
-                            <div class="sharing-field-heading">
-                                <span>{{ __('Alt text') }}</span>
-                                <button type="button" @click="copyText(@js($post['alt_text']), 'alt-{{ $post['id'] }}')">
-                                    <i class="fas" :class="copied === 'alt-{{ $post['id'] }}' ? 'fa-check' : 'fa-copy'"></i>
-                                    <span x-text="copied === 'alt-{{ $post['id'] }}' ? @js(__('Copied')) : @js(__('Copy'))"></span>
-                                </button>
-                            </div>
-                            <div class="sharing-copy-text">{{ $post['alt_text'] }}</div>
-                        </div>
-                        @endif
-
-                        @if($post['verify'] !== [])
-                        <div class="fbc-verify">
-                            <div class="fbc-verify-head"><i class="fas fa-triangle-exclamation"></i> {{ __('Check before publishing') }}</div>
-                            <ul>
-                                @foreach($post['verify'] as $item)
-                                <li>{{ $item }}</li>
-                                @endforeach
-                            </ul>
-                        </div>
-                        @endif
-                    </aside>
+                        </article>
+                    @endforeach
                 </div>
-            </article>
-            @endforeach
+
+                @if($this->posts->hasPages())
+                    <div class="fbr-pagination">{{ $this->posts->links() }}</div>
+                @endif
+            @endif
+        </main>
+    </div>
+
+    @if($showPostForm)
+        <div class="modal-backdrop" wire:click.self="closePostForm" x-data @keydown.escape.window="$wire.closePostForm()">
+            <form wire:submit="savePost" class="modal fbr-form-modal">
+                <div class="fbr-modal-head">
+                    <div><span>{{ $editingPostId ? __('Edit repository item') : __('Add repository item') }}</span><h3>{{ $editingPostId ? __('Edit Facebook post') : __('Create Facebook post') }}</h3></div>
+                    <button type="button" wire:click="closePostForm" aria-label="{{ __('Close') }}"><i class="fas fa-xmark"></i></button>
+                </div>
+
+                <div class="fbr-form-grid">
+                    <label class="fbr-field fbr-span-2"><span>{{ __('Campaign') }} *</span><select wire:model="postCampaignId" class="form-control">@foreach($this->campaigns as $campaignItem)<option value="{{ $campaignItem->id }}">{{ $campaignItem->name }}</option>@endforeach</select>@error('postCampaignId')<small>{{ $message }}</small>@enderror</label>
+                    <label class="fbr-field fbr-span-2"><span>{{ __('Internal title') }} *</span><input type="text" wire:model="postTitle" class="form-control" placeholder="{{ __('A clear title for the repository') }}">@error('postTitle')<small>{{ $message }}</small>@enderror</label>
+                    <label class="fbr-field"><span>{{ __('Status') }}</span><select wire:model.live="postStatus" class="form-control">@foreach(\App\Models\FacebookPost::STATUSES as $statusOption)<option value="{{ $statusOption }}">{{ __(str($statusOption)->title()->toString()) }}</option>@endforeach</select>@error('postStatus')<small>{{ $message }}</small>@enderror</label>
+                    <label class="fbr-field"><span>{{ __('Category') }}</span><input type="text" wire:model="postCategory" list="facebook-categories" class="form-control" placeholder="hadith"><datalist id="facebook-categories">@foreach(array_keys(\App\Models\FacebookPost::CATEGORIES) as $categoryOption)<option value="{{ $categoryOption }}"></option>@endforeach</datalist>@error('postCategory')<small>{{ $message }}</small>@enderror</label>
+                    <label class="fbr-field"><span>{{ __('Post length') }}</span><select wire:model="postLength" class="form-control"><option value="short">{{ __('Short') }}</option><option value="long">{{ __('Long') }}</option></select></label>
+                    <label class="fbr-field"><span>{{ __('Suggested slot') }}</span><input type="text" wire:model="postPublishSlot" class="form-control" placeholder="{{ __('Monday evening') }}"></label>
+                    @if($postStatus === 'scheduled')
+                        <label class="fbr-field fbr-span-2"><span>{{ __('Scheduled for') }} *</span><input type="datetime-local" wire:model="postScheduledFor" class="form-control">@error('postScheduledFor')<small>{{ $message }}</small>@enderror</label>
+                    @endif
+                    <label class="fbr-field fbr-span-2"><span>{{ __('Hook') }} *</span><textarea wire:model="postHook" rows="2" class="form-control" placeholder="{{ __('The first line before See more') }}"></textarea>@error('postHook')<small>{{ $message }}</small>@enderror</label>
+                    <label class="fbr-field fbr-span-2"><span>{{ __('Post body') }} *</span><textarea wire:model="postBody" rows="7" class="form-control" placeholder="{{ __('Write the publishing copy here') }}"></textarea>@error('postBody')<small>{{ $message }}</small>@enderror</label>
+                    <label class="fbr-field fbr-span-2"><span>{{ __('Call to action') }}</span><textarea wire:model="postCta" rows="2" class="form-control"></textarea></label>
+                    <label class="fbr-field fbr-span-2"><span>{{ __('Hashtags') }}</span><input type="text" wire:model="postHashtags" class="form-control" placeholder="#mojawad #quran"></label>
+                </div>
+
+                <details class="fbr-form-advanced">
+                    <summary><span><i class="fas fa-wand-magic-sparkles"></i> {{ __('Creative asset details') }}</span><small>{{ __('Optional') }}</small></summary>
+                    <div class="fbr-form-grid">
+                        <label class="fbr-field"><span>{{ __('Aspect ratio') }}</span><select wire:model="postAspectRatio" class="form-control">@foreach(\App\Models\FacebookPost::ASPECT_RATIOS as $ratio)<option value="{{ $ratio }}">{{ $ratio }}</option>@endforeach</select></label>
+                        <label class="fbr-field"><span>{{ __('Image file name') }}</span><input type="text" wire:model="postImageFile" class="form-control" placeholder="campaign-post.png">@error('postImageFile')<small>{{ $message }}</small>@enderror</label>
+                        <label class="fbr-field fbr-span-2"><span>{{ __('Visual brief') }}</span><textarea wire:model="postVisualBrief" rows="3" class="form-control"></textarea></label>
+                        <label class="fbr-field fbr-span-2"><span>{{ __('Image prompt') }}</span><textarea wire:model="postImagePrompt" rows="5" class="form-control" dir="ltr"></textarea></label>
+                        <label class="fbr-field fbr-span-2"><span>{{ __('Text on poster') }}</span><textarea wire:model="postVisualText" rows="2" class="form-control"></textarea></label>
+                        <label class="fbr-field fbr-span-2"><span>{{ __('Alt text') }}</span><textarea wire:model="postAltText" rows="2" class="form-control"></textarea></label>
+                        <label class="fbr-field fbr-span-2"><span>{{ __('Review notes') }}</span><textarea wire:model="postReviewNotes" rows="3" class="form-control" placeholder="{{ __('One check per line') }}"></textarea></label>
+                    </div>
+                </details>
+
+                <div class="fbr-modal-actions">
+                    <button type="button" wire:click="closePostForm" class="btn btn-ghost">{{ __('Cancel') }}</button>
+                    <button type="submit" class="btn btn-primary" wire:loading.attr="disabled" wire:target="savePost"><span wire:loading.remove wire:target="savePost"><i class="fas fa-check"></i> {{ __('Save post') }}</span><span wire:loading wire:target="savePost">{{ __('Saving…') }}</span></button>
+                </div>
+            </form>
+        </div>
+    @endif
+
+    @if($showCampaignForm)
+        <div class="modal-backdrop" wire:click.self="closeCampaignForm" x-data @keydown.escape.window="$wire.closeCampaignForm()">
+            <form wire:submit="saveCampaign" class="modal fbr-form-modal fbr-campaign-modal">
+                <div class="fbr-modal-head">
+                    <div><span>{{ __('Campaign brief') }}</span><h3>{{ $editingCampaignId ? __('Edit campaign') : __('New campaign') }}</h3></div>
+                    <button type="button" wire:click="closeCampaignForm" aria-label="{{ __('Close') }}"><i class="fas fa-xmark"></i></button>
+                </div>
+                <div class="fbr-form-grid">
+                    <label class="fbr-field fbr-span-2"><span>{{ __('Campaign name') }} *</span><input type="text" wire:model="campaignName" class="form-control" autofocus>@error('campaignName')<small>{{ $message }}</small>@enderror</label>
+                    <label class="fbr-field fbr-span-2"><span>{{ __('Goal') }}</span><textarea wire:model="campaignGoal" rows="3" class="form-control"></textarea></label>
+                    <label class="fbr-field fbr-span-2"><span>{{ __('Audience') }}</span><textarea wire:model="campaignAudience" rows="2" class="form-control"></textarea></label>
+                    <label class="fbr-field"><span>{{ __('Cadence') }}</span><input type="text" wire:model="campaignCadence" class="form-control" placeholder="{{ __('3 posts per week') }}"></label>
+                    <label class="fbr-field"><span>{{ __('Core hashtags') }}</span><input type="text" wire:model="campaignHashtags" class="form-control" placeholder="#mojawad #quran"></label>
+                    <label class="fbr-field fbr-span-2"><span>{{ __('Tone guidelines') }}</span><textarea wire:model="campaignTone" rows="3" class="form-control" placeholder="{{ __('One guideline per line') }}"></textarea></label>
+                    <label class="fbr-field fbr-span-2"><span>{{ __('Image workflow') }}</span><textarea wire:model="campaignImageWorkflow" rows="3" class="form-control"></textarea></label>
+                    <label class="fbr-check fbr-span-2"><input type="checkbox" wire:model="campaignIsActive"><span><strong>{{ __('Active campaign') }}</strong><small>{{ __('Show this campaign first in the repository.') }}</small></span></label>
+                </div>
+                <div class="fbr-modal-actions"><button type="button" wire:click="closeCampaignForm" class="btn btn-ghost">{{ __('Cancel') }}</button><button type="submit" class="btn btn-primary" wire:loading.attr="disabled" wire:target="saveCampaign"><i class="fas fa-check"></i> {{ __('Save campaign') }}</button></div>
+            </form>
+        </div>
+    @endif
+
+    @if($deletePostId)
+        <div class="modal-backdrop" wire:click.self="$set('deletePostId', null)" x-data @keydown.escape.window="$wire.set('deletePostId', null)">
+            <div class="modal fbr-confirm-modal"><span class="fbr-confirm-icon"><i class="fas fa-trash"></i></span><h3>{{ __('Delete this post?') }}</h3><p>{{ __('This removes the post from the campaign repository. This action cannot be undone.') }}</p><div><button type="button" wire:click="$set('deletePostId', null)" class="btn btn-ghost">{{ __('Cancel') }}</button><button type="button" wire:click="deletePost" class="btn btn-danger">{{ __('Delete post') }}</button></div></div>
+        </div>
+    @endif
+
+    @if($deleteCampaignId)
+        <div class="modal-backdrop" wire:click.self="$set('deleteCampaignId', null)" x-data @keydown.escape.window="$wire.set('deleteCampaignId', null)">
+            <div class="modal fbr-confirm-modal"><span class="fbr-confirm-icon"><i class="fas fa-folder-minus"></i></span><h3>{{ __('Delete this campaign?') }}</h3><p>{{ __('Only empty campaigns can be deleted. This action cannot be undone.') }}</p><div><button type="button" wire:click="$set('deleteCampaignId', null)" class="btn btn-ghost">{{ __('Cancel') }}</button><button type="button" wire:click="deleteCampaign" class="btn btn-danger">{{ __('Delete campaign') }}</button></div></div>
         </div>
     @endif
 
     <script>
-    function campaignCopy(){
+    function campaignRepository() {
         return {
-            copied:null, copyTimer:null,
-            async copyText(text, key){
+            copied: null,
+            copyTimer: null,
+            async copyText(text, key) {
                 try {
                     if (navigator.clipboard && window.isSecureContext) {
                         await navigator.clipboard.writeText(text);
