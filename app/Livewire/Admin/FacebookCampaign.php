@@ -2,8 +2,10 @@
 
 namespace App\Livewire\Admin;
 
+use App\Jobs\PublishFacebookPost;
 use App\Models\FacebookCampaign as Campaign;
 use App\Models\FacebookPost;
+use App\Services\FacebookPostPublisher;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -39,6 +41,8 @@ class FacebookCampaign extends Component
     public ?int $deletePostId = null;
 
     public ?int $deleteCampaignId = null;
+
+    public ?int $publishPostId = null;
 
     public bool $showPostForm = false;
 
@@ -165,6 +169,21 @@ class FacebookCampaign extends Component
     public function statusOptions(): array
     {
         return FacebookPost::stageStatuses($this->stage);
+    }
+
+    /** Whether page credentials are present, so the UI can explain why publishing is unavailable. */
+    #[Computed]
+    public function facebookConnected(): bool
+    {
+        return FacebookPostPublisher::enabled();
+    }
+
+    #[Computed]
+    public function publishTarget(): ?FacebookPost
+    {
+        return $this->publishPostId !== null
+            ? FacebookPost::query()->find($this->publishPostId)
+            : null;
     }
 
     #[Computed]
@@ -324,6 +343,15 @@ class FacebookCampaign extends Component
             $post->published_at = now();
         }
 
+        /**
+         * Re-arm a post that never made it to the page: moving its slot is how
+         * an editor asks the scheduler to try again after a failed attempt.
+         */
+        if (! $post->isLive() && $post->isDirty('scheduled_for')) {
+            $post->publish_attempted_at = null;
+            $post->publish_error = null;
+        }
+
         $post->save();
 
         $this->notice = $this->editingPostId === null ? __('Post added to the repository.') : __('Post updated.');
@@ -345,6 +373,50 @@ class FacebookCampaign extends Component
         $this->deletePostId = null;
         $this->expandedPostId = null;
         $this->notice = __('Post deleted from the repository.');
+    }
+
+    public function confirmPublish(int $postId): void
+    {
+        $this->authorizeAdmin();
+        $post = FacebookPost::query()->findOrFail($postId);
+        abort_if($post->isLive(), 422);
+
+        $this->publishPostId = $postId;
+    }
+
+    public function cancelPublish(): void
+    {
+        $this->publishPostId = null;
+    }
+
+    /**
+     * Hand the post to the queue. The scheduler claims due posts the same way,
+     * so stamping the attempt here keeps a manual publish and an automatic one
+     * from racing over the same record.
+     */
+    public function publishPost(): void
+    {
+        $this->authorizeAdmin();
+        $post = FacebookPost::query()->findOrFail($this->publishPostId);
+        $this->publishPostId = null;
+
+        if ($post->isLive()) {
+            $this->notice = __('This post is already live on the page.');
+
+            return;
+        }
+
+        if (! FacebookPostPublisher::enabled()) {
+            $this->addError('publish', __('Add the Facebook page id and access token before publishing.'));
+
+            return;
+        }
+
+        $post->update(['publish_attempted_at' => now(), 'publish_error' => null]);
+        PublishFacebookPost::dispatch($post->id);
+
+        $this->notice = __('The post was queued for publishing to the Facebook page.');
+        $this->followPost($post);
     }
 
     public function closePostForm(): void

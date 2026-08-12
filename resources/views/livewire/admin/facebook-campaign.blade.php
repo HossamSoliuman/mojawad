@@ -159,10 +159,25 @@
                                         <span x-text="copied === 'post-{{ $post->id }}' ? @js(__('Copied')) : @js(__('Copy'))"></span>
                                     </button>
                                     <button type="button" wire:click="editPost({{ $post->id }})" class="btn btn-ghost btn-xs"><i class="fas fa-pen"></i> {{ __('Edit') }}</button>
+                                    @if($post->isLive())
+                                        <a href="{{ $post->external_url }}" target="_blank" rel="noopener" class="btn btn-ghost btn-xs"><i class="fab fa-facebook"></i> {{ __('View on Facebook') }}</a>
+                                    @else
+                                        <button type="button" wire:click="confirmPublish({{ $post->id }})" class="btn btn-ghost btn-xs" @disabled(! $this->facebookConnected)>
+                                            <i class="fas fa-paper-plane"></i> {{ $post->publish_error ? __('Retry publish') : __('Publish now') }}
+                                        </button>
+                                    @endif
                                 </div>
                             </div>
 
                             @if($expandedPostId === $post->id)
+                                @if($post->publish_error)
+                                    <p class="fbr-publish-error" role="alert"><i class="fas fa-triangle-exclamation"></i> <span>{{ $post->publish_error }}</span></p>
+                                @elseif($post->isLive())
+                                    <p class="fbr-publish-live"><i class="fab fa-facebook"></i> <span>{{ __('Published to the page') }} {{ $post->published_at?->diffForHumans() }}</span></p>
+                                @elseif($post->status === 'scheduled' && $post->publish_attempted_at)
+                                    <p class="fbr-publish-live"><i class="fas fa-hourglass-half"></i> <span>{{ __('Queued for publishing.') }}</span></p>
+                                @endif
+
                                 <div class="fbr-post-detail">
                                     <section class="fbr-copy-preview">
                                         <div class="fbr-detail-heading"><span><i class="fas fa-align-left"></i> {{ __('Publishing copy') }}</span><small>{{ $post->length === 'long' ? __('Long post') : __('Short post') }}</small></div>
@@ -298,6 +313,22 @@
     @if($deleteCampaignId)
         <div class="modal-backdrop" wire:click.self="$set('deleteCampaignId', null)" x-data @keydown.escape.window="$wire.set('deleteCampaignId', null)">
             <div class="modal fbr-confirm-modal"><span class="fbr-confirm-icon"><i class="fas fa-folder-minus"></i></span><h3>{{ __('Delete this campaign?') }}</h3><p>{{ __('Only empty campaigns can be deleted. This action cannot be undone.') }}</p><div><button type="button" wire:click="$set('deleteCampaignId', null)" class="btn btn-ghost">{{ __('Cancel') }}</button><button type="button" wire:click="deleteCampaign" class="btn btn-danger">{{ __('Delete campaign') }}</button></div></div>
+        </div>
+    @endif
+
+    @if($this->publishTarget)
+        <div class="modal-backdrop" wire:click.self="cancelPublish" x-data @keydown.escape.window="$wire.cancelPublish()">
+            <div class="modal fbr-confirm-modal fbr-publish-modal">
+                <span class="fbr-confirm-icon"><i class="fab fa-facebook"></i></span>
+                <h3>{{ __('Publish to the Facebook page?') }}</h3>
+                <p>{{ $this->publishTarget->hasImage() ? __('The copy below and its image will be posted to the page immediately.') : __('The copy below will be posted to the page immediately as a text post.') }}</p>
+                <div class="fbr-publish-preview">{{ $this->publishTarget->fullText() }}</div>
+                @error('publish')<p class="fbr-side-error">{{ $message }}</p>@enderror
+                <div>
+                    <button type="button" wire:click="cancelPublish" class="btn btn-ghost">{{ __('Cancel') }}</button>
+                    <button type="button" wire:click="publishPost" class="btn btn-primary" wire:loading.attr="disabled" wire:target="publishPost"><i class="fas fa-paper-plane"></i> {{ __('Publish now') }}</button>
+                </div>
+            </div>
         </div>
     @endif
 

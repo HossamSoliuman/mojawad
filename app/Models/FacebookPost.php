@@ -63,6 +63,10 @@ class FacebookPost extends Model
         'publish_slot',
         'scheduled_for',
         'published_at',
+        'external_id',
+        'external_url',
+        'publish_error',
+        'publish_attempted_at',
         'sort_order',
         'created_by',
     ];
@@ -72,6 +76,7 @@ class FacebookPost extends Model
         return [
             'scheduled_for' => 'datetime',
             'published_at' => 'datetime',
+            'publish_attempted_at' => 'datetime',
             'sort_order' => 'integer',
         ];
     }
@@ -107,6 +112,28 @@ class FacebookPost extends Model
         }
 
         return $query->where('category', $category);
+    }
+
+    /**
+     * Scheduled posts whose time has come and that the scheduler has not tried
+     * yet. Claiming a row stamps `publish_attempted_at`, so the automatic
+     * publisher touches each post exactly once — a failure waits for a human
+     * rather than looping and risking a duplicate on the Page.
+     */
+    public function scopeDueForPublishing(Builder $query): Builder
+    {
+        return $query
+            ->where('status', 'scheduled')
+            ->whereNotNull('scheduled_for')
+            ->where('scheduled_for', '<=', now())
+            ->whereNull('external_id')
+            ->whereNull('publish_attempted_at');
+    }
+
+    /** Whether this post already exists on the Facebook Page. */
+    public function isLive(): bool
+    {
+        return filled($this->external_id);
     }
 
     /** @return list<string> */

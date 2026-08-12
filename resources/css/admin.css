@@ -1732,6 +1732,28 @@ body.adm .fbr-confirm-modal h3 { font-size: .95rem; }
 body.adm .fbr-confirm-modal p { margin: .3rem 0 1rem; color: #64748b; font-size: .72rem; }
 body.adm .fbr-confirm-modal > div { display: flex; justify-content: center; gap: .45rem; }
 
+body.adm .fbr-publish-error,
+body.adm .fbr-publish-live { display: flex; align-items: flex-start; gap: .45rem; margin: 0; padding: .55rem .75rem; border-top: 1px solid #edf2f7; font-size: .72rem; font-weight: 700; line-height: 1.55; }
+body.adm .fbr-publish-error { background: #fef2f2; color: #b91c1c; }
+body.adm .fbr-publish-live { background: #eff6ff; color: #1d4ed8; }
+
+body.adm .fbr-publish-modal { width: min(460px, 94vw); }
+body.adm .fbr-publish-modal .fbr-confirm-icon { background: #eff6ff; color: #1d4ed8; }
+body.adm .fbr-publish-preview {
+  max-height: 190px;
+  margin-bottom: 1rem;
+  padding: .65rem .7rem;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: .72rem;
+  line-height: 1.7;
+  text-align: start;
+  white-space: pre-wrap;
+}
+
 @media(max-width: 1050px) {
   body.adm .fbr-workspace { grid-template-columns: 200px minmax(0, 1fr); }
   body.adm .fbr-tab small { display: none; }
