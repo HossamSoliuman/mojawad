@@ -187,7 +187,7 @@
     @if($confirmingBulkDelete || $confirmingSourceId !== null)
     <div class="modal-backdrop" wire:click.self="cancelDelete"
          x-data @keydown.escape.window="$wire.cancelDelete()">
-        <div class="modal" style="max-width:400px">
+        <div class="modal" style="max-width:540px">
             <div class="modal-title"><i class="fas fa-trash" style="color:var(--red)"></i> {{ __('Confirm deletion') }}</div>
             <p style="color:var(--text2);font-size:.9rem;margin:0 0 1.4rem">
                 @if($confirmingBulkDelete)

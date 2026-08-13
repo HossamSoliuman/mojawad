@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\CarbonInterface;
 use Database\Factories\FacebookPostFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -136,6 +137,21 @@ class FacebookPost extends Model
         return filled($this->external_id);
     }
 
+    /**
+     * The publishing slot read in the cadence timezone. Slots are stored in UTC
+     * like every other timestamp, but an editor judges them against the clock the
+     * audience lives by, so every screen shows this instead of the raw column.
+     */
+    public function localScheduledFor(): ?CarbonInterface
+    {
+        return $this->scheduled_for?->copy()->setTimezone(self::slotTimezone());
+    }
+
+    public static function slotTimezone(): string
+    {
+        return (string) config('publishing.facebook.cadence.timezone', config('app.timezone'));
+    }
+
     /** @return list<string> */
     public static function stageStatuses(string $stage): array
     {
@@ -172,7 +188,7 @@ class FacebookPost extends Model
     /** @return list<string> */
     public function reviewNoteList(): array
     {
-        return array_values(array_filter(preg_split('/\R+/', trim((string) $this->review_notes)) ?: []));
+        return array_values(array_filter(preg_split('/\R+/u', trim((string) $this->review_notes)) ?: []));
     }
 
     public function imagePath(): ?string

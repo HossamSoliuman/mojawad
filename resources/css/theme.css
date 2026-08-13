@@ -1879,6 +1879,44 @@ textarea.form-control {
   font-size: 1.05rem
 }
 
+.legal {
+  max-width: 52rem;
+  padding-bottom: 4rem;
+  line-height: 2;
+}
+
+.legal-date {
+  margin-bottom: 2.2rem;
+  color: var(--text2);
+  font-size: .9rem
+}
+
+.legal h2 {
+  margin: 2.2rem 0 .7rem;
+  font-size: 1.25rem
+}
+
+.legal p {
+  margin-bottom: .9rem;
+  color: var(--text2)
+}
+
+.legal ul {
+  margin: 0 0 .9rem;
+  padding-inline-start: 1.3rem;
+  color: var(--text2)
+}
+
+.legal li {
+  margin-bottom: .5rem;
+  list-style: disc
+}
+
+.legal a {
+  color: var(--gold);
+  text-decoration: underline
+}
+
 .avatar {
   border-radius: 50%;
   object-fit: cover

@@ -376,7 +376,7 @@
 
   {{-- ===================== DELETE CONFIRM MODAL ===================== --}}
   <div class="modal-backdrop" x-show="confirmOpen" x-cloak @click.self="confirmOpen = false" @keydown.escape.window="confirmOpen = false" style="display:none">
-    <div class="modal" style="max-width:420px">
+    <div class="modal" style="max-width:560px">
       <div class="modal-title"><i class="fas fa-trash" style="color:var(--red)"></i> {{ __('Confirm deletion') }}</div>
       <p style="color:var(--text2);font-size:.9rem;margin:0 0 1.4rem">
         <span x-show="confirmMode === 'single'">{{ __('Delete') }} “<span x-text="confirmTitle"></span>”?</span>

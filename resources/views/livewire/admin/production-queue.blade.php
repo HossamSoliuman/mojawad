@@ -376,7 +376,7 @@
     {{-- Card editor: texts, optional info about the tilawa, and the animation toggles --}}
     @if($editingId !== null)
     <div class="modal-backdrop" wire:click.self="closeEditor" x-data @keydown.escape.window="$wire.closeEditor()">
-        <div class="modal" style="max-width:1120px;width:96vw;max-height:92vh;overflow:auto">
+        <div class="modal" style="max-width:1280px;width:96vw;max-height:92vh;overflow:auto">
             <div class="modal-title" style="margin-bottom:1rem"><i class="fas fa-wand-magic-sparkles"></i> {{ __('Video card & animation') }}</div>
             <div style="display:flex;gap:1.4rem;align-items:flex-start;flex-wrap:wrap">
                 <div style="flex:0 0 300px;max-width:100%;display:flex;flex-direction:column;gap:.8rem">
@@ -434,7 +434,7 @@
     {{-- Publish composer: per-platform title + description, then upload --}}
     @if($publishFor !== null)
     <div class="modal-backdrop" wire:click.self="cancelPublish" x-data @keydown.escape.window="$wire.cancelPublish()">
-        <div class="modal" style="max-width:560px;width:96vw;max-height:92vh;overflow:auto">
+        <div class="modal" style="max-width:760px;width:96vw;max-height:92vh;overflow:auto">
             <div class="modal-title" style="margin-bottom:.4rem"><i class="fas fa-tower-broadcast"></i> {{ __('Compose & publish') }}</div>
             <p style="color:var(--text3);font-size:.8rem;margin:0 0 1rem">{{ __('Pick the platforms and write the title & description that will go live on each one.') }}</p>
 
@@ -493,7 +493,7 @@
     {{-- Remove-from-pipeline confirmation — an in-page modal, never the browser's confirm() --}}
     @if($confirmingRemoveId !== null)
     <div class="modal-backdrop" wire:click.self="cancelRemove" x-data @keydown.escape.window="$wire.cancelRemove()">
-        <div class="modal" style="max-width:420px">
+        <div class="modal" style="max-width:560px">
             <div class="modal-title"><i class="fas fa-xmark" style="color:var(--red)"></i> {{ __('Remove from production') }}</div>
             <p style="color:var(--text2);font-size:.9rem;margin:0 0 1.4rem">
                 {{ __('Drop this recitation out of the production pipeline? It stays on the site and its assets are kept — you can add it again from Selection.') }}

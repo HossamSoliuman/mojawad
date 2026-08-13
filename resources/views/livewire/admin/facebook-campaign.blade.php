@@ -9,6 +9,12 @@
             <button type="button" wire:click="createCampaign" class="btn btn-ghost btn-sm">
                 <i class="fas fa-folder-plus"></i> {{ __('New campaign') }}
             </button>
+            <button type="button" wire:click="openInstructions" class="btn btn-ghost btn-sm fbr-instructions-btn">
+                <i class="fas fa-book-open-reader"></i> {{ __('Post instructions') }}
+                @if($this->instructionsCampaign?->editLessonList())
+                    <em>{{ count($this->instructionsCampaign->editLessonList()) }}</em>
+                @endif
+            </button>
             <button type="button" wire:click="createPost" class="btn btn-primary btn-sm">
                 <i class="fas fa-plus"></i> {{ __('New post') }}
             </button>
@@ -24,9 +30,9 @@
     @endif
 
     @php($stageMeta = [
-        'creation' => ['label' => __('In creation'), 'hint' => __('Drafts and posts ready to schedule.'), 'icon' => 'fa-pen-ruler'],
-        'scheduled' => ['label' => __('Scheduled to post'), 'hint' => __('Waiting for their publishing slot.'), 'icon' => 'fa-calendar-day'],
-        'posted' => ['label' => __('Posted'), 'hint' => __('Already published on the page.'), 'icon' => 'fa-paper-plane'],
+        'creation' => ['label' => __('Review and approve'), 'hint' => __('Read the copy, then approve in one click.'), 'icon' => 'fa-pen-ruler'],
+        'scheduled' => ['label' => __('Scheduled to post'), 'hint' => __('Booked into the cadence, publishing on their own.'), 'icon' => 'fa-calendar-day'],
+        'posted' => ['label' => __('Posted'), 'hint' => __('Already live on the page.'), 'icon' => 'fa-paper-plane'],
     ])
 
     <nav class="fbr-tabs" aria-label="{{ __('Publishing stage') }}">
@@ -89,6 +95,21 @@
                 @endif
             </div>
 
+            @if($stage !== 'posted')
+                <div class="fbr-cadence" role="note">
+                    <i class="fas fa-wave-square"></i>
+                    <div>
+                        <strong>{{ __('Publishing cadence') }}</strong>
+                        <span>{{ __('Approved posts are booked automatically — :count a week at :daily, plus :friday on Friday. Times are :timezone.', [
+                            'count' => $this->cadence['weekly'],
+                            'daily' => implode(' & ', $this->cadence['daily']),
+                            'friday' => implode(' & ', $this->cadence['friday']),
+                            'timezone' => $this->cadence['timezone'],
+                        ]) }}</span>
+                    </div>
+                </div>
+            @endif
+
             <div class="fbr-toolbar">
                 <label class="fbr-search">
                     <i class="fas fa-magnifying-glass"></i>
@@ -148,26 +169,46 @@
                                     </span>
                                     <span class="fbr-post-meta">
                                         <span class="fbr-status-label fbr-status-{{ $post->status }}">{{ __(str($post->status)->title()->toString()) }}</span>
-                                        @if($post->scheduled_for)<time datetime="{{ $post->scheduled_for->toIso8601String() }}"><i class="fas fa-calendar"></i> {{ $post->scheduled_for->format('M j, H:i') }}</time>@endif
+                                        @if($post->scheduled_for)<time datetime="{{ $post->scheduled_for->toIso8601String() }}" title="{{ $post::slotTimezone() }}"><i class="fas fa-calendar"></i> {{ $post->localScheduledFor()->format('M j, H:i') }}</time>@endif
                                         <span><i class="fas fa-text-width"></i> {{ mb_strlen($post->fullText()) }}</span>
                                     </span>
                                     <i class="fas fa-chevron-down fbr-chevron"></i>
                                 </button>
                                 <div class="fbr-post-actions">
-                                    <button type="button" @click="copyText(@js($post->fullText()), 'post-{{ $post->id }}')" class="btn btn-primary btn-xs">
+                                    @if($stage === 'creation')
+                                        <button type="button" wire:click="approvePost({{ $post->id }})" class="btn btn-primary btn-xs fbr-approve"
+                                                wire:loading.attr="disabled" wire:target="approvePost({{ $post->id }})">
+                                            <i class="fas fa-circle-check"></i> {{ __('Approve & schedule') }}
+                                        </button>
+                                    @endif
+                                    <button type="button" @click="copyText(@js($post->fullText()), 'post-{{ $post->id }}')" class="btn btn-ghost btn-xs">
                                         <i class="fas" :class="copied === 'post-{{ $post->id }}' ? 'fa-check' : 'fa-copy'"></i>
                                         <span x-text="copied === 'post-{{ $post->id }}' ? @js(__('Copied')) : @js(__('Copy'))"></span>
                                     </button>
                                     <button type="button" wire:click="editPost({{ $post->id }})" class="btn btn-ghost btn-xs"><i class="fas fa-pen"></i> {{ __('Edit') }}</button>
                                     @if($post->isLive())
-                                        <a href="{{ $post->external_url }}" target="_blank" rel="noopener" class="btn btn-ghost btn-xs"><i class="fab fa-facebook"></i> {{ __('View on Facebook') }}</a>
+                                        <a href="{{ $post->external_url }}" target="_blank" rel="noopener" class="btn btn-primary btn-xs"><i class="fab fa-facebook"></i> {{ __('View on Facebook') }}</a>
                                     @else
+                                        @if($stage === 'scheduled')
+                                            <button type="button" wire:click="returnToCreation({{ $post->id }})" class="btn btn-ghost btn-xs"><i class="fas fa-rotate-left"></i> {{ __('Send back') }}</button>
+                                        @endif
                                         <button type="button" wire:click="confirmPublish({{ $post->id }})" class="btn btn-ghost btn-xs" @disabled(! $this->facebookConnected)>
                                             <i class="fas fa-paper-plane"></i> {{ $post->publish_error ? __('Retry publish') : __('Publish now') }}
                                         </button>
                                     @endif
                                 </div>
                             </div>
+
+                            @if($stage === 'creation' && $expandedPostId !== $post->id)
+                                <div class="fbr-review-strip">
+                                    <p>{{ $post->fullText() }}</p>
+                                    @if($post->hasImage())
+                                        <a href="{{ route('admin.social.poster', $post) }}?v={{ $post->imageVersion() }}" target="_blank" class="fbr-review-thumb">
+                                            <img src="{{ route('admin.social.poster', $post) }}?v={{ $post->imageVersion() }}" alt="{{ $post->alt_text }}">
+                                        </a>
+                                    @endif
+                                </div>
+                            @endif
 
                             @if($expandedPostId === $post->id)
                                 @if($post->publish_error)
@@ -246,6 +287,13 @@
                 </div>
 
                 <div class="fbr-form-grid">
+                    @if($editingPostId)
+                        <label class="fbr-field fbr-span-2 fbr-lesson-field">
+                            <span><i class="fas fa-lightbulb"></i> {{ __('What was wrong with this post?') }}</span>
+                            <textarea wire:model="postEditLesson" rows="2" class="form-control" placeholder="{{ __('Optional — the rule the writer should follow next time') }}"></textarea>
+                            <small class="fbr-field-hint">{{ __('Saved with the edited fields into the post instructions, so the next generated post learns from it.') }}</small>
+                        </label>
+                    @endif
                     <label class="fbr-field fbr-span-2"><span>{{ __('Campaign') }} *</span><select wire:model="postCampaignId" class="form-control">@foreach($this->campaigns as $campaignItem)<option value="{{ $campaignItem->id }}">{{ $campaignItem->name }}</option>@endforeach</select>@error('postCampaignId')<small>{{ $message }}</small>@enderror</label>
                     <label class="fbr-field fbr-span-2"><span>{{ __('Internal title') }} *</span><input type="text" wire:model="postTitle" class="form-control" placeholder="{{ __('A clear title for the repository') }}">@error('postTitle')<small>{{ $message }}</small>@enderror</label>
                     <label class="fbr-field"><span>{{ __('Status') }}</span><select wire:model.live="postStatus" class="form-control">@foreach(\App\Models\FacebookPost::STATUSES as $statusOption)<option value="{{ $statusOption }}">{{ __(str($statusOption)->title()->toString()) }}</option>@endforeach</select>@error('postStatus')<small>{{ $message }}</small>@enderror</label>
@@ -253,7 +301,7 @@
                     <label class="fbr-field"><span>{{ __('Post length') }}</span><select wire:model="postLength" class="form-control"><option value="short">{{ __('Short') }}</option><option value="long">{{ __('Long') }}</option></select></label>
                     <label class="fbr-field"><span>{{ __('Suggested slot') }}</span><input type="text" wire:model="postPublishSlot" class="form-control" placeholder="{{ __('Monday evening') }}"></label>
                     @if($postStatus === 'scheduled')
-                        <label class="fbr-field fbr-span-2"><span>{{ __('Scheduled for') }} *</span><input type="datetime-local" wire:model="postScheduledFor" class="form-control">@error('postScheduledFor')<small>{{ $message }}</small>@enderror</label>
+                        <label class="fbr-field fbr-span-2"><span>{{ __('Scheduled for') }} * <em>({{ \App\Models\FacebookPost::slotTimezone() }})</em></span><input type="datetime-local" wire:model="postScheduledFor" class="form-control">@error('postScheduledFor')<small>{{ $message }}</small>@enderror</label>
                     @endif
                     <label class="fbr-field fbr-span-2"><span>{{ __('Hook') }} *</span><textarea wire:model="postHook" rows="2" class="form-control" placeholder="{{ __('The first line before See more') }}"></textarea>@error('postHook')<small>{{ $message }}</small>@enderror</label>
                     <label class="fbr-field fbr-span-2"><span>{{ __('Post body') }} *</span><textarea wire:model="postBody" rows="7" class="form-control" placeholder="{{ __('Write the publishing copy here') }}"></textarea>@error('postBody')<small>{{ $message }}</small>@enderror</label>
@@ -277,6 +325,49 @@
                 <div class="fbr-modal-actions">
                     <button type="button" wire:click="closePostForm" class="btn btn-ghost">{{ __('Cancel') }}</button>
                     <button type="submit" class="btn btn-primary" wire:loading.attr="disabled" wire:target="savePost"><span wire:loading.remove wire:target="savePost"><i class="fas fa-check"></i> {{ __('Save post') }}</span><span wire:loading wire:target="savePost">{{ __('Saving…') }}</span></button>
+                </div>
+            </form>
+        </div>
+    @endif
+
+    @if($showInstructions && $this->instructionsCampaign)
+        @php($instructionsCampaign = $this->instructionsCampaign)
+        <div class="modal-backdrop" wire:click.self="closeInstructions" x-data @keydown.escape.window="$wire.closeInstructions()">
+            <form wire:submit="saveInstructions" class="modal fbr-form-modal fbr-instructions-modal">
+                <div class="fbr-modal-head">
+                    <div><span>{{ __('Post instructions') }}</span><h3>{{ $instructionsCampaign->name }}</h3></div>
+                    <button type="button" wire:click="closeInstructions" aria-label="{{ __('Close') }}"><i class="fas fa-xmark"></i></button>
+                </div>
+
+                <div class="fbr-instructions-lead">
+                    <p>{{ __('What the writer must follow for every post in this campaign. Copy the full brief and hand it to the generator before it writes.') }}</p>
+                    <div>
+                        <button type="button" @click="copyText(@js($instructionsCampaign->instructionsDocument()), 'instructions')" class="btn btn-primary btn-xs">
+                            <i class="fas" :class="copied === 'instructions' ? 'fa-check' : 'fa-copy'"></i>
+                            <span x-text="copied === 'instructions' ? @js(__('Copied')) : @js(__('Copy full brief'))"></span>
+                        </button>
+                        <button type="button" wire:click="editCampaign({{ $instructionsCampaign->id }})" class="btn btn-ghost btn-xs"><i class="fas fa-sliders"></i> {{ __('Campaign brief') }}</button>
+                    </div>
+                </div>
+
+                <div class="fbr-form-grid">
+                    <label class="fbr-field fbr-span-2">
+                        <span>{{ __('Post writing instructions') }}</span>
+                        <textarea wire:model="instructionsText" rows="12" class="form-control" placeholder="{{ __('One rule per line') }}"></textarea>
+                        @error('instructionsText')<small>{{ $message }}</small>@enderror
+                    </label>
+
+                    <label class="fbr-field fbr-span-2">
+                        <span><i class="fas fa-lightbulb"></i> {{ __('Lessons from editor corrections') }} <em>{{ count($instructionsCampaign->editLessonList()) }}/{{ \App\Models\FacebookCampaign::EDIT_LESSON_LIMIT }}</em></span>
+                        <textarea wire:model="instructionsLessons" rows="8" class="form-control fbr-lesson-log" placeholder="{{ __('Every post edit is logged here automatically.') }}"></textarea>
+                        @error('instructionsLessons')<small>{{ $message }}</small>@enderror
+                        <small class="fbr-field-hint">{{ __('Written automatically whenever a post is edited, newest last. Delete a line once the writer stops making that mistake.') }}</small>
+                    </label>
+                </div>
+
+                <div class="fbr-modal-actions">
+                    <button type="button" wire:click="closeInstructions" class="btn btn-ghost">{{ __('Cancel') }}</button>
+                    <button type="submit" class="btn btn-primary" wire:loading.attr="disabled" wire:target="saveInstructions"><i class="fas fa-check"></i> {{ __('Save instructions') }}</button>
                 </div>
             </form>
         </div>

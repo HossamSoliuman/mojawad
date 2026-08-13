@@ -34,6 +34,9 @@ Route::post('/shorts/{short}/view', ShortViewController::class)->name('shorts.vi
 // Podcast RSS feed pulled by Spotify & Anghami — submit this URL to each once.
 Route::get('/podcast/feed.xml', [PodcastFeedController::class, 'feed'])->name('podcast.feed');
 
+// Required by Meta before a Facebook app can leave development mode.
+Route::view('/privacy', 'pages.privacy')->name('privacy');
+
 Route::prefix('qaris')->name('qaris.')->group(function () {
     Route::get('/', [QariController::class, 'index'])->name('index');
     Route::get('/{qari:slug}', [QariController::class, 'show'])->name('show');

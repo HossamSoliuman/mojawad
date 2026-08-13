@@ -6,6 +6,9 @@ use App\Jobs\PublishFacebookPost;
 use App\Models\FacebookCampaign as Campaign;
 use App\Models\FacebookPost;
 use App\Services\FacebookPostPublisher;
+use App\Services\FacebookPostScheduler;
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -20,6 +23,27 @@ use Livewire\WithPagination;
 class FacebookCampaign extends Component
 {
     use WithPagination;
+
+    /**
+     * The writing fields whose hand edits are worth teaching the generator.
+     * Workflow columns (status, slot, image file) are left out: changing them
+     * says nothing about how the next post should be written.
+     *
+     * @var array<string, string>
+     */
+    private const LESSON_FIELDS = [
+        'title' => 'Internal title',
+        'category' => 'Category',
+        'length' => 'Post length',
+        'hook' => 'Hook',
+        'body' => 'Post body',
+        'cta' => 'Call to action',
+        'hashtags' => 'Hashtags',
+        'visual_brief' => 'Visual brief',
+        'image_prompt' => 'Image prompt',
+        'visual_text' => 'Text on poster',
+        'alt_text' => 'Alt text',
+    ];
 
     #[Url]
     public string $stage = 'creation';
@@ -84,6 +108,16 @@ class FacebookCampaign extends Component
 
     public string $postScheduledFor = '';
 
+    public string $postEditLesson = '';
+
+    public bool $showInstructions = false;
+
+    public ?int $instructionsCampaignId = null;
+
+    public string $instructionsText = '';
+
+    public string $instructionsLessons = '';
+
     public bool $showCampaignForm = false;
 
     public ?int $editingCampaignId = null;
@@ -115,6 +149,21 @@ class FacebookCampaign extends Component
             ->orderByDesc('is_active')
             ->orderBy('name')
             ->get();
+    }
+
+    /**
+     * The campaign the instructions button opens. The workspace runs on a
+     * single campaign, so a filtered one wins and otherwise the active one
+     * stands in without asking the editor to pick.
+     */
+    #[Computed]
+    public function instructionsCampaign(): ?Campaign
+    {
+        if ($this->campaign !== 'all') {
+            return $this->campaigns->firstWhere('id', (int) $this->campaign);
+        }
+
+        return $this->campaigns->firstWhere('is_active', true) ?? $this->campaigns->first();
     }
 
     /**
@@ -184,6 +233,17 @@ class FacebookCampaign extends Component
         return $this->publishPostId !== null
             ? FacebookPost::query()->find($this->publishPostId)
             : null;
+    }
+
+    /**
+     * The rhythm approval books into, so the workspace can state it plainly.
+     *
+     * @return array{timezone: string, weekly: int, daily: list<string>, friday: list<string>}
+     */
+    #[Computed]
+    public function cadence(): array
+    {
+        return app(FacebookPostScheduler::class)->summary();
     }
 
     #[Computed]
@@ -306,7 +366,8 @@ class FacebookCampaign extends Component
         $this->postAltText = (string) $post->alt_text;
         $this->postReviewNotes = (string) $post->review_notes;
         $this->postPublishSlot = (string) $post->publish_slot;
-        $this->postScheduledFor = $post->scheduled_for?->format('Y-m-d\TH:i') ?? '';
+        $this->postScheduledFor = $post->localScheduledFor()?->format('Y-m-d\TH:i') ?? '';
+        $this->postEditLesson = '';
         $this->showPostForm = true;
     }
 
@@ -336,7 +397,9 @@ class FacebookCampaign extends Component
             'alt_text' => $this->nullableText($validated['postAltText']),
             'review_notes' => $this->nullableText($validated['postReviewNotes']),
             'publish_slot' => $this->nullableText($validated['postPublishSlot']),
-            'scheduled_for' => filled($validated['postScheduledFor']) ? $validated['postScheduledFor'] : null,
+            'scheduled_for' => filled($validated['postScheduledFor'])
+                ? CarbonImmutable::parse($validated['postScheduledFor'], FacebookPost::slotTimezone())->setTimezone('UTC')
+                : null,
         ]);
 
         if ($post->status === 'published' && $post->published_at === null) {
@@ -352,7 +415,17 @@ class FacebookCampaign extends Component
             $post->publish_error = null;
         }
 
+        /** Read the corrections while the record still knows what it replaced. */
+        $lesson = $this->editingPostId !== null
+            ? $this->editLesson($post, $validated['postEditLesson'] ?? '')
+            : null;
+
         $post->save();
+
+        if ($lesson !== null) {
+            Campaign::query()->find($post->facebook_campaign_id)?->recordEditLesson($lesson);
+            unset($this->campaigns, $this->instructionsCampaign);
+        }
 
         $this->notice = $this->editingPostId === null ? __('Post added to the repository.') : __('Post updated.');
         $this->closePostForm();
@@ -373,6 +446,51 @@ class FacebookCampaign extends Component
         $this->deletePostId = null;
         $this->expandedPostId = null;
         $this->notice = __('Post deleted from the repository.');
+    }
+
+    /**
+     * The one click that moves a post out of review. Booking the slot here is
+     * what makes the next tab self-driving: the editor judges the copy, the
+     * cadence decides the timing, and the scheduler publishes it unattended.
+     * A slot an editor already chose for the future is respected as-is.
+     */
+    public function approvePost(int $postId): void
+    {
+        $this->authorizeAdmin();
+        $post = FacebookPost::query()->findOrFail($postId);
+        abort_unless(in_array($post->status, FacebookPost::stageStatuses('creation'), true), 422);
+
+        $slot = $post->scheduled_for?->isFuture()
+            ? $post->scheduled_for
+            : app(FacebookPostScheduler::class)->nextSlot();
+
+        $post->update([
+            'status' => 'scheduled',
+            'scheduled_for' => $slot,
+            'publish_attempted_at' => null,
+            'publish_error' => null,
+        ]);
+
+        $this->notice = __('Approved — it posts on :slot.', ['slot' => $this->slotLabel($slot)]);
+        $this->expandedPostId = null;
+    }
+
+    /** Undo an approval that came too fast; the slot frees up for the next post. */
+    public function returnToCreation(int $postId): void
+    {
+        $this->authorizeAdmin();
+        $post = FacebookPost::query()->findOrFail($postId);
+        abort_if($post->isLive(), 422);
+
+        $post->update([
+            'status' => 'ready',
+            'scheduled_for' => null,
+            'publish_attempted_at' => null,
+            'publish_error' => null,
+        ]);
+
+        $this->notice = __('Sent back for review. Its slot is free again.');
+        $this->followPost($post);
     }
 
     public function confirmPublish(int $postId): void
@@ -425,10 +543,59 @@ class FacebookCampaign extends Component
         $this->resetPostForm();
     }
 
+    /**
+     * Open the brief the post generator writes from: the standing instructions
+     * plus every correction an editor has made since. Both are editable, so an
+     * instruction that stopped being true can be rewritten instead of accruing.
+     */
+    public function openInstructions(): void
+    {
+        $this->authorizeAdmin();
+        $campaign = $this->instructionsCampaign;
+
+        if ($campaign === null) {
+            $this->createCampaign();
+
+            return;
+        }
+
+        $this->instructionsCampaignId = $campaign->id;
+        $this->instructionsText = $campaign->postInstructions();
+        $this->instructionsLessons = (string) $campaign->edit_lessons;
+        $this->showInstructions = true;
+        $this->resetValidation();
+    }
+
+    public function saveInstructions(): void
+    {
+        $this->authorizeAdmin();
+        $validated = $this->validate([
+            'instructionsText' => ['nullable', 'string', 'max:50000'],
+            'instructionsLessons' => ['nullable', 'string', 'max:50000'],
+        ]);
+
+        Campaign::query()->findOrFail($this->instructionsCampaignId)->update([
+            'post_instructions' => $this->nullableText($validated['instructionsText']),
+            'edit_lessons' => $this->nullableText($validated['instructionsLessons']),
+        ]);
+
+        unset($this->campaigns, $this->instructionsCampaign);
+        $this->notice = __('Post instructions updated.');
+        $this->closeInstructions();
+    }
+
+    public function closeInstructions(): void
+    {
+        $this->showInstructions = false;
+        $this->reset(['instructionsCampaignId', 'instructionsText', 'instructionsLessons']);
+        $this->resetValidation();
+    }
+
     public function createCampaign(): void
     {
         $this->authorizeAdmin();
         $this->resetCampaignForm();
+        $this->showInstructions = false;
         $this->showCampaignForm = true;
     }
 
@@ -436,6 +603,7 @@ class FacebookCampaign extends Component
     {
         $this->authorizeAdmin();
         $campaign = Campaign::query()->findOrFail($campaignId);
+        $this->showInstructions = false;
 
         $this->editingCampaignId = $campaign->id;
         $this->campaignName = $campaign->name;
@@ -553,7 +721,47 @@ class FacebookCampaign extends Component
             'postReviewNotes' => ['nullable', 'string', 'max:5000'],
             'postPublishSlot' => ['nullable', 'string', 'max:255'],
             'postScheduledFor' => ['nullable', 'date', 'required_if:postStatus,scheduled'],
+            'postEditLesson' => ['nullable', 'string', 'max:2000'],
         ];
+    }
+
+    /**
+     * One line describing what an editor rewrote, kept on the campaign so the
+     * next generated post is written against the corrections rather than
+     * repeating them. Returns null when the edit taught nothing.
+     */
+    private function editLesson(FacebookPost $post, string $note): ?string
+    {
+        $changes = collect(self::LESSON_FIELDS)
+            ->filter(fn (string $label, string $field): bool => $post->isDirty($field))
+            ->map(fn (string $label, string $field): string => __(':field: «:before» → «:after»', [
+                'field' => __($label),
+                'before' => $this->lessonSnippet($post->getOriginal($field)),
+                'after' => $this->lessonSnippet($post->getAttribute($field)),
+            ]))
+            ->values();
+
+        $summary = collect([trim($note), $changes->implode(' · ')])
+            ->filter(fn (string $part): bool => $part !== '')
+            ->implode(' — ');
+
+        if ($summary === '') {
+            return null;
+        }
+
+        return __(':date · «:title» — :summary', [
+            'date' => now()->setTimezone(FacebookPost::slotTimezone())->format('Y-m-d'),
+            'title' => $post->title,
+            'summary' => $summary,
+        ]);
+    }
+
+    /** Edited copy runs long; the lesson only needs enough to recognise it. */
+    private function lessonSnippet(?string $value): string
+    {
+        $value = trim(preg_replace('/\s+/u', ' ', (string) $value) ?? '');
+
+        return $value !== '' ? Str::limit($value, 140) : __('empty');
     }
 
     /** @return array<string, string> */
@@ -585,6 +793,7 @@ class FacebookCampaign extends Component
             'editingPostId', 'postCampaignId', 'postTitle', 'postCategory', 'postHook', 'postBody',
             'postCta', 'postHashtags', 'postVisualBrief', 'postImagePrompt', 'postImageFile',
             'postVisualText', 'postAltText', 'postReviewNotes', 'postPublishSlot', 'postScheduledFor',
+            'postEditLesson',
         ]);
         $this->postStatus = 'draft';
         $this->postLength = 'short';
@@ -645,6 +854,14 @@ class FacebookCampaign extends Component
         $normalised = implode(' ', preg_split('/\s+/', trim((string) $hashtags)) ?: []);
 
         return $normalised !== '' ? $normalised : null;
+    }
+
+    /** Slots are stored in UTC but only make sense read in the cadence timezone. */
+    private function slotLabel(CarbonInterface $slot): string
+    {
+        return $slot->copy()
+            ->setTimezone((string) config('publishing.facebook.cadence.timezone'))
+            ->translatedFormat('D j M · H:i');
     }
 
     private function nullableText(?string $value): ?string

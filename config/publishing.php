@@ -145,5 +145,32 @@ return [
         'page_id' => env('FACEBOOK_PAGE_ID'),
         'access_token' => env('FACEBOOK_PAGE_TOKEN'),
         'graph_version' => 'v21.0',
+
+        /*
+        |------------------------------------------------------------------
+        | Publishing cadence
+        |------------------------------------------------------------------
+        |
+        | Approving a post books it into the next free slot below, so editors
+        | never pick a date by hand. Two posts a day keeps each one competing
+        | for a separate audience session — a heavier cadence mostly splits
+        | the same reach across more posts. Friday earns a third slot before
+        | Jumu'ah, the strongest window of the week for this audience.
+        |
+        | Times are local to `timezone` (the app itself runs on UTC) and are
+        | stored converted, so the slot means the same thing year round.
+        |
+        */
+        'cadence' => [
+            'timezone' => env('FACEBOOK_CADENCE_TIMEZONE', 'Africa/Cairo'),
+            'daily' => ['08:00', '21:00'],
+            'friday' => ['08:00', '11:00', '21:00'],
+
+            // Never book a slot closer than this, so the queue has runway.
+            'lead_minutes' => (int) env('FACEBOOK_CADENCE_LEAD', 15),
+
+            // How far ahead the booker will look before giving up.
+            'horizon_days' => 180,
+        ],
     ],
 ];
