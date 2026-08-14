@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Exceptions\FacebookPublishException;
 use App\Models\FacebookPost;
 use App\Services\FacebookPostPublisher;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -49,10 +50,24 @@ class PublishFacebookPost implements ShouldQueue
         ]);
     }
 
+    /**
+     * A refused token never reached the page, so the post keeps its slot and
+     * publishes itself once the credentials are replaced. Every other failure
+     * stays claimed, because the attempt may have left a live post behind.
+     */
     public function failed(Throwable $exception): void
     {
-        FacebookPost::query()->find($this->postId)?->update([
+        $post = FacebookPost::query()->find($this->postId);
+
+        if ($post === null) {
+            return;
+        }
+
+        $post->update([
             'publish_error' => Str::limit($exception->getMessage(), 1000),
+            'publish_attempted_at' => $exception instanceof FacebookPublishException && $exception->credentialsRejected()
+                ? null
+                : $post->publish_attempted_at,
         ]);
     }
 }

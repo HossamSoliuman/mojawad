@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\FacebookPublishException;
 use App\Jobs\PublishFacebookPost;
 use App\Livewire\Admin\FacebookCampaign as FacebookCampaignComponent;
 use App\Models\FacebookCampaign;
@@ -59,8 +60,17 @@ function fbPostImage(FacebookPost $post, string $directory): void
     File::put($directory.DIRECTORY_SEPARATOR.'poster.png', 'fake-png-bytes');
 }
 
+/** Answers the identity probe the scheduler makes before it claims anything. */
+function fbHealthyToken(): void
+{
+    Http::fake([
+        'graph.facebook.com/v21.0/me?*' => Http::response(['id' => '1234567890', 'name' => 'Mojawad.org']),
+    ]);
+}
+
 it('queues scheduled posts whose time has come', function () {
     Queue::fake();
+    fbHealthyToken();
 
     $this->artisan('facebook:publish-due')->assertSuccessful();
 
@@ -81,6 +91,7 @@ it('leaves posts alone until their scheduled time arrives', function () {
 
 it('never queues a post twice', function () {
     Queue::fake();
+    fbHealthyToken();
 
     $this->artisan('facebook:publish-due')->assertSuccessful();
     $this->artisan('facebook:publish-due')->assertSuccessful();
@@ -143,6 +154,84 @@ it('uploads the poster and keeps the story id for a post with an image', functio
 
     expect($this->post->fresh()->external_id)->toBe('1234567890_888')
         ->and($this->post->fresh()->status)->toBe('published');
+});
+
+it('claims nothing and holds the queue when the page token is rejected', function () {
+    Queue::fake();
+
+    Http::fake([
+        'graph.facebook.com/v21.0/me?*' => Http::response([
+            'error' => ['message' => 'Invalid OAuth access token.', 'code' => 190],
+        ], 400),
+    ]);
+
+    $this->artisan('facebook:publish-due')->assertFailed();
+
+    Queue::assertNothingPushed();
+
+    $held = $this->post->fresh();
+
+    expect($held->publish_attempted_at)->toBeNull()
+        ->and($held->status)->toBe('scheduled')
+        ->and($held->publish_error)->toContain('Invalid OAuth access token.');
+});
+
+/** A working token means the probe must not cost the queue an extra call per post. */
+it('probes the page token once for the whole batch', function () {
+    Queue::fake();
+    fbHealthyToken();
+
+    FacebookPost::factory()->for($this->campaign, 'campaign')->create([
+        'status' => 'scheduled',
+        'scheduled_for' => now()->subMinutes(5),
+    ]);
+
+    $this->artisan('facebook:publish-due')->assertSuccessful();
+
+    Queue::assertPushed(PublishFacebookPost::class, 2);
+    Http::assertSentCount(1);
+});
+
+it('re-arms the post when facebook refuses the credentials', function () {
+    $this->post->update(['publish_attempted_at' => now()]);
+
+    Http::fake([
+        'graph.facebook.com/*/feed' => Http::response([
+            'error' => ['message' => 'Invalid OAuth access token.', 'code' => 190],
+        ], 400),
+    ]);
+
+    $job = new PublishFacebookPost($this->post->id);
+
+    try {
+        $job->handle(new FacebookPostPublisher);
+    } catch (FacebookPublishException $exception) {
+        $job->failed($exception);
+    }
+
+    $rearmed = $this->post->fresh();
+
+    expect($rearmed->publish_attempted_at)->toBeNull()
+        ->and($rearmed->publish_error)->toContain('Invalid OAuth access token.');
+});
+
+/** The attempt may have left a live post behind, so a human decides what happens next. */
+it('keeps the post claimed when facebook refuses the post itself', function () {
+    Http::fake([
+        'graph.facebook.com/*/feed' => Http::response([
+            'error' => ['message' => 'Invalid parameter', 'code' => 100],
+        ], 400),
+    ]);
+
+    $job = new PublishFacebookPost($this->post->id);
+
+    try {
+        $job->handle(new FacebookPostPublisher);
+    } catch (FacebookPublishException $exception) {
+        $job->failed($exception);
+    }
+
+    expect($this->post->fresh()->publish_attempted_at)->not->toBeNull();
 });
 
 it('records the graph error message when facebook rejects the post', function () {

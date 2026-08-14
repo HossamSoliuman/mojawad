@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\FacebookPublishException;
 use App\Models\FacebookPost;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
@@ -15,6 +16,9 @@ use RuntimeException;
  */
 class FacebookPostPublisher
 {
+    /** Seconds allowed for the identity probe, which uploads nothing. */
+    private const PROBE_TIMEOUT = 30;
+
     public static function enabled(): bool
     {
         return filled(config('publishing.facebook.page_id'))
@@ -53,12 +57,30 @@ class FacebookPostPublisher
     }
 
     /**
+     * Asks the Graph API who the token belongs to, answering with the rejection
+     * when it is no longer usable. The scheduler probes this before claiming
+     * anything: a dead token would otherwise be spent one post at a time, each
+     * attempt consuming a post that then needs re-arming by hand.
+     */
+    public function credentialProblem(): ?string
+    {
+        $version = config('publishing.facebook.graph_version');
+
+        $response = Http::timeout(self::PROBE_TIMEOUT)->get("https://graph.facebook.com/{$version}/me", [
+            'fields' => 'id',
+            'access_token' => $this->token(),
+        ]);
+
+        return $response->failed() ? $this->readError($response) : null;
+    }
+
+    /**
      * @return array{id: string, url: string}
      */
     private function read(Response $response): array
     {
         if ($response->failed()) {
-            throw new RuntimeException('Facebook rejected the post: '.$this->readError($response));
+            throw FacebookPublishException::rejected($response);
         }
 
         /**
@@ -127,12 +149,8 @@ class FacebookPostPublisher
         return (string) config('publishing.facebook.access_token');
     }
 
-    /**
-     * Graph errors carry a readable message; fall back to the raw body when the
-     * response is not the shape we expect.
-     */
     private function readError(Response $response): string
     {
-        return (string) ($response->json('error.message') ?? $response->body());
+        return FacebookPublishException::readError($response);
     }
 }

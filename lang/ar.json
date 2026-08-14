@@ -656,6 +656,8 @@
     "Delete this recitation and all its assets?": "حذف هذه التلاوة وكل أصولها؟",
     "YouTube is not configured.": "يوتيوب غير مُهيّأ.",
     "Facebook is not configured.": "فيسبوك غير مُهيّأ.",
+    "Facebook rejected the post: :error": "رفض فيسبوك المنشور: :error",
+    "Facebook rejected the page credentials: :error": "رفض فيسبوك بيانات اعتماد الصفحة: :error",
     "Privacy policy": "سياسة الخصوصية",
     "How Mojawad handles your data.": "كيف يتعامل مجوّد مع بياناتك.",
     "Last updated :date": "آخر تحديث: :date",
