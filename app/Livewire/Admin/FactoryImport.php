@@ -28,7 +28,7 @@ class FactoryImport extends Component
     public function qaris(): Collection
     {
         return Qari::where('status', 'active')
-            ->orderBy('name_ar')
+            ->ordered()
             ->get(['id', 'name_ar', 'name_en', 'image'])
             ->map(fn (Qari $q): array => [
                 'id' => $q->id,

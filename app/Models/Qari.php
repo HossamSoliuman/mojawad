@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
@@ -10,9 +11,22 @@ class Qari extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name_ar', 'name_en', 'slug', 'image', 'biography_ar', 'biography_en', 'created_by', 'is_featured', 'status'];
+    protected $fillable = ['name_ar', 'name_en', 'slug', 'image', 'biography_ar', 'biography_en', 'created_by', 'is_featured', 'status', 'sort_order'];
 
-    protected $casts = ['is_featured' => 'boolean'];
+    protected $casts = ['is_featured' => 'boolean', 'sort_order' => 'integer'];
+
+    /**
+     * Apply the manual admin ordering, falling back to the Arabic name.
+     */
+    public function scopeOrdered(Builder $query): Builder
+    {
+        return $query->orderBy('sort_order')->orderBy('name_ar');
+    }
+
+    public function isActive(): bool
+    {
+        return $this->status === 'active';
+    }
 
     public function creator()
     {

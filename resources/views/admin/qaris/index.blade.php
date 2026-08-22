@@ -48,7 +48,7 @@
       <span class="badge badge-muted"><i class="fas fa-music"></i> {{ $q->tilawat_count }} {{ __('tilawat') }}</span>
     </div>
 
-    {{-- Status --}}
+    {{-- Status toggle --}}
     <form method="POST" action="{{ route('admin.qaris.update',$q) }}" style="width:100%">
       @csrf @method('PUT')
       <input type="hidden" name="name_ar" value="{{ $q->name_ar }}">
@@ -56,11 +56,28 @@
       <input type="hidden" name="biography_ar" value="{{ $q->biography_ar }}">
       <input type="hidden" name="biography_en" value="{{ $q->biography_en }}">
       <input type="hidden" name="is_featured" value="{{ $q->is_featured ? '1':'0' }}">
-      <select name="status" onchange="this.form.submit()" class="f-select f-select-sm" style="width:100%">
-        <option value="active"   {{ $q->status==='active'  ?'selected':'' }}>{{ __('Active') }}</option>
-        <option value="pending"  {{ $q->status==='pending' ?'selected':'' }}>{{ __('Pending') }}</option>
-        <option value="inactive" {{ $q->status==='inactive'?'selected':'' }}>{{ __('Inactive') }}</option>
-      </select>
+      <input type="hidden" name="status" value="{{ $q->isActive() ? 'inactive' : 'active' }}">
+      <button type="submit" class="status-toggle{{ $q->isActive() ? ' is-on' : '' }}" role="switch"
+        aria-checked="{{ $q->isActive() ? 'true' : 'false' }}"
+        title="{{ $q->isActive() ? __('Deactivate') : __('Activate') }}">
+        <span class="status-toggle-track"><span class="status-toggle-knob"></span></span>
+        <span class="status-toggle-label">{{ $q->isActive() ? __('Active') : __('Not Active') }}</span>
+      </button>
+    </form>
+
+    {{-- Display order --}}
+    <form method="POST" action="{{ route('admin.qaris.update',$q) }}" class="qari-card-order">
+      @csrf @method('PUT')
+      <input type="hidden" name="name_ar" value="{{ $q->name_ar }}">
+      <input type="hidden" name="name_en" value="{{ $q->name_en }}">
+      <input type="hidden" name="biography_ar" value="{{ $q->biography_ar }}">
+      <input type="hidden" name="biography_en" value="{{ $q->biography_en }}">
+      <input type="hidden" name="is_featured" value="{{ $q->is_featured ? '1':'0' }}">
+      <input type="hidden" name="status" value="{{ $q->status }}">
+      <label for="sort-order-{{ $q->id }}"><i class="fas fa-arrow-down-1-9"></i> {{ __('Order') }}</label>
+      <input type="number" id="sort-order-{{ $q->id }}" name="sort_order" value="{{ $q->sort_order }}"
+        min="0" max="65535" onchange="this.form.submit()" aria-label="{{ __('Sort Order') }}">
+      <button type="submit" class="btn-icon" title="{{ __('Save order') }}"><i class="fas fa-check"></i></button>
     </form>
 
     <div class="qari-card-date">{{ __('Added') }} {{ $q->created_at->format('d M Y') }}</div>

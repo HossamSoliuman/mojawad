@@ -20,7 +20,7 @@ class StudioController extends Controller
     public function index(): View
     {
         $qaris = Qari::where('status', 'active')
-            ->orderBy('name_ar')
+            ->ordered()
             ->get(['id', 'name_ar', 'name_en']);
 
         return view('admin.studio.index', compact('qaris'));

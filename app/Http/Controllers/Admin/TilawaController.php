@@ -54,7 +54,7 @@ class TilawaController extends Controller
         ];
 
         $qaris = $this->qariScope($isAdmin)
-            ->orderBy('name_ar')
+            ->ordered()
             ->get(['id', 'name_ar', 'name_en', 'image'])
             ->map(fn (Qari $q) => [
                 'id' => $q->id,
@@ -80,8 +80,8 @@ class TilawaController extends Controller
     }
 
     /**
-     * Qaris with their recitation totals for the "By Qari" tab, ordered by the
-     * most recitations first.
+     * Qaris with their recitation totals for the "By Qari" tab, in the manual
+     * display order set in the qaris admin.
      */
     private function qariGrid(Request $request, bool $isAdmin): Collection
     {
@@ -91,8 +91,7 @@ class TilawaController extends Controller
             ->withCount(['tilawat as tilawat_count' => $ownScope])
             ->withSum(['tilawat as plays_sum' => $ownScope], 'plays_count')
             ->when($request->search, fn (Builder $q) => $q->where(fn (Builder $sub) => $sub->where('name_ar', 'like', '%'.$request->search.'%')->orWhere('name_en', 'like', '%'.$request->search.'%')))
-            ->orderByDesc('tilawat_count')
-            ->orderBy('name_ar')
+            ->ordered()
             ->get();
     }
 
@@ -111,7 +110,7 @@ class TilawaController extends Controller
     public function uploader(Request $request)
     {
         $qaris = Qari::where('status', 'active')
-            ->orderBy('name_ar')
+            ->ordered()
             ->get(['id', 'name_ar', 'name_en', 'image'])
             ->map(fn (Qari $q) => [
                 'id' => $q->id,
@@ -205,7 +204,7 @@ class TilawaController extends Controller
     {
         $qaris = Qari::where('status', 'active')
             ->when(! Auth::user()->hasRole('admin'), fn ($q) => $q->where('created_by', Auth::id()))
-            ->orderBy('name_ar')
+            ->ordered()
             ->get(['id', 'name_ar', 'name_en', 'image']);
 
         return view('admin.tilawat.edit', compact('tilawa', 'qaris'));

@@ -23,6 +23,7 @@ class SearchController extends Controller
                 $query->where('name_ar', 'like', '%'.$q.'%')
                     ->orWhere('name_en', 'like', '%'.$q.'%');
             })
+            ->ordered()
             ->take(5)
             ->get()
             ->map(fn ($r) => [

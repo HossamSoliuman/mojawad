@@ -29,11 +29,13 @@
       </div>
       <div class="form-group">
         <label class="form-label"><i class="fas fa-circle-check"></i> {{ __('Status') }}</label>
-        <select name="status" class="form-control">
-          <option value="pending"  {{ old('status',$qari->status)==='pending'  ? 'selected':'' }}>{{ __('Pending') }}</option>
-          <option value="active"   {{ old('status',$qari->status)==='active'   ? 'selected':'' }}>{{ __('Active') }}</option>
-          <option value="inactive" {{ old('status',$qari->status)==='inactive' ? 'selected':'' }}>{{ __('Inactive') }}</option>
-        </select>
+        <x-admin.status-switch :status="old('status', $qari->status)" />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="sort_order"><i class="fas fa-arrow-down-1-9"></i> {{ __('Sort Order') }}</label>
+        <input type="number" id="sort_order" name="sort_order" class="form-control" min="0" max="65535" value="{{ old('sort_order', $qari->sort_order) }}">
+        <span class="form-hint">{{ __('Lower numbers appear first.') }}</span>
+        @error('sort_order')<span class="form-error">{{ $message }}</span>@enderror
       </div>
       <div class="form-group" style="display:flex;align-items:flex-end;padding-bottom:.2rem">
         <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.9rem;color:var(--text2)">

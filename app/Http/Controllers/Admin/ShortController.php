@@ -42,7 +42,7 @@ class ShortController extends Controller
     public function create(): View
     {
         $qaris = Qari::where('status', 'active')
-            ->orderBy('name_ar')
+            ->ordered()
             ->get(['id', 'name_ar', 'name_en']);
 
         return view('admin.shorts.create', compact('qaris'));
@@ -160,7 +160,7 @@ class ShortController extends Controller
     public function edit(Short $short): View
     {
         $qaris = Qari::where('status', 'active')
-            ->orderBy('name_ar')
+            ->ordered()
             ->get(['id', 'name_ar', 'name_en']);
 
         return view('admin.shorts.edit', compact('short', 'qaris'));

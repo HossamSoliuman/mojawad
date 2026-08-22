@@ -14,13 +14,14 @@ class UpdateQariRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name_ar'     => 'required|string|max:255',
-            'name_en'     => 'nullable|string|max:255',
-            'biography_ar'=> 'nullable|string',
-            'biography_en'=> 'nullable|string',
-            'status'      => 'required|in:active,inactive,pending',
-            'image_tmp'   => 'nullable|string|exists:tmp_uploads,id',
+            'name_ar' => 'required|string|max:255',
+            'name_en' => 'nullable|string|max:255',
+            'biography_ar' => 'nullable|string',
+            'biography_en' => 'nullable|string',
+            'status' => 'required|in:active,inactive,pending',
+            'image_tmp' => 'nullable|string|exists:tmp_uploads,id',
             'is_featured' => 'boolean',
+            'sort_order' => 'nullable|integer|min:0|max:65535',
         ];
     }
 }

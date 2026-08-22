@@ -86,7 +86,7 @@ class ProductionQueue extends Component
         return Qari::query()
             ->whereHas('tilawat', fn (Builder $q) => $this->scopeSelectable($q))
             ->withCount(['tilawat as selectable_count' => fn (Builder $q) => $this->scopeSelectable($q)])
-            ->orderBy('name_ar')
+            ->ordered()
             ->get();
     }
 
