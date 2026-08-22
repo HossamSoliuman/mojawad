@@ -19,9 +19,12 @@
     <a href="{{ route('collections.show', $collection) }}" wire:navigate class="collection-card">
       <div class="collection-card-img">
         <img src="{{ $collection->cover_url }}" alt="{{ $collection->title }}" loading="lazy">
+        @if($collection->isAuto())
+        <span class="collection-card-auto" title="{{ __('Updates automatically') }}"><i class="fas {{ $collection->icon_class }}"></i></span>
+        @endif
         <div class="collection-card-overlay">
           <div class="collection-card-title">{{ $collection->title }}</div>
-          <div class="collection-card-count">{{ $collection->tilawat_count }} {{ __('tilawat') }}</div>
+          <div class="collection-card-count">{{ $collection->itemsCount() }} {{ __('tilawat') }}</div>
         </div>
       </div>
     </a>

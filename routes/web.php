@@ -163,6 +163,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
         Route::delete('/tilawat/{tilawa}', [App\Http\Controllers\Admin\TilawaController::class, 'destroy'])->name('tilawat.destroy')->middleware('can:delete,tilawa');
 
         Route::middleware('role:admin')->group(function () {
+            Route::get('/collections', [App\Http\Controllers\Admin\CollectionController::class, 'index'])->name('collections.index');
             Route::get('/reports', ReportController::class)->name('reports');
             Route::get('/users', [UserController::class, 'index'])->name('users.index');
             Route::get('/users/create', [UserController::class, 'create'])->name('users.create');

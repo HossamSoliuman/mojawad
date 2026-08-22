@@ -18,12 +18,18 @@
       <img src="{{ $collection->cover_url }}" alt="{{ $collection->title }}"
         style="width:148px;height:148px;border-radius:var(--r2);object-fit:cover;border:2px solid var(--border2);box-shadow:0 20px 60px rgba(0,0,0,.65);flex-shrink:0">
       <div>
-        <div class="badge badge-gold" style="margin-bottom:.65rem"><i class="fas fa-layer-group"></i> {{ __('Collection') }}</div>
+        <div class="badge badge-gold" style="margin-bottom:.65rem">
+          <i class="fas {{ $collection->icon_class }}"></i>
+          {{ $collection->isAuto() ? __('Auto collection') : __('Collection') }}
+        </div>
         <h1 style="font-size:clamp(1.65rem,4vw,2.7rem);margin-bottom:.4rem">{{ $collection->title }}</h1>
         <div class="gold" style="font-size:.88rem;margin-bottom:1.1rem">
-          <i class="fas fa-music"></i> {{ $collection->tilawat->count() }} {{ __('Tilawat') }}
+          <i class="fas fa-music"></i> {{ $tilawat->count() }} {{ __('Tilawat') }}
+          @if($collection->isAuto())
+          <span style="color:var(--text2);margin-inline-start:.6rem"><i class="fas fa-rotate"></i> {{ __('Updates automatically') }}</span>
+          @endif
         </div>
-        @if($collection->tilawat->isNotEmpty())
+        @if($tilawat->isNotEmpty())
         <button class="btn btn-primary" onclick="document.querySelector('#cList [data-track]')?.click()">
           <i class="fas fa-play"></i> {{ __('Play All') }}
         </button>
@@ -40,14 +46,14 @@
   </div>
   @endif
 
-  @if($collection->tilawat->isEmpty())
+  @if($tilawat->isEmpty())
   <div style="text-align:center;padding:4rem 1rem;color:var(--text2)">
     <i class="fas fa-music-slash" style="font-size:2.5rem;display:block;margin-bottom:.65rem"></i>
     {{ __('No tilawat yet.') }}
   </div>
   @else
   <div style="display:flex;flex-direction:column;gap:.45rem" id="cList" data-queue>
-    @foreach($collection->tilawat as $t)
+    @foreach($tilawat as $t)
     <div class="track-row" data-track="{{ json_encode($t->playerPayload()) }}" data-track-id="{{ $t->id }}">
       <span class="track-num">{{ $loop->iteration }}</span>
       <span class="track-eq" aria-hidden="true"><span></span><span></span><span></span></span>

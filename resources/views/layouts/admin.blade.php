@@ -80,6 +80,11 @@
         @endif
         @endrole
       </a>
+      @role('admin')
+      <a href="{{ route('admin.collections.index') }}" class="s-link {{ request()->routeIs('admin.collections.*') ? 'active':'' }}">
+        <i class="fas fa-layer-group"></i> <span>{{ __('Collections') }}</span>
+      </a>
+      @endrole
 
       <div class="adm-nav-divider"></div>
       <div class="nav-sec-lbl">{{ __('Publishing') }}</div>

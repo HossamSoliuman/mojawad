@@ -10,7 +10,7 @@ class CollectionController extends Controller
     public function index(): View
     {
         $collections = Collection::active()
-            ->with(['tilawat' => fn ($q) => $q->where('status', 'active')])
+            ->with(['tilawat' => fn ($q) => $q->where('status', 'active')->with('qari')])
             ->withCount(['tilawat as tilawat_count' => fn ($q) => $q->where('status', 'active')])
             ->orderBy('sort_order')
             ->latest()
@@ -23,8 +23,13 @@ class CollectionController extends Controller
     {
         abort_unless($collection->is_active, 404);
 
-        $collection->load(['tilawat' => fn ($q) => $q->where('status', 'active')->with('qari')]);
+        if (! $collection->isAuto()) {
+            $collection->load(['tilawat' => fn ($q) => $q->where('status', 'active')->with('qari')]);
+        }
 
-        return view('pages.collections.show', compact('collection'));
+        return view('pages.collections.show', [
+            'collection' => $collection,
+            'tilawat' => $collection->items(),
+        ]);
     }
 }

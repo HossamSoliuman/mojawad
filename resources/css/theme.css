@@ -4315,6 +4315,22 @@ textarea:focus-visible,
   color: var(--gold);
 }
 
+.collection-card-auto {
+  position: absolute;
+  top: .55rem;
+  inset-inline-end: .55rem;
+  width: 1.85rem;
+  height: 1.85rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: .72rem;
+  color: var(--gold);
+  background: rgba(7, 7, 15, .78);
+  border: 1px solid color-mix(in srgb, var(--gold) 45%, transparent);
+  backdrop-filter: blur(4px);
+}
+
 /* ── Profile page ── */
 .profile-id {
   display: flex;
