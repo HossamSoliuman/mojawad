@@ -41,10 +41,6 @@
 <section class="hero" x-data="quranRadio()">
   <div class="hero-grid">
     <div class="hero-live z1">
-      <span class="hero-eyebrow"><span class="radio-dot"></span> {{ __('Live') }} · {{ __('Broadcasting from Cairo') }}</span>
-      <h1 class="hero-heading">{{ __('The Holy Qur\'an, with you everywhere') }}</h1>
-      <p class="hero-sub">{{ __('Listen to the live broadcast and explore recitations from your favorite reciters.') }}</p>
-
       <div class="radio-card" :class="playing && 'playing'">
         <div class="radio-live">
           <span class="radio-dot"></span> {{ __('Live') }}
@@ -54,7 +50,6 @@
         </div>
         <div class="radio-meta">
           <div class="radio-name">{{ __('Holy Qur\'an Radio') }}</div>
-          <div class="radio-from"><i class="fas fa-tower-broadcast"></i> {{ __('Broadcasting from Cairo') }}</div>
         </div>
         <button class="radio-btn" @click="toggle()" :title="playing ? '{{ __('Pause') }}' : '{{ __('Listen Live') }}'">
           <i class="fas" :class="loading ? 'fa-spinner fa-spin' : (playing ? 'fa-pause' : 'fa-play')"></i>
@@ -196,20 +191,6 @@
         <div class="q-count">{{ $q->tilawat_count }} {{ __('tilawat') }}</div>
       </div>
       <div class="q-play-btn"><i class="fas fa-play"></i></div>
-    </a>
-    @endforeach
-  </div>
-</section>
-@endif
-
-@if($browse_surahs->isNotEmpty())
-<section class="section">
-  <div class="sec-title"><i class="fas fa-book-open gold"></i> {{ __('Browse by Surah') }}</div>
-  <div class="surah-rail">
-    @foreach($browse_surahs as $n)
-    <a href="{{ route('surah.show', $n) }}" wire:navigate class="surah-chip">
-      <span class="surah-chip-num">{{ $n }}</span>
-      <span class="surah-chip-name">{{ config('surahs.'.$n, $n) }}</span>
     </a>
     @endforeach
   </div>

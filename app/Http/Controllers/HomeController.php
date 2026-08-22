@@ -25,8 +25,6 @@ class HomeController extends Controller
             'top_qaris' => Qari::where('status', 'active')->withCount(['tilawat' => fn ($q) => $q->where('status', 'active')])->orderByDesc('is_featured')->take(12)->get(),
             'recent_tilawat' => Tilawa::with('qari')->where('status', 'active')->latest()->take(12)->get(),
             'popular_tilawat' => Tilawa::with('qari')->where('status', 'active')->orderByDesc('likes_count')->take(12)->get(),
-            'browse_surahs' => Tilawa::where('status', 'active')->whereNotNull('surah_number')
-                ->distinct()->orderBy('surah_number')->pluck('surah_number'),
             'trending_tilawat' => $this->trendingTilawat(),
             'collections' => Collection::active()
                 ->with(['tilawat' => fn ($q) => $q->where('status', 'active')->limit(1)])
