@@ -7,6 +7,8 @@ use App\Models\FacebookCampaign;
 use App\Models\FacebookPost;
 use App\Models\User;
 use App\Services\FacebookPostPublisher;
+use Illuminate\Console\Scheduling\Event;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
@@ -443,4 +445,16 @@ it('passes the check when the token metadata cannot be read', function () {
     ]);
 
     $this->artisan('facebook:check')->assertSuccessful();
+});
+
+/**
+ * Publishing is manual now: the command stays available to run by hand, but
+ * nothing on the schedule may reach for it on its own.
+ */
+it('never publishes on a schedule', function () {
+    $scheduled = collect(app(Schedule::class)->events())
+        ->map(fn (Event $event): string => $event->command ?? $event->description ?? '')
+        ->filter(fn (string $command): bool => str_contains($command, 'facebook:publish-due'));
+
+    expect($scheduled)->toBeEmpty();
 });
