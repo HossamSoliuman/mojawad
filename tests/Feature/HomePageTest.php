@@ -38,3 +38,9 @@ it('no longer renders the browse by surah section', function () {
         ->assertDontSee(__('Browse by Surah'))
         ->assertDontSee('surah-chip');
 });
+
+it('scopes the home content so desktop density styles apply only here', function () {
+    $this->get(route('home'))
+        ->assertOk()
+        ->assertSee('class="wrap home" id="homeContent"', false);
+});

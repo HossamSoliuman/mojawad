@@ -4378,3 +4378,139 @@ textarea:focus-visible,
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Home: denser desktop layout ──────────────────────────────────── */
+@media(min-width:1024px) {
+  .hero,
+  .hero-grid {
+    min-height: clamp(300px, 40vh, 400px);
+  }
+
+  .hero-grid {
+    padding: 4.5rem 2rem 2rem;
+  }
+
+  .hero-scroll-cue {
+    display: none;
+  }
+
+  .home .section {
+    padding: 1.1rem 0;
+  }
+
+  .home .sec-title {
+    font-size: 1.15rem;
+    margin-bottom: .95rem;
+  }
+
+  .home .grid-tilawat {
+    grid-template-columns: repeat(auto-fill, minmax(188px, 1fr));
+    gap: .9rem;
+  }
+
+  .home .rail .rail-card {
+    flex-basis: 188px;
+  }
+
+  .home .rail {
+    gap: .9rem;
+  }
+
+  .home .t-card-body {
+    padding: .65rem .75rem .7rem;
+  }
+
+  .home .t-card-title {
+    font-size: 14px;
+    margin-bottom: .1rem;
+  }
+
+  .home .t-card-qari {
+    display: block;
+    font-size: .74rem;
+    margin-bottom: .35rem;
+  }
+
+  .home .t-card-meta {
+    font-size: .7rem;
+  }
+
+  .home .t-play-btn {
+    width: 38px;
+    height: 38px;
+    bottom: .55rem;
+    right: .55rem;
+    font-size: .85rem;
+  }
+
+  .home .grid-qaris {
+    grid-template-columns: repeat(auto-fill, minmax(142px, 1fr));
+    gap: .9rem;
+  }
+
+  .home .q-overlay {
+    padding: .7rem;
+  }
+
+  .home .q-name {
+    font-size: .84rem;
+  }
+
+  .home .q-count {
+    font-size: .7rem;
+  }
+
+  .home .q-play-btn {
+    width: 40px;
+    height: 40px;
+    font-size: .9rem;
+  }
+
+  .home .grid-collections {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: .9rem;
+  }
+
+  .home .collection-card-overlay {
+    padding: .7rem;
+  }
+
+  .home .collection-card-title {
+    font-size: .9rem;
+  }
+
+  .home .t-list-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .5rem .9rem;
+  }
+
+  .home .t-list-item {
+    gap: .85rem;
+    padding: .5rem .8rem;
+  }
+
+  .home .t-list-cover {
+    width: 42px;
+    height: 42px;
+  }
+
+  .home .t-list-title {
+    font-size: 14px;
+  }
+
+  .home .t-list-qari {
+    font-size: .72rem;
+  }
+
+  .home .t-list-meta {
+    gap: .8rem;
+    font-size: .7rem;
+  }
+
+  .home .t-list-play {
+    width: 32px;
+    height: 32px;
+    font-size: .72rem;
+  }
+}

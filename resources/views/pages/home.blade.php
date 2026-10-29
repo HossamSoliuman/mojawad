@@ -63,7 +63,7 @@
   </a>
 </section>
 
-<div class="wrap" id="homeContent">
+<div class="wrap home" id="homeContent">
 
 <section class="section" x-data="continueListening()" @tilawa-history-changed.window="load()"
   x-show="items.length" x-cloak style="display:none">
