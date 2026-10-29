@@ -1554,42 +1554,174 @@
                 },
             }));
 
-            Alpine.data('quranRadio', () => ({
-                audio: null,
-                playing: false,
-                loading: false,
-                stream: 'https://n0e.radiojar.com/8s5u5tpdtwzuv',
-                init() {
-                    if (!window.quranRadioAudio) {
-                        // Keep one Audio element alive for the whole session (survives wire:navigate).
-                        // Pre-buffer the live stream up-front so the first click starts instantly.
-                        const a = new Audio();
-                        a.preload = 'auto';
-                        a.src = this.stream;
-                        a.load();
-                        window.quranRadioAudio = a;
-                    }
-                    this.audio = window.quranRadioAudio;
-                    this.playing = !this.audio.paused && !!this.audio.src;
-                    this.audio.addEventListener('playing', () => { this.playing = true; this.loading = false; });
-                    this.audio.addEventListener('pause', () => { this.playing = false; });
-                    this.audio.addEventListener('waiting', () => { this.loading = true; });
-                    this.audio.addEventListener('error', () => { this.playing = false; this.loading = false; });
-                },
-                toggle() {
-                    if (this.playing) {
-                        this.audio.pause();
+            // ── Live Qur'an radio engine ──────────────────────────────────────
+            // One Audio element for the whole session (survives wire:navigate).
+            // The radio is always live: a pause drops the connection, and a resume,
+            // a dropped network or a long stall reconnects to the live edge instead
+            // of replaying a stale buffer like a recording.
+            window._quranRadioEngine = () => {
+                if (window._quranRadio) return window._quranRadio;
+
+                const stream = 'https://n0e.radiojar.com/8s5u5tpdtwzuv';
+                const freshMs = 10000;
+                const connectMs = 15000;
+                const stallMs = 4000;
+                const maxLagMs = 8000;
+                const audio = new Audio();
+                audio.preload = 'auto';
+
+                const engine = {
+                    audio,
+                    wanted: false,
+                    sounding: false,
+                    connecting: false,
+                    connectedAt: 0,
+                    lagMs: 0,
+                    waitingSince: 0,
+                    retries: 0,
+                    retryTimer: null,
+                    stallTimer: null,
+                    idleTimer: null,
+                    emit() {
+                        window.dispatchEvent(new CustomEvent('quran-radio-state', {
+                            detail: { active: this.wanted, live: this.wanted && this.sounding },
+                        }));
+                    },
+                    clearTimers() {
+                        clearTimeout(this.retryTimer);
+                        clearTimeout(this.stallTimer);
+                        clearTimeout(this.idleTimer);
+                    },
+                    connect() {
+                        this.clearTimers();
+                        this.connecting = true;
+                        this.sounding = false;
+                        this.lagMs = 0;
+                        this.waitingSince = 0;
+                        // Re-assigning src restarts the request at the live edge. The
+                        // stream rejects query strings, so no cache-buster.
+                        audio.src = stream;
+                        audio.load();
+                        this.connectedAt = Date.now();
+                        // An unused pre-buffer goes stale, so let it go.
+                        this.idleTimer = setTimeout(() => { if (!this.wanted) this.release(); }, freshMs);
+                    },
+                    release() {
+                        this.clearTimers();
+                        this.connecting = false;
+                        this.sounding = false;
+                        if (audio.getAttribute('src')) {
+                            audio.removeAttribute('src');
+                            audio.load();
+                        }
+                    },
+                    // Load failures surface through the `error` event; an AbortError
+                    // only means a reconnect replaced the source mid-start.
+                    start() {
+                        audio.play().catch((e) => {
+                            if (e && e.name === 'NotAllowedError') {
+                                this.wanted = false;
+                                this.release();
+                                this.emit();
+                            }
+                        });
+                    },
+                    play() {
+                        if (window.globalAudio && !window.globalAudio.paused) window.globalAudio.pause();
+                        this.wanted = true;
+                        this.retries = 0;
+                        const fresh = audio.getAttribute('src') && !audio.error
+                            && Date.now() - this.connectedAt < freshMs;
+                        if (!fresh) this.connect();
+                        this.emit();
+                        this.start();
+                    },
+                    pause() {
+                        this.wanted = false;
+                        audio.pause();
+                        this.release();
+                        this.emit();
+                    },
+                    reconnect() {
+                        if (!this.wanted) return;
+                        this.clearTimers();
+                        this.sounding = false;
+                        this.emit();
+                        const delay = this.retries === 0 ? 0 : Math.min(1000 * 2 ** (this.retries - 1), 10000);
+                        this.retries++;
+                        this.retryTimer = setTimeout(() => {
+                            if (!this.wanted) return;
+                            this.connect();
+                            this.start();
+                        }, delay);
+                    },
+                };
+
+                audio.addEventListener('playing', () => {
+                    if (engine.waitingSince) engine.lagMs += Date.now() - engine.waitingSince;
+                    engine.waitingSince = 0;
+                    clearTimeout(engine.stallTimer);
+                    if (engine.lagMs > maxLagMs) {
+                        engine.retries = 0;
+                        engine.reconnect();
                         return;
                     }
-                    // Optimistic UI: flip to loading the instant the user clicks.
-                    this.loading = true;
-                    if (window.globalAudio && !window.globalAudio.paused) {
-                        window.globalAudio.pause();
+                    engine.connecting = false;
+                    engine.sounding = true;
+                    engine.retries = 0;
+                    engine.emit();
+                });
+                audio.addEventListener('waiting', () => {
+                    if (!engine.wanted) return;
+                    if (!engine.connecting && !engine.waitingSince) engine.waitingSince = Date.now();
+                    engine.sounding = false;
+                    engine.emit();
+                    clearTimeout(engine.stallTimer);
+                    engine.stallTimer = setTimeout(() => engine.reconnect(), engine.connecting ? connectMs : stallMs);
+                });
+                audio.addEventListener('error', () => {
+                    if (!audio.getAttribute('src')) return;
+                    engine.reconnect();
+                });
+                audio.addEventListener('ended', () => engine.reconnect());
+                // Pauses from elsewhere (media keys, another player) count as the
+                // listener stopping, except the ones a reconnect or a dropped
+                // stream (which pauses right before `ended`) triggers.
+                audio.addEventListener('pause', () => {
+                    if (engine.connecting || !engine.wanted || audio.ended || audio.error) return;
+                    engine.pause();
+                });
+                window.addEventListener('online', () => {
+                    if (!engine.wanted) return;
+                    engine.retries = 0;
+                    engine.reconnect();
+                });
+
+                window.quranRadioAudio = audio;
+                window._quranRadio = engine;
+                // Pre-buffer so a first click right after landing starts instantly.
+                engine.connect();
+                return engine;
+            };
+
+            Alpine.data('quranRadio', () => ({
+                engine: null,
+                playing: false,
+                loading: false,
+                init() {
+                    this.engine = window._quranRadioEngine();
+                    this.sync({ active: this.engine.wanted, live: this.engine.wanted && this.engine.sounding });
+                },
+                sync(state) {
+                    this.playing = state.live;
+                    this.loading = state.active && !state.live;
+                },
+                toggle() {
+                    if (this.engine.wanted) {
+                        this.engine.pause();
+                        return;
                     }
-                    if (!this.audio.src) {
-                        this.audio.src = this.stream;
-                    }
-                    this.audio.play().catch(() => { this.loading = false; });
+                    this.engine.play();
                 },
             }));
 
@@ -1685,7 +1817,7 @@
                 },
                 openOverlay() {
                     if (window.globalAudio && !window.globalAudio.paused) window.globalAudio.pause();
-                    if (window.quranRadioAudio && !window.quranRadioAudio.paused) window.quranRadioAudio.pause();
+                    if (window._quranRadio && window._quranRadio.wanted) window._quranRadio.pause();
                     this.open = true;
                     document.body.style.overflow = 'hidden';
                     this.$nextTick(() => this.show());

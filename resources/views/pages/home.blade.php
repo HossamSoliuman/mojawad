@@ -38,7 +38,7 @@
 </div>
 @endif
 
-<section class="hero" x-data="quranRadio()">
+<section class="hero" x-data="quranRadio()" @quran-radio-state.window="sync($event.detail)">
   <div class="hero-grid">
     <div class="hero-live z1">
       <div class="radio-card" :class="playing && 'playing'">
@@ -51,7 +51,7 @@
         <div class="radio-meta">
           <div class="radio-name">{{ __('Holy Qur\'an Radio') }}</div>
         </div>
-        <button class="radio-btn" @click="toggle()" :title="playing ? '{{ __('Pause') }}' : '{{ __('Listen Live') }}'">
+        <button class="radio-btn" @click="toggle()" :title="(playing || loading) ? '{{ __('Pause') }}' : '{{ __('Listen Live') }}'">
           <i class="fas" :class="loading ? 'fa-spinner fa-spin' : (playing ? 'fa-pause' : 'fa-play')"></i>
         </button>
       </div>

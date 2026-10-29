@@ -20,6 +20,14 @@ it('renders the hero with the radio card only', function () {
         ->assertDontSee(__('Listen to the live broadcast and explore recitations from your favorite reciters.'));
 });
 
+it('wires the radio card to the live radio engine', function () {
+    $this->get(route('home'))
+        ->assertOk()
+        ->assertSee('@quran-radio-state.window="sync($event.detail)"', false)
+        ->assertSee('window._quranRadioEngine = () =>', false)
+        ->assertDontSee('8s5u5tpdtwzuv?_=', false);
+});
+
 it('lists the top qaris in their admin sort order', function () {
     Qari::factory()->create(['name_ar' => 'ثالث', 'status' => 'active', 'sort_order' => 30]);
     Qari::factory()->create(['name_ar' => 'أول', 'status' => 'active', 'sort_order' => 10]);
