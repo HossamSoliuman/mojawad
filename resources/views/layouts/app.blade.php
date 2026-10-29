@@ -1556,9 +1556,10 @@
 
             // ── Live Qur'an radio engine ──────────────────────────────────────
             // One Audio element for the whole session (survives wire:navigate).
-            // The radio is always live: a pause drops the connection, and a resume,
-            // a dropped network or a long stall reconnects to the live edge instead
-            // of replaying a stale buffer like a recording.
+            // The radio is always live: a resume, a dropped network or a long
+            // stall reconnects to the live edge instead of replaying a stale
+            // buffer like a recording. While the radio card is on screen the
+            // stream stays connected but muted ("warm"), so play is instant.
             window._quranRadioEngine = () => {
                 if (window._quranRadio) return window._quranRadio;
 
@@ -1567,12 +1568,18 @@
                 const connectMs = 15000;
                 const stallMs = 4000;
                 const maxLagMs = 8000;
+                const idleMs = 120000;
                 const audio = new Audio();
                 audio.preload = 'auto';
 
                 const engine = {
                     audio,
                     wanted: false,
+                    warming: false,
+                    warmBlocked: false,
+                    cardInView: false,
+                    playerHooked: false,
+                    lastActivity: Date.now(),
                     sounding: false,
                     connecting: false,
                     connectedAt: 0,
@@ -1582,6 +1589,10 @@
                     retryTimer: null,
                     stallTimer: null,
                     idleTimer: null,
+                    coolTimer: null,
+                    active() {
+                        return this.wanted || this.warming;
+                    },
                     emit() {
                         window.dispatchEvent(new CustomEvent('quran-radio-state', {
                             detail: { active: this.wanted, live: this.wanted && this.sounding },
@@ -1603,8 +1614,8 @@
                         audio.src = stream;
                         audio.load();
                         this.connectedAt = Date.now();
-                        // An unused pre-buffer goes stale, so let it go.
-                        this.idleTimer = setTimeout(() => { if (!this.wanted) this.release(); }, freshMs);
+                        // An unplayed pre-buffer goes stale, so let it go.
+                        this.idleTimer = setTimeout(() => { if (!this.active()) this.release(); }, freshMs);
                     },
                     release() {
                         this.clearTimers();
@@ -1618,39 +1629,108 @@
                     // Load failures surface through the `error` event; an AbortError
                     // only means a reconnect replaced the source mid-start.
                     start() {
+                        const listening = this.wanted;
                         audio.play().catch((e) => {
-                            if (e && e.name === 'NotAllowedError') {
+                            if (!e || e.name !== 'NotAllowedError') return;
+                            if (listening && this.wanted) {
                                 this.wanted = false;
                                 this.release();
                                 this.emit();
+                            } else if (!listening && this.warming) {
+                                // Muted autoplay is blocked here: fall back to a plain pre-buffer.
+                                this.warming = false;
+                                this.warmBlocked = true;
+                                this.connect();
                             }
                         });
                     },
                     play() {
                         if (window.globalAudio && !window.globalAudio.paused) window.globalAudio.pause();
-                        this.wanted = true;
-                        this.retries = 0;
+                        clearTimeout(this.coolTimer);
+                        const warmed = this.warming && audio.getAttribute('src') && !audio.error;
                         const fresh = audio.getAttribute('src') && !audio.error
                             && Date.now() - this.connectedAt < freshMs;
-                        if (!fresh) this.connect();
+                        this.warming = false;
+                        this.wanted = true;
+                        this.retries = 0;
+                        audio.muted = false;
+                        if (!warmed && !fresh) this.connect();
                         this.emit();
                         this.start();
                     },
+                    // Pausing keeps a live stream flowing silently when it can, so
+                    // resuming is instant and still at the live edge.
                     pause() {
                         this.wanted = false;
+                        if (!audio.paused && this.sounding && this.canWarm()) {
+                            audio.muted = true;
+                            this.warming = true;
+                            this.scheduleCool();
+                            this.emit();
+                            return;
+                        }
+                        this.stop();
+                    },
+                    stop() {
+                        clearTimeout(this.coolTimer);
+                        this.wanted = false;
+                        this.warming = false;
                         audio.pause();
                         this.release();
                         this.emit();
                     },
+                    canWarm() {
+                        if (this.warmBlocked || !this.cardInView || document.visibilityState !== 'visible') return false;
+                        if (navigator.connection && navigator.connection.saveData) return false;
+                        if (window.globalAudio && !window.globalAudio.paused) return false;
+                        return Date.now() - this.lastActivity < idleMs;
+                    },
+                    warm() {
+                        if (this.active()) return;
+                        this.warming = true;
+                        this.retries = 0;
+                        audio.muted = true;
+                        this.connect();
+                        this.start();
+                    },
+                    cool() {
+                        if (this.warming && !this.wanted) this.stop();
+                    },
+                    scheduleCool() {
+                        clearTimeout(this.coolTimer);
+                        const left = idleMs - (Date.now() - this.lastActivity);
+                        this.coolTimer = setTimeout(() => this.warmCheck(), Math.max(left, 0) + 100);
+                    },
+                    warmCheck() {
+                        this.hookPlayer();
+                        if (this.wanted) return;
+                        if (!this.canWarm()) {
+                            this.cool();
+                            return;
+                        }
+                        this.warm();
+                        this.scheduleCool();
+                    },
+                    // The main player and the radio never share the bandwidth.
+                    hookPlayer() {
+                        if (this.playerHooked || !window.globalAudio) return;
+                        this.playerHooked = true;
+                        window.globalAudio.addEventListener('play', () => this.warmCheck());
+                        window.globalAudio.addEventListener('pause', () => this.warmCheck());
+                    },
+                    setCardInView(inView) {
+                        this.cardInView = inView;
+                        this.warmCheck();
+                    },
                     reconnect() {
-                        if (!this.wanted) return;
+                        if (!this.active()) return;
                         this.clearTimers();
                         this.sounding = false;
                         this.emit();
                         const delay = this.retries === 0 ? 0 : Math.min(1000 * 2 ** (this.retries - 1), 10000);
                         this.retries++;
                         this.retryTimer = setTimeout(() => {
-                            if (!this.wanted) return;
+                            if (!this.active()) return;
                             this.connect();
                             this.start();
                         }, delay);
@@ -1672,7 +1752,7 @@
                     engine.emit();
                 });
                 audio.addEventListener('waiting', () => {
-                    if (!engine.wanted) return;
+                    if (!engine.active()) return;
                     if (!engine.connecting && !engine.waitingSince) engine.waitingSince = Date.now();
                     engine.sounding = false;
                     engine.emit();
@@ -1684,33 +1764,64 @@
                     engine.reconnect();
                 });
                 audio.addEventListener('ended', () => engine.reconnect());
-                // Pauses from elsewhere (media keys, another player) count as the
-                // listener stopping, except the ones a reconnect or a dropped
-                // stream (which pauses right before `ended`) triggers.
+                // Pauses from elsewhere (media keys, the browser) stop the radio,
+                // except the ones a reconnect or a dropped stream (which pauses
+                // right before `ended`) triggers. A warm stream the browser keeps
+                // pausing is not retried.
                 audio.addEventListener('pause', () => {
-                    if (engine.connecting || !engine.wanted || audio.ended || audio.error) return;
-                    engine.pause();
+                    if (engine.connecting || !engine.active() || audio.ended || audio.error) return;
+                    const listening = engine.wanted;
+                    engine.stop();
+                    if (listening) {
+                        engine.warmCheck();
+                    } else {
+                        engine.warmBlocked = true;
+                    }
                 });
                 window.addEventListener('online', () => {
-                    if (!engine.wanted) return;
+                    if (!engine.active()) return;
                     engine.retries = 0;
                     engine.reconnect();
+                });
+                document.addEventListener('visibilitychange', () => engine.warmCheck());
+                // Warm only for someone who is around: an idle page lets the stream go.
+                let activityAt = 0;
+                const onActivity = () => {
+                    const now = Date.now();
+                    if (now - activityAt < 1000) return;
+                    activityAt = now;
+                    engine.lastActivity = now;
+                    if (!engine.active()) engine.warmCheck();
+                };
+                ['pointerdown', 'pointermove', 'keydown', 'touchstart', 'wheel', 'scroll'].forEach((type) => {
+                    window.addEventListener(type, onActivity, { passive: true, capture: true });
                 });
 
                 window.quranRadioAudio = audio;
                 window._quranRadio = engine;
-                // Pre-buffer so a first click right after landing starts instantly.
-                engine.connect();
                 return engine;
             };
 
             Alpine.data('quranRadio', () => ({
                 engine: null,
+                observer: null,
                 playing: false,
                 loading: false,
                 init() {
                     this.engine = window._quranRadioEngine();
                     this.sync({ active: this.engine.wanted, live: this.engine.wanted && this.engine.sounding });
+                    if ('IntersectionObserver' in window) {
+                        this.observer = new IntersectionObserver(([entry]) => {
+                            this.engine.setCardInView(entry.isIntersecting);
+                        });
+                        this.observer.observe(this.$el);
+                    } else {
+                        this.engine.setCardInView(true);
+                    }
+                },
+                destroy() {
+                    if (this.observer) this.observer.disconnect();
+                    this.engine.setCardInView(false);
                 },
                 sync(state) {
                     this.playing = state.live;

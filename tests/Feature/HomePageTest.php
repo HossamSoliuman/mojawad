@@ -25,6 +25,7 @@ it('wires the radio card to the live radio engine', function () {
         ->assertOk()
         ->assertSee('@quran-radio-state.window="sync($event.detail)"', false)
         ->assertSee('window._quranRadioEngine = () =>', false)
+        ->assertSee('this.engine.setCardInView(entry.isIntersecting)', false)
         ->assertDontSee('8s5u5tpdtwzuv?_=', false);
 });
 
