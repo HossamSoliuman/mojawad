@@ -1839,18 +1839,91 @@
             // ── Next prayer (home hero) ───────────────────────────────────────
             // The server sends today's and tomorrow's prayers as epoch ms. Shows
             // the next prayer's clock time, switching to a live countdown in
-            // its final 20 minutes.
-            Alpine.data('prayerCountdown', (prayers) => ({
-                prayers: prayers || [],
+            // its final 20 minutes. Location comes from the browser timezone,
+            // or exact coordinates once the visitor shares them; it is kept in
+            // the prayer_location cookie so later visits render it server-side.
+            Alpine.data('prayerCountdown', (state, endpoint) => ({
+                prayers: state.prayers || [],
+                city: state.city,
+                location: state.location,
+                precise: state.precise,
+                ready: state.stored,
+                canLocate: false,
+                locating: false,
                 next: null,
                 remaining: 0,
                 timer: null,
                 init() {
                     this.tick();
                     this.timer = setInterval(() => this.tick(), 1000);
+                    this.detect().finally(() => { this.ready = true; });
                 },
                 destroy() {
                     clearInterval(this.timer);
+                },
+                async detect() {
+                    let permission = null;
+                    try {
+                        permission = (await navigator.permissions.query({ name: 'geolocation' })).state;
+                    } catch (e) {}
+                    this.canLocate = !!navigator.geolocation && permission !== 'denied';
+
+                    let wanted = this.timezone();
+                    if (permission === 'granted' || (permission === null && this.precise)) {
+                        const coords = await this.position().catch(() => null);
+                        if (coords) wanted += '|' + coords;
+                        else if (this.precise) wanted = this.location;
+                    }
+
+                    if (!wanted) return;
+                    if (wanted === this.location) {
+                        this.remember(wanted);
+                        return;
+                    }
+                    await this.load(wanted);
+                },
+                locate() {
+                    if (this.locating) return;
+                    this.locating = true;
+                    this.position()
+                        .then((coords) => this.load(this.timezone() + '|' + coords))
+                        .catch((error) => {
+                            if (error && error.code === 1) this.canLocate = false;
+                        })
+                        .finally(() => { this.locating = false; });
+                },
+                position() {
+                    return new Promise((resolve, reject) => {
+                        if (!navigator.geolocation) return reject(null);
+                        navigator.geolocation.getCurrentPosition(
+                            (p) => resolve(p.coords.latitude.toFixed(2) + ',' + p.coords.longitude.toFixed(2)),
+                            reject,
+                            { maximumAge: 30 * 60000, timeout: 10000 },
+                        );
+                    });
+                },
+                timezone() {
+                    try {
+                        return Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+                    } catch (e) {
+                        return '';
+                    }
+                },
+                remember(location) {
+                    document.cookie = 'prayer_location=' + encodeURIComponent(location) + ';path=/;max-age=31536000;samesite=lax';
+                },
+                async load(location) {
+                    this.remember(location);
+                    try {
+                        const response = await fetch(endpoint, { headers: { Accept: 'application/json' } });
+                        if (!response.ok) return;
+                        const data = await response.json();
+                        this.prayers = data.prayers;
+                        this.city = data.city;
+                        this.location = data.location;
+                        this.precise = data.precise;
+                        this.tick();
+                    } catch (e) {}
                 },
                 tick() {
                     const now = Date.now();

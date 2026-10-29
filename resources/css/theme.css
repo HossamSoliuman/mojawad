@@ -929,6 +929,32 @@ textarea.form-control {
   font-variant-numeric: tabular-nums;
 }
 
+.prayer-next-city {
+  padding-inline-start: .55rem;
+  border-inline-start: 1px solid var(--border2);
+  color: var(--text2);
+  font-weight: 600;
+}
+
+.prayer-next-locate {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  margin-inline-start: .1rem;
+  border: none;
+  border-radius: 50%;
+  background: rgba(var(--gold-rgb), .12);
+  color: var(--gold);
+  font-size: .75rem;
+  cursor: pointer;
+  transition: background .2s;
+}
+
+.prayer-next-locate:hover {
+  background: rgba(var(--gold-rgb), .25);
+}
+
 .prayer-next.soon {
   border-color: rgba(var(--gold-rgb), .55);
   box-shadow: 0 10px 34px rgba(0, 0, 0, .45), 0 0 0 1px rgba(var(--gold-rgb), .25);

@@ -39,12 +39,17 @@
 @endif
 
 <section class="hero" x-data="quranRadio()" @quran-radio-state.window="sync($event.detail)">
-  <div class="prayer-next" x-data="prayerCountdown(@js($prayer_times))" x-show="next" x-cloak style="display:none"
+  <div class="prayer-next" x-data="prayerCountdown(@js($prayer), @js(route('prayer-times')))" x-show="ready && next" x-cloak style="display:none"
     :class="soon && 'soon'" role="timer" title="{{ __('Next prayer') }}">
     <i class="fas fa-mosque prayer-next-icon"></i>
     <span class="prayer-next-name" x-text="next && next.name"></span>
     <span class="prayer-next-time" x-show="!soon" x-text="next && next.time"></span>
     <span class="prayer-next-countdown" x-show="soon">{{ __('in') }} <span class="prayer-next-clock" x-text="countdown"></span></span>
+    <span class="prayer-next-city" x-show="city" x-text="city"></span>
+    <button type="button" class="prayer-next-locate" x-show="canLocate && !precise" @click="locate()"
+      title="{{ __('Use my exact location') }}" aria-label="{{ __('Use my exact location') }}">
+      <i class="fas" :class="locating ? 'fa-spinner fa-spin' : 'fa-location-crosshairs'"></i>
+    </button>
   </div>
 
   <div class="hero-grid">

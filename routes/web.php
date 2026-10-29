@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\WatchHistoryController;
 use App\Http\Controllers\CollectionController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PodcastFeedController;
+use App\Http\Controllers\PrayerTimesController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QariController;
 use App\Http\Controllers\ShortViewController;
@@ -29,6 +30,7 @@ use Illuminate\Support\Facades\Route;
 
 // ── Public ──────────────────────────────────────────────────────────────
 Route::get('/', HomeController::class)->name('home');
+Route::get('/prayer-times', PrayerTimesController::class)->name('prayer-times')->middleware('throttle:30,1');
 Route::post('/shorts/{short}/view', ShortViewController::class)->name('shorts.view');
 
 // Podcast RSS feed pulled by Spotify & Anghami — submit this URL to each once.

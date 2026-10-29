@@ -41,12 +41,14 @@ it('renders the next prayer countdown in the hero', function () {
 });
 
 it('passes today and tomorrow prayers in Cairo time to the hero', function () {
-    $this->travelTo(CarbonImmutable::parse('2026-01-15 10:00', PrayerTimes::TIMEZONE));
+    $this->travelTo(CarbonImmutable::parse('2026-01-15 10:00', PrayerTimes::CAIRO_TIMEZONE));
     app()->setLocale('ar');
 
-    $prayers = $this->get(route('home'))->assertOk()->viewData('prayer_times');
+    $prayer = $this->get(route('home'))->assertOk()->viewData('prayer');
+    $prayers = $prayer['prayers'];
 
-    expect($prayers)->toHaveCount(10)
+    expect($prayer)->toMatchArray(['location' => 'Africa/Cairo', 'precise' => false, 'city' => null, 'stored' => false])
+        ->and($prayers)->toHaveCount(10)
         ->and(array_column($prayers, 'key'))->toBe(['fajr', 'dhuhr', 'asr', 'maghrib', 'isha', 'fajr', 'dhuhr', 'asr', 'maghrib', 'isha'])
         ->and($prayers[2]['name'])->toBe('العصر')
         ->and($prayers[2]['time'])->toBe('2:58 م')
