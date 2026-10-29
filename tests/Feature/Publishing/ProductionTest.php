@@ -383,6 +383,22 @@ it('moves a published recitation back to publishing to post it elsewhere', funct
     expect($tilawa->fresh()->production_stage)->toBe('publishing');
 });
 
+it('moves recitations published only through the podcast back to publishing', function () {
+    $owner = User::factory()->create();
+    $podcastOnly = readyTilawa($owner, 'ready', 'published');
+    Publication::factory()->podcast()->completed()->create(['tilawa_id' => $podcastOnly->id]);
+    $failedUpload = readyTilawa($owner, 'ready', 'published');
+    Publication::factory()->youtube()->failed()->create(['tilawa_id' => $failedUpload->id]);
+    $postedOnFacebook = readyTilawa($owner, 'ready', 'published');
+    Publication::factory()->facebook()->completed()->create(['tilawa_id' => $postedOnFacebook->id]);
+
+    (require database_path('migrations/2026_10_29_135017_move_unposted_recitations_back_to_publishing.php'))->up();
+
+    expect($podcastOnly->fresh()->production_stage)->toBe('publishing')
+        ->and($failedUpload->fresh()->production_stage)->toBe('publishing')
+        ->and($postedOnFacebook->fresh()->production_stage)->toBe('published');
+});
+
 it('does not mark as posted without a rendered customized card', function () {
     $creator = User::factory()->create()->assignRole('creator');
     $tilawa = readyTilawa($creator, 'ready', 'publishing');
