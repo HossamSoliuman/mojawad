@@ -76,7 +76,7 @@ return [
     |
     */
 
-    'cta_key' => 'Listen to Mojawad on mojawad.org',
+    'cta_key' => 'Listen to Mojawad on mojawad.com',
 
     'utm' => [
         'utm_source' => 'tiktok',

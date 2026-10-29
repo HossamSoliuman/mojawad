@@ -60,7 +60,7 @@
         defaultTemplate: '{{ config('clips.default_template') }}',
         presets: @js($presets),
         maxDuration: {{ (int) $maxDuration }},
-        cta: @js(__('Listen to Mojawad on mojawad.org')),
+        cta: @js(__('Listen to Mojawad on mojawad.com')),
     })"
      style="display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:2rem;align-items:start;margin-bottom:2.4rem"
      class="clip-editor-grid">

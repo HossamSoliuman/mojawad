@@ -138,7 +138,7 @@ class YoutubePublisher
 
     private function description($tilawa): string
     {
-        $link = 'https://mojawad.org?utm_source=youtube&utm_medium=video&utm_campaign=publishing';
+        $link = 'https://mojawad.com?utm_source=youtube&utm_medium=video&utm_campaign=publishing';
 
         return trim(($tilawa->qari?->name ? $tilawa->qari->name."\n" : '').$link);
     }

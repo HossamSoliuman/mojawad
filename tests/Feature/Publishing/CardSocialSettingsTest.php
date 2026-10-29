@@ -19,7 +19,7 @@ it('prefills the footer handles with the config defaults', function () {
     config(['publishing.social' => [
         'youtube' => '@mojawad',
         'facebook' => 'mojawad',
-        'website' => 'mojawad.net',
+        'website' => 'mojawad.com',
         'instagram' => '@mojawad',
     ]]);
 
@@ -28,7 +28,7 @@ it('prefills the footer handles with the config defaults', function () {
 
     Livewire::test(CardSocialSettings::class)
         ->assertSet('social.youtube', '@mojawad')
-        ->assertSet('social.website', 'mojawad.net');
+        ->assertSet('social.website', 'mojawad.com');
 });
 
 it('shows the footer links form at the top of the production page', function () {

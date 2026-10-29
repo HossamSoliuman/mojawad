@@ -165,17 +165,17 @@ it('renders the card html with the social footer', function () {
         ->toContain('الشيخ الحصري')
         ->toContain('البقرة')
         ->toContain('@mojawad')
-        ->toContain('mojawad.net')
+        ->toContain('mojawad.com')
         ->toContain('class="badge"')
         ->toContain('تلاوة نادرة');
 });
 
 it('colours the footer icons per platform', function () {
     config(['publishing.social' => [
-        'youtube' => 'mojawad.net',
-        'facebook' => 'mojawad.net',
-        'website' => 'mojawad.net',
-        'instagram' => 'mojawad.net',
+        'youtube' => 'mojawad.com',
+        'facebook' => 'mojawad.com',
+        'website' => 'mojawad.com',
+        'instagram' => 'mojawad.com',
     ]]);
 
     $html = app(VideoCardService::class)->html(['surahName' => 'البقرة']);

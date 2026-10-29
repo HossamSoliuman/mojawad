@@ -368,7 +368,7 @@ it('shows copy-ready youtube and facebook texts without the referral link or pod
     expect($copy['youtube_title'])->toContain('A ready recitation')
         ->and($copy['youtube_description'])->toContain('A ready recitation')
         ->and($copy['facebook_text'])->toContain('#القرآن_الكريم')
-        ->and($copy['facebook_text'])->not->toContain('mojawad.org');
+        ->and($copy['facebook_text'])->not->toContain('mojawad.com');
 });
 
 it('moves a published recitation back to publishing to post it elsewhere', function () {

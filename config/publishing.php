@@ -78,7 +78,7 @@ return [
     'intro_audio' => env('BRAND_INTRO_AUDIO'),
     'outro_audio' => env('BRAND_OUTRO_AUDIO'),
     'mp3_bitrate' => '320k',
-    'id3' => ['album_artist' => 'Mojawad', 'genre' => 'Quran', 'publisher' => 'mojawad.org'],
+    'id3' => ['album_artist' => 'Mojawad', 'genre' => 'Quran', 'publisher' => 'mojawad.com'],
 
     // ── Visual branding ────────────────────────────────────────────────
     'video' => ['width' => 1920, 'height' => 1080, 'fps' => 25, 'preset' => env('PUBLISH_VIDEO_PRESET', 'ultrafast')],
@@ -94,10 +94,10 @@ return [
         'text_seconds' => 3.0,    // duration of the text entrance
     ],
     'social' => [
-        'youtube' => env('SOCIAL_YOUTUBE', 'mojawad.net'),
-        'facebook' => env('SOCIAL_FACEBOOK', 'mojawad.net'),
-        'website' => env('SOCIAL_WEBSITE', 'mojawad.net'),
-        'instagram' => env('SOCIAL_INSTAGRAM', 'mojawad.net'),
+        'youtube' => env('SOCIAL_YOUTUBE', 'mojawad.com'),
+        'facebook' => env('SOCIAL_FACEBOOK', 'mojawad.com'),
+        'website' => env('SOCIAL_WEBSITE', 'mojawad.com'),
+        'instagram' => env('SOCIAL_INSTAGRAM', 'mojawad.com'),
     ],
     'cover' => [
         'driver' => env('COVER_DRIVER', 'browsershot'),   // browsershot | ffmpeg

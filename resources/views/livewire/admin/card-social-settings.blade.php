@@ -17,7 +17,7 @@
         @foreach([
             'youtube' => ['YouTube', 'fab fa-youtube', '#ff0000', 'youtube.com/@mojawad'],
             'facebook' => ['Facebook', 'fab fa-facebook-f', '#1877f2', 'facebook.com/mojawad'],
-            'website' => [__('Website'), 'fas fa-globe', '#b58b19', 'mojawad.net'],
+            'website' => [__('Website'), 'fas fa-globe', '#b58b19', 'mojawad.com'],
             'instagram' => ['Instagram', 'fab fa-instagram', '#c13584', 'instagram.com/mojawad'],
         ] as $key => [$label, $icon, $color, $placeholder])
         <div>
