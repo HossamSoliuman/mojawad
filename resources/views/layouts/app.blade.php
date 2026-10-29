@@ -1594,11 +1594,30 @@
             // signed-in) and shows in-progress tracks, Spotify-style.
             Alpine.data('continueListening', () => ({
                 items: [],
+                canPrev: false,
+                canNext: false,
                 load() {
                     this.items = (window._watchHistory || []).filter((i) =>
                         !i.completed && i.position > 5 && (!i.duration || i.position < i.duration - 15)
                     );
-                    this.$nextTick(() => window._paintNowPlaying());
+                    this.$nextTick(() => {
+                        window._paintNowPlaying();
+                        this.updateArrows();
+                    });
+                },
+                // The rail scrollbar is hidden, so arrows page through it on
+                // desktop. scrollLeft runs negative in RTL, hence Math.abs.
+                updateArrows() {
+                    const rail = this.$refs.rail;
+                    if (!rail) return;
+                    const offset = Math.abs(rail.scrollLeft);
+                    this.canPrev = offset > 2;
+                    this.canNext = offset + rail.clientWidth < rail.scrollWidth - 2;
+                },
+                scrollRail(step) {
+                    const rail = this.$refs.rail;
+                    const towardEnd = getComputedStyle(rail).direction === 'rtl' ? -1 : 1;
+                    rail.scrollBy({ left: step * towardEnd * rail.clientWidth * 0.85, behavior: 'smooth' });
                 },
                 init() {
                     // Refreshes are driven by the `tilawa-history-changed` window

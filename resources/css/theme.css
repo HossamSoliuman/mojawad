@@ -3604,14 +3604,67 @@ a.att-card:hover {
   display: none !important;
 }
 
+.rail-wrap {
+  position: relative;
+}
+
 .rail {
   display: flex;
   gap: 1.1rem;
   overflow-x: auto;
   scroll-snap-type: x proximity;
-  padding-bottom: .6rem;
+  padding-block: .25rem;
   -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
+  scrollbar-width: none;
+}
+
+.rail::-webkit-scrollbar {
+  display: none;
+}
+
+.rail-arrow {
+  position: absolute;
+  top: 40%;
+  z-index: 2;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--border2);
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  color: var(--text);
+  font-size: .8rem;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, .45);
+  transform: translateY(-50%);
+  transition: background .2s, color .2s, border-color .2s;
+}
+
+.rail-arrow:hover {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--bg);
+}
+
+.rail-prev {
+  inset-inline-start: -.9rem;
+}
+
+.rail-next {
+  inset-inline-end: -.9rem;
+}
+
+[dir="rtl"] .rail-arrow i {
+  transform: scaleX(-1);
+}
+
+@media (hover: none), (max-width: 768px) {
+  .rail-arrow {
+    display: none !important;
+  }
 }
 
 .rail .rail-card {

@@ -44,3 +44,11 @@ it('scopes the home content so desktop density styles apply only here', function
         ->assertOk()
         ->assertSee('class="wrap home" id="homeContent"', false);
 });
+
+it('renders arrow controls for the continue listening rail', function () {
+    $this->get(route('home'))
+        ->assertOk()
+        ->assertSee('rail-arrow rail-prev', false)
+        ->assertSee('rail-arrow rail-next', false)
+        ->assertSee('x-ref="rail"', false);
+});
