@@ -10,6 +10,7 @@ use App\Services\PublishingMixer;
 use App\Services\PublishingPipeline;
 use App\Services\VideoCardService;
 use Carbon\CarbonImmutable;
+use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -116,9 +117,10 @@ class ProductionQueue extends Component
 
     /**
      * Every recitation in the publishing queue booked into its posting slot,
-     * soonest first. Worked out live, so it re-plans whenever the queue changes.
+     * around the posts already scheduled on the platforms, soonest first.
+     * Worked out live, so it re-plans whenever the queue changes.
      *
-     * @return Collection<int, array{tilawa: Tilawa, at: CarbonImmutable, kahf: bool, in_progress: bool}>
+     * @return Collection<int, array{tilawa: Tilawa, at: CarbonImmutable, kahf: bool, in_progress: bool, posted: bool}>
      */
     #[Computed]
     public function postingPlan(): Collection
@@ -133,7 +135,10 @@ class ProductionQueue extends Component
             ->sortBy(fn (Tilawa $tilawa) => $this->postedPublications($tilawa)->min(fn (Publication $p) => $p->published_at?->getTimestamp()))
             ->values();
 
-        return app(PostingScheduler::class)->plan($waiting->values(), $inProgress, $this->recentlyPosted(), $this->postedTodayCount());
+        $booked = $inProgress->map(fn (Tilawa $tilawa) => ['tilawa' => $tilawa, 'at' => $this->goesLiveAt($tilawa), 'posted' => false])
+            ->concat($this->postedFromToday()->map(fn (Tilawa $tilawa) => ['tilawa' => $tilawa, 'at' => $this->goesLiveAt($tilawa), 'posted' => true]));
+
+        return app(PostingScheduler::class)->plan($waiting->values(), $booked->values(), $this->recentlyPosted());
     }
 
     /**
@@ -144,13 +149,13 @@ class ProductionQueue extends Component
     #[Computed]
     public function publishingList()
     {
-        return $this->postingPlan->take(50)->pluck('tilawa');
+        return $this->postingPlan->reject(fn (array $entry) => $entry['posted'])->take(50)->pluck('tilawa');
     }
 
     /**
      * Each queued recitation's booked slot, keyed by recitation id.
      *
-     * @return Collection<int, array{tilawa: Tilawa, at: CarbonImmutable, kahf: bool, in_progress: bool}>
+     * @return Collection<int, array{tilawa: Tilawa, at: CarbonImmutable, kahf: bool, in_progress: bool, posted: bool}>
      */
     #[Computed]
     public function postingSlots(): Collection
@@ -161,20 +166,21 @@ class ProductionQueue extends Component
     /**
      * The week ahead for the schedule brief, with the next Al-Kahf Friday.
      *
-     * @return array{days: list<array{date: CarbonImmutable, posts: list<array{tilawa: Tilawa, at: CarbonImmutable, kahf: bool, in_progress: bool}>}>, next: ?array{tilawa: Tilawa, at: CarbonImmutable, kahf: bool, in_progress: bool}, last: ?array{tilawa: Tilawa, at: CarbonImmutable, kahf: bool, in_progress: bool}, kahf: ?array{tilawa: Tilawa, at: CarbonImmutable, kahf: bool, in_progress: bool}, kahf_waiting: int, next_friday: CarbonImmutable, today: CarbonImmutable}
+     * @return array{days: list<array{date: CarbonImmutable, posts: list<array{tilawa: Tilawa, at: CarbonImmutable, kahf: bool, in_progress: bool, posted: bool}>}>, next: ?array{tilawa: Tilawa, at: CarbonImmutable, kahf: bool, in_progress: bool, posted: bool}, last: ?array{tilawa: Tilawa, at: CarbonImmutable, kahf: bool, in_progress: bool, posted: bool}, kahf: ?array{tilawa: Tilawa, at: CarbonImmutable, kahf: bool, in_progress: bool, posted: bool}, kahf_waiting: int, next_friday: CarbonImmutable, today: CarbonImmutable}
      */
     #[Computed]
     public function scheduleBrief(): array
     {
         $scheduler = app(PostingScheduler::class);
         $today = $scheduler->today();
+        $upcoming = $this->postingPlan->reject(fn (array $entry) => $entry['posted'] && $entry['at']->isPast());
 
         return [
             'days' => $scheduler->days($this->postingPlan),
-            'next' => $this->postingPlan->first(),
+            'next' => $upcoming->first(),
             'last' => $this->postingPlan->last(),
-            'kahf' => $this->postingPlan->first(fn (array $entry) => $entry['kahf'] && ! $entry['in_progress']),
-            'kahf_waiting' => $this->postingPlan->where('kahf', true)->count(),
+            'kahf' => $upcoming->first(fn (array $entry) => $entry['kahf'] && $entry['at']->isFriday()),
+            'kahf_waiting' => $this->postingPlan->where('kahf', true)->where('posted', false)->count(),
             'next_friday' => $today->isFriday() ? $today : $today->next(CarbonImmutable::FRIDAY),
             'today' => $today,
         ];
@@ -388,8 +394,10 @@ class ProductionQueue extends Component
 
     /**
      * Record that the video was uploaded to a platform by hand, with the
-     * optional link to the live post. Once both platforms are posted the
-     * recitation moves on to the Published stage.
+     * optional link to the live post. Marked ahead of its booked slot, it was
+     * scheduled on the platform for that slot, so it goes live then and keeps
+     * the slot. Once both platforms are posted the recitation moves on to the
+     * Published stage.
      */
     public function markPosted(int $tilawaId, string $platform): void
     {
@@ -403,12 +411,15 @@ class ProductionQueue extends Component
 
         $this->validatePostLink($tilawaId, $platform, required: false);
 
+        $slot = $this->postingSlots->get($tilawa->id)['at'] ?? null;
+        unset($this->postingSlots, $this->postingPlan);
+
         Publication::updateOrCreate(
             ['tilawa_id' => $tilawa->id, 'platform' => $platform],
             [
                 'status' => 'completed',
                 'external_url' => trim($this->postLinks[$tilawaId][$platform] ?? '') ?: null,
-                'published_at' => now(),
+                'published_at' => $slot?->isFuture() ? $slot->utc() : now(),
                 'error' => null,
                 'created_by' => Auth::id(),
             ],
@@ -605,25 +616,31 @@ class ProductionQueue extends Component
     }
 
     /**
-     * Recitations whose posting started today and that already left the
-     * queue, so today's slots they used are not booked twice.
+     * When the recitation goes live: its earliest post, or scheduled post.
      */
-    private function postedTodayCount(): int
+    private function goesLiveAt(Tilawa $tilawa): ?CarbonImmutable
     {
-        $startOfToday = app(PostingScheduler::class)->today()->utc();
-        $postedSince = fn (string $operator) => fn (Builder $q) => $q->whereIn('platform', self::MANUAL_PLATFORMS)
-            ->where('status', 'completed')
-            ->where('published_at', $operator, $startOfToday);
+        $first = $this->postedPublications($tilawa)->pluck('published_at')->filter()->min();
 
-        return $this->applyOwnership(Tilawa::query())
-            ->where('production_stage', 'published')
-            ->whereHas('publications', $postedSince('>='))
-            ->whereDoesntHave('publications', $postedSince('<'))
-            ->count();
+        return $first ? CarbonImmutable::instance($first) : null;
     }
 
     /**
-     * The latest recitations that went live, oldest first.
+     * Recitations that left the queue posted everywhere and go live today or
+     * later, so the slots they hold are not booked twice.
+     *
+     * @return Collection<int, Tilawa>
+     */
+    private function postedFromToday(): Collection
+    {
+        return $this->stageQuery('published')
+            ->whereHas('publications', $this->postedComparedToToday('>='))
+            ->whereDoesntHave('publications', $this->postedComparedToToday('<'))
+            ->get();
+    }
+
+    /**
+     * The latest recitations that went live before today, oldest first.
      *
      * @return Collection<int, Tilawa>
      */
@@ -633,7 +650,7 @@ class ProductionQueue extends Component
 
         return $this->applyOwnership(Tilawa::query())
             ->where('production_stage', 'published')
-            ->whereHas('publications', $posted)
+            ->whereHas('publications', $this->postedComparedToToday('<'))
             ->withMax(['publications as last_posted_at' => $posted], 'published_at')
             ->orderByDesc('last_posted_at')
             ->orderByDesc('id')
@@ -641,6 +658,18 @@ class ProductionQueue extends Component
             ->get()
             ->reverse()
             ->values();
+    }
+
+    /**
+     * Matches manual posts that go live before (`<`) or from (`>=`) the start of today.
+     */
+    private function postedComparedToToday(string $operator): Closure
+    {
+        $startOfToday = app(PostingScheduler::class)->today()->utc();
+
+        return fn (Builder $q) => $q->whereIn('platform', self::MANUAL_PLATFORMS)
+            ->where('status', 'completed')
+            ->where('published_at', $operator, $startOfToday);
     }
 
     private function scopeSelectable(Builder $query): Builder

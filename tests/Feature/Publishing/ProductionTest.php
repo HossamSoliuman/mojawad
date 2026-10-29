@@ -402,6 +402,40 @@ it('lists the publishing queue by posting date with a schedule brief', function 
         ->assertSee(__('Al-Kahf waiting: :count', ['count' => 1]));
 });
 
+it('records a post marked ahead of its slot at that slot and keeps the slot once it leaves the queue', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-10-29 21:30', config('publishing.schedule.timezone'))->utc());
+
+    $creator = User::factory()->create()->assignRole('creator');
+    $kahf = readyTilawa($creator, 'ready', 'publishing');
+    $kahf->update(['surah_number' => 18, 'title_ar' => 'تلاوة سورة الكهف']);
+    readyTilawa($creator, 'ready', 'publishing');
+    readyTilawa($creator, 'ready', 'publishing');
+
+    $this->actingAs($creator);
+
+    $component = Livewire::test(ProductionQueue::class)
+        ->set('tab', 'publishing')
+        ->call('markPosted', $kahf->id, 'youtube')
+        ->call('markPosted', $kahf->id, 'facebook');
+
+    $overdue = $component->instance()->publishingList->first();
+    $component->call('markPosted', $overdue->id, 'youtube');
+
+    $friday = CarbonImmutable::parse('2026-10-30 08:00', config('publishing.schedule.timezone'));
+    $kahfPosts = Publication::where('tilawa_id', $kahf->id)->get();
+    $plan = $component->instance()->postingPlan;
+
+    expect($kahfPosts)->toHaveCount(2)
+        ->and($kahfPosts->every(fn (Publication $publication) => $publication->published_at->equalTo($friday)))->toBeTrue()
+        ->and($kahf->fresh()->production_stage)->toBe('published')
+        ->and(Publication::where('tilawa_id', $overdue->id)->first()->published_at->equalTo(now()))->toBeTrue()
+        ->and($plan->map(fn (array $entry) => $entry['at']->format('D H:i').($entry['posted'] ? ' posted' : ''))->all())
+        ->toBe(['Thu 21:30', 'Fri 08:00 posted', 'Sat 20:00'])
+        ->and($component->instance()->publishingList->pluck('id'))->not->toContain($kahf->id);
+
+    $component->assertSee(__('Scheduled'));
+});
+
 it('shows copy-ready youtube and facebook texts without the referral link or podcast', function () {
     $creator = User::factory()->create()->assignRole('creator');
     $tilawa = readyTilawa($creator, 'ready', 'publishing');

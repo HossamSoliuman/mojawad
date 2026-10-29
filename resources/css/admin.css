@@ -1839,6 +1839,8 @@ body.adm .posting-day-post {
 body.adm .posting-day.is-friday .posting-day-post { background: #fff; }
 body.adm .posting-day-post.is-kahf,
 body.adm .posting-day.is-friday .posting-day-post.is-kahf { color: #b45309; background: #fef3c7; }
+body.adm .posting-day-post.is-posted,
+body.adm .posting-day.is-friday .posting-day-post.is-posted { color: #15803d; background: #dcfce7; }
 
 body.adm .posting-day-none {
   color: var(--text3);

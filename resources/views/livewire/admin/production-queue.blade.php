@@ -193,14 +193,14 @@
                 <div class="posting-brief-stats">
                     <div class="posting-brief-stat">
                         <span class="posting-brief-label">{{ __('Next post') }}</span>
-                        <strong>{{ $scheduler->dayLabel($brief['next']['at']) }} · {{ $brief['next']['in_progress'] ? __('In progress') : $brief['next']['at']->translatedFormat('g:i A') }}</strong>
+                        <strong>{{ $scheduler->dayLabel($brief['next']['at']) }} · {{ $brief['next']['at']->translatedFormat('g:i A') }}</strong>
                         <span class="posting-brief-meta" title="{{ $brief['next']['tilawa']->title_ar }}">{{ $brief['next']['tilawa']->qari?->name }} · {{ $brief['next']['tilawa']->title_ar }}</span>
                     </div>
                     <div class="posting-brief-stat {{ $brief['kahf'] ? 'is-kahf' : 'is-warning' }}">
                         <span class="posting-brief-label"><i class="fas fa-book-quran"></i> {{ __('Al-Kahf Friday') }}</span>
                         @if($brief['kahf'])
                         <strong>{{ $brief['kahf']['at']->translatedFormat('j F') }} · {{ $brief['kahf']['at']->translatedFormat('g:i A') }}</strong>
-                        <span class="posting-brief-meta">{{ $brief['kahf']['tilawa']->qari?->name }} · {{ __('Al-Kahf waiting: :count', ['count' => $brief['kahf_waiting']]) }}</span>
+                        <span class="posting-brief-meta">{{ $brief['kahf']['tilawa']->qari?->name }} · {{ $brief['kahf']['posted'] ? __('Scheduled') : __('Al-Kahf waiting: :count', ['count' => $brief['kahf_waiting']]) }}</span>
                         @else
                         <strong>{{ __('No Al-Kahf recitation waiting') }}</strong>
                         <span class="posting-brief-meta">{{ __('Friday :date gets a regular post', ['date' => $brief['next_friday']->translatedFormat('j F')]) }}</span>
@@ -219,8 +219,8 @@
                         <span class="posting-day-name">{{ $scheduler->dayLabel($day['date']) }}</span>
                         <span class="posting-day-date">{{ $day['date']->translatedFormat('j F') }}</span>
                         @forelse($day['posts'] as $post)
-                        <span class="posting-day-post {{ $post['kahf'] ? 'is-kahf' : '' }}" title="{{ $post['tilawa']->title_ar }}">
-                            @if($post['kahf'])<i class="fas fa-book-quran"></i>@endif
+                        <span class="posting-day-post {{ $post['kahf'] ? 'is-kahf' : '' }} {{ $post['posted'] ? 'is-posted' : '' }}" title="{{ $post['tilawa']->title_ar }}">
+                            @if($post['posted'])<i class="fas fa-circle-check"></i>@elseif($post['kahf'])<i class="fas fa-book-quran"></i>@endif
                             {{ $post['tilawa']->qari?->name }}
                         </span>
                         @empty
@@ -249,7 +249,7 @@
                             <div class="posting-slot {{ $slot['kahf'] ? 'is-kahf' : '' }} {{ $slot['in_progress'] ? 'is-live' : '' }}">
                                 <span class="posting-slot-day">@if($slot['kahf'])<i class="fas fa-book-quran"></i> @endif{{ $scheduler->dayLabel($slot['at']) }}</span>
                                 <span class="posting-slot-date">{{ $slot['at']->translatedFormat('j F') }}</span>
-                                <span class="posting-slot-time">{{ $slot['in_progress'] ? __('In progress') : $slot['at']->translatedFormat('g:i A') }}</span>
+                                <span class="posting-slot-time">{{ $slot['at']->translatedFormat('g:i A') }}</span>
                             </div>
                             @php($thumb = $tilawa->brand_card_image_url ?? $tilawa->brand_cover_url)
                             @if($thumb)
@@ -315,7 +315,9 @@
                         <section wire:key="share-platform-{{ $tilawa->id }}-{{ $platform }}" class="sharing-platform-card {{ $publication ? 'is-posted' : '' }}">
                             <div class="sharing-platform-title" style="--platform-color:{{ $content['color'] }}">
                                 <span><i class="{{ $content['icon'] }}"></i> {{ $content['label'] }}</span>
-                                @if($publication)
+                                @if($publication?->published_at?->isFuture())
+                                <span class="badge badge-amber"><i class="fas fa-calendar-check"></i> {{ __('Scheduled') }}</span>
+                                @elseif($publication)
                                 <span class="badge badge-green"><i class="fas fa-circle-check"></i> {{ __('Posted') }}</span>
                                 @else
                                 <a href="{{ $this->uploadLinks[$platform] }}" target="_blank" rel="noopener" class="sharing-open-link">
@@ -418,6 +420,8 @@
                                     <a href="{{ $publication->external_url }}" target="_blank" rel="noopener" class="badge badge-green" style="text-decoration:none">
                                         <i class="fas fa-circle-check"></i> {{ __('Open post') }} <i class="fas fa-arrow-up-right-from-square" style="font-size:.6rem"></i>
                                     </a>
+                                    @elseif($publication->published_at?->isFuture())
+                                    <span class="badge badge-amber"><i class="fas fa-calendar-check"></i> {{ __('Scheduled') }}</span>
                                     @else
                                     <span class="badge badge-green"><i class="fas fa-circle-check"></i> {{ __('Posted') }}</span>
                                     @endif
