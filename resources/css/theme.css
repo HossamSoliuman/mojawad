@@ -2312,6 +2312,18 @@ textarea.form-control {
   border-color: var(--gold);
 }
 
+.ni-avatar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: #07070f;
+  font-size: .8rem;
+}
+
 .ni-menu {
   display: inline-flex;
   align-items: center;

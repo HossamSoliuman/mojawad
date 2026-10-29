@@ -89,6 +89,16 @@ it('shows the header dashboard icon to creators', function () {
         ->assertSee('fa-gauge', false);
 });
 
+it('shows a user icon instead of initials when there is no avatar', function () {
+    $user = User::factory()->create(['avatar' => null]);
+
+    $this->actingAs($user)
+        ->get(route('home'))
+        ->assertOk()
+        ->assertSee('ni-avatar-icon', false)
+        ->assertDontSee('ui-avatars.com', false);
+});
+
 it('no longer exposes the legacy tilawa create routes', function () {
     expect(Route::has('admin.tilawat.create'))->toBeFalse()
         ->and(Route::has('admin.tilawat.store'))->toBeFalse();

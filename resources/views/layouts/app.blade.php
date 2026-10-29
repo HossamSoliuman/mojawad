@@ -134,7 +134,11 @@
                 @endif
                 <a href="{{ route('profile') }}" wire:navigate class="ni-avatar-btn"
                     title="{{ auth()->user()->name }}">
-                    <img src="{{ auth()->user()->avatar_url }}" class="avatar" width="30" height="30" alt="">
+                    @if (auth()->user()->avatar)
+                        <img src="{{ auth()->user()->avatar_url }}" class="avatar" width="30" height="30" alt="">
+                    @else
+                        <span class="avatar ni-avatar-icon"><i class="fas fa-user"></i></span>
+                    @endif
                 </a>
             @else
                 <a href="{{ route('login') }}" class="ni-icon-btn" title="{{ __('Login') }}"
