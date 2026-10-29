@@ -128,7 +128,7 @@
         <div class="ni-actions">
             {{-- USER --}}
             @auth
-                @if (auth()->user()->hasAnyRole(['admin', 'creator']))
+                @if (auth()->user()->hasRole('creator') && ! auth()->user()->hasRole('admin'))
                     <a href="{{ route('admin.dashboard') }}" class="ni-icon-btn" title="{{ __('Dashboard') }}"
                         aria-label="{{ __('Dashboard') }}"><i class="fas fa-gauge"></i></a>
                 @endif

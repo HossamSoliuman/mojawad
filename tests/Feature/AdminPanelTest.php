@@ -71,6 +71,24 @@ it('redirects a creator from the dashboard to the uploader', function () {
         ->assertRedirect(route('admin.upload'));
 });
 
+it('hides the header dashboard icon from admins', function () {
+    $admin = User::factory()->create()->assignRole(['admin', 'creator']);
+
+    $this->actingAs($admin)
+        ->get(route('home'))
+        ->assertOk()
+        ->assertDontSee('fa-gauge', false);
+});
+
+it('shows the header dashboard icon to creators', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+
+    $this->actingAs($creator)
+        ->get(route('home'))
+        ->assertOk()
+        ->assertSee('fa-gauge', false);
+});
+
 it('no longer exposes the legacy tilawa create routes', function () {
     expect(Route::has('admin.tilawat.create'))->toBeFalse()
         ->and(Route::has('admin.tilawat.store'))->toBeFalse();
