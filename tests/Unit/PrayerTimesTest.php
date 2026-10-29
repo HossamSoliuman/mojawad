@@ -12,7 +12,7 @@ it('matches the Egyptian survey reference times within two minutes', function (s
     $times = (new PrayerTimes)->forDate(CarbonImmutable::parse($date));
 
     foreach ($expected as $prayer => $clock) {
-        $reference = CarbonImmutable::parse("{$date} {$clock}", PrayerTimes::TIMEZONE);
+        $reference = CarbonImmutable::parse("{$date} {$clock}", PrayerTimes::CAIRO_TIMEZONE);
 
         expect(abs($times[$prayer]->diffInMinutes($reference)))->toBeLessThanOrEqual(2, "{$prayer} on {$date}");
     }
@@ -25,7 +25,7 @@ it('returns the five prayers in order on the requested Cairo day', function () {
 
     $previous = null;
     foreach ($times as $time) {
-        expect($time->timezoneName)->toBe(PrayerTimes::TIMEZONE)
+        expect($time->timezoneName)->toBe(PrayerTimes::CAIRO_TIMEZONE)
             ->and($time->toDateString())->toBe('2026-06-21');
 
         if ($previous) {
@@ -43,4 +43,32 @@ it('follows Cairo daylight saving time', function () {
 
     expect($summerDhuhr->format('H'))->toBe('12')
         ->and($winterDhuhr->format('H'))->toBe('11');
+});
+
+it('uses Umm al-Qura for Saudi Arabia with a later Isha in Ramadan', function () {
+    $makkah = PrayerTimes::forCountry(21.42, 39.83, 'Asia/Riyadh', 'SA');
+
+    $regular = $makkah->forDate(CarbonImmutable::parse('2026-01-15'));
+    $ramadan = $makkah->forDate(CarbonImmutable::parse('2026-03-01'));
+
+    expect($makkah->method)->toBe('umm_al_qura')
+        ->and($regular['fajr']->format('H:i'))->toBe('05:41')
+        ->and($regular['maghrib']->diffInMinutes($regular['isha']))->toEqual(90)
+        ->and($ramadan['maghrib']->diffInMinutes($ramadan['isha']))->toEqual(120);
+});
+
+it('falls back to the Muslim World League method for unmapped countries', function () {
+    expect(PrayerTimes::forCountry(51.51, -0.13, 'Europe/London', 'GB')->method)->toBe('mwl')
+        ->and(PrayerTimes::forCountry(30.04, 31.24, 'Africa/Cairo', 'eg')->method)->toBe('egyptian');
+});
+
+it('keeps fajr and isha inside the night at high latitudes in summer', function () {
+    $times = PrayerTimes::forCountry(51.51, -0.13, 'Europe/London', 'GB')->forDate(CarbonImmutable::parse('2026-06-21'));
+
+    expect($times['fajr']->format('H:i'))->toBe('02:31')
+        ->and($times['isha']->format('H:i'))->toBe('23:27');
+});
+
+it('returns no times when the sun never sets', function () {
+    expect(PrayerTimes::forCountry(69.65, 18.96, 'Europe/Oslo', 'NO')->forDate(CarbonImmutable::parse('2026-06-21')))->toBeNull();
 });
