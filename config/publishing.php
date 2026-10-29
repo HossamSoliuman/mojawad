@@ -114,6 +114,16 @@ return [
     'outro_video' => env('BRAND_OUTRO_VIDEO'),
     'render_timeout' => (int) env('PUBLISH_RENDER_TIMEOUT', 1800),
 
+    // ── Posting schedule ───────────────────────────────────────────────
+    // Recitation videos in the Publishing tab are booked into these daily
+    // slots (local to `timezone`), one recitation per slot. Friday's first
+    // slot is kept for an Al-Kahf recitation whenever one is waiting.
+    'schedule' => [
+        'timezone' => env('PUBLISHING_SCHEDULE_TIMEZONE', 'Africa/Cairo'),
+        'daily' => ['20:00'],
+        'friday' => ['08:00'],
+    ],
+
     // ── Podcast RSS ────────────────────────────────────────────────────
     'podcast' => [
         'title' => 'Mojawad — مجوّد',
