@@ -11,13 +11,15 @@ use Illuminate\Support\Collection;
  *
  * The plan is worked out from the queue every time rather than stored, so it
  * re-plans the moment a recitation arrives from Preparation or goes live:
- *  - Recitations already posted on one platform keep today's first slots.
+ *  - Recitations already posted or scheduled on the platforms hold the slot
+ *    nearest the time they go live, so nothing else is booked over them. A
+ *    half-posted one that first went out before today catches up today.
  *  - Al-Kahf recitations are kept for Fridays: the first free slot of each
- *    Friday takes one, mixed so consecutive Fridays vary the qari. When none
- *    is waiting, Friday gets a regular recitation.
+ *    Friday takes one, mixed so consecutive Fridays vary the qari, unless an
+ *    Al-Kahf post is already booked that Friday. When none is waiting,
+ *    Friday gets a regular recitation.
  *  - Everything else fills the remaining slots in the order PublishingMixer
- *    gives, which also keeps the qaris around each Friday apart.
- *  - Slots that already went out today are skipped.
+ *    gives, which also keeps the qaris around each booked post apart.
  */
 class PostingScheduler
 {
@@ -27,42 +29,38 @@ class PostingScheduler
 
     /**
      * @param  Collection<int, Tilawa>  $waiting  not posted anywhere yet, longest waiting first
-     * @param  Collection<int, Tilawa>  $inProgress  posted on some platforms only, first started first
-     * @param  Collection<int, Tilawa>  $recentlyPosted  the latest finished posts, oldest first
-     * @param  int  $postedToday  recitations that already went out today and left the queue
-     * @return Collection<int, array{tilawa: Tilawa, at: CarbonImmutable, kahf: bool, in_progress: bool}>
+     * @param  Collection<int, array{tilawa: Tilawa, at: ?CarbonImmutable, posted: bool}>  $booked  posted or scheduled on some platforms and still queued, or on all of them (posted), with when they go live
+     * @param  Collection<int, Tilawa>  $recentlyPosted  the latest posts that went live before today, oldest first
+     * @return Collection<int, array{tilawa: Tilawa, at: CarbonImmutable, kahf: bool, in_progress: bool, posted: bool}>
      */
-    public function plan(Collection $waiting, Collection $inProgress, Collection $recentlyPosted, int $postedToday = 0): Collection
+    public function plan(Collection $waiting, Collection $booked, Collection $recentlyPosted): Collection
     {
         [$kahf, $regular] = $waiting->partition(fn (Tilawa $tilawa) => $this->isKahf($tilawa));
 
-        $todaySlots = $this->slotsOn($this->today());
-        $plan = $inProgress->values()->map(fn (Tilawa $tilawa, int $index) => [
-            'tilawa' => $tilawa,
-            'at' => $todaySlots[min($postedToday + $index, count($todaySlots) - 1)],
-            'kahf' => $this->isKahf($tilawa),
-            'in_progress' => true,
-        ]);
-
-        $slots = $this->bookSlots($kahf->count(), $regular->count(), $postedToday + $inProgress->count());
-        $kahfOrder = $this->mixer->mix($kahf->values(), $recentlyPosted->filter(fn (Tilawa $tilawa) => $this->isKahf($tilawa))->values());
+        $booked = $this->placeBooked($booked);
+        $slots = $this->bookSlots($kahf->count(), $regular->count(), $booked);
+        $kahfHistory = $recentlyPosted->concat($booked->pluck('tilawa'))->filter(fn (Tilawa $tilawa) => $this->isKahf($tilawa));
+        $kahfOrder = $this->mixer->mix($kahf->values(), $kahfHistory->values());
 
         $pinned = [];
 
         foreach ($slots as $position => $slot) {
-            if ($slot['kahf']) {
+            if ($slot['booked'] !== null) {
+                $pinned[$position] = $slot['booked']['tilawa'];
+            } elseif ($slot['kahf']) {
                 $pinned[$position] = $kahfOrder->shift();
             }
         }
 
-        $sequence = $this->mixer->mix($regular->values(), $recentlyPosted->concat($inProgress)->values(), $pinned);
+        $sequence = $this->mixer->mix($regular->values(), $recentlyPosted->values(), $pinned);
 
-        return $plan->concat($sequence->values()->map(fn (Tilawa $tilawa, int $position) => [
+        return $sequence->values()->map(fn (Tilawa $tilawa, int $position) => [
             'tilawa' => $tilawa,
             'at' => $slots[$position]['at'],
             'kahf' => $slots[$position]['kahf'],
-            'in_progress' => false,
-        ]))->values();
+            'in_progress' => $slots[$position]['booked'] !== null && ! $slots[$position]['booked']['posted'],
+            'posted' => $slots[$position]['booked']['posted'] ?? false,
+        ]);
     }
 
     /**
@@ -114,43 +112,92 @@ class PostingScheduler
     }
 
     /**
-     * Walks the calendar from today and books one slot per recitation. The
-     * first free slot of a Friday goes to Al-Kahf while one is waiting;
-     * once only Al-Kahf recitations remain, the days in between stay empty.
+     * Gives each booked post its local time, soonest first. Posts with no
+     * time, or one before today, take today's slots in the order given.
      *
-     * @return list<array{at: CarbonImmutable, kahf: bool}>
+     * @param  Collection<int, array{tilawa: Tilawa, at: ?CarbonImmutable, posted: bool}>  $booked
+     * @return Collection<int, array{tilawa: Tilawa, at: CarbonImmutable, posted: bool}>
      */
-    private function bookSlots(int $kahfLeft, int $regularLeft, int $usedToday): array
+    private function placeBooked(Collection $booked): Collection
+    {
+        $today = $this->today();
+        $todaySlots = $this->slotsOn($today);
+        $catchingUp = 0;
+
+        return $booked
+            ->map(function (array $entry) use ($today, $todaySlots, &$catchingUp): array {
+                $at = $entry['at']?->setTimezone($today->getTimezone());
+
+                if ($at === null || $at->lt($today)) {
+                    $at = $todaySlots[min($catchingUp++, count($todaySlots) - 1)];
+                }
+
+                return [...$entry, 'at' => $at];
+            })
+            ->sortBy(fn (array $entry) => $entry['at']->getTimestamp())
+            ->values();
+    }
+
+    /**
+     * Walks the calendar from today, laying out the booked posts on their
+     * days and one free slot per waiting recitation around them. Each booked
+     * post takes the slot nearest its time. The first free slot of a Friday
+     * goes to Al-Kahf while one is waiting, unless a booked Al-Kahf post
+     * already covers that Friday. Once only Al-Kahf recitations remain, the
+     * days in between stay empty.
+     *
+     * @param  Collection<int, array{tilawa: Tilawa, at: CarbonImmutable, posted: bool}>  $booked  soonest first
+     * @return list<array{at: CarbonImmutable, kahf: bool, booked: ?array{tilawa: Tilawa, at: CarbonImmutable, posted: bool}}>
+     */
+    private function bookSlots(int $kahfLeft, int $regularLeft, Collection $booked): array
     {
         $slots = [];
         $day = $this->today();
-        $skip = $usedToday;
+        $lastBooked = $booked->last()['at'] ?? null;
 
-        while ($kahfLeft + $regularLeft > 0) {
-            $fridayKahfBooked = false;
+        while ($kahfLeft + $regularLeft > 0 || ($lastBooked !== null && $day->lte($lastBooked))) {
+            $free = $this->slotsOn($day);
+            $daySlots = [];
+            $kahfSlotOpen = $day->isFriday();
 
-            foreach ($this->slotsOn($day) as $at) {
-                if ($skip > 0) {
-                    $skip--;
+            foreach ($booked->filter(fn (array $entry) => $entry['at']->isSameDay($day)) as $entry) {
+                $isKahf = $this->isKahf($entry['tilawa']);
+                $daySlots[] = ['at' => $entry['at'], 'kahf' => $isKahf, 'booked' => $entry];
+                $kahfSlotOpen = $kahfSlotOpen && ! $isKahf;
 
-                    continue;
+                if ($free !== []) {
+                    unset($free[$this->nearestSlot($free, $entry['at'])]);
                 }
+            }
 
-                if ($day->isFriday() && ! $fridayKahfBooked && $kahfLeft > 0) {
-                    $slots[] = ['at' => $at, 'kahf' => true];
-                    $fridayKahfBooked = true;
+            foreach ($free as $at) {
+                if ($kahfSlotOpen && $kahfLeft > 0) {
+                    $daySlots[] = ['at' => $at, 'kahf' => true, 'booked' => null];
+                    $kahfSlotOpen = false;
                     $kahfLeft--;
                 } elseif ($regularLeft > 0) {
-                    $slots[] = ['at' => $at, 'kahf' => false];
+                    $daySlots[] = ['at' => $at, 'kahf' => false, 'booked' => null];
                     $regularLeft--;
                 }
             }
 
-            $skip = 0;
+            usort($daySlots, fn (array $a, array $b) => $a['at']->getTimestamp() <=> $b['at']->getTimestamp());
+            array_push($slots, ...$daySlots);
             $day = $day->addDay();
         }
 
         return $slots;
+    }
+
+    /**
+     * @param  array<int, CarbonImmutable>  $slots
+     */
+    private function nearestSlot(array $slots, CarbonImmutable $at): int
+    {
+        return collect($slots)
+            ->sortBy(fn (CarbonImmutable $slot) => abs($slot->getTimestamp() - $at->getTimestamp()))
+            ->keys()
+            ->first();
     }
 
     /**
