@@ -1017,5 +1017,16 @@
     "AM": "ص",
     "PM": "م",
     "Your location": "موقعك",
-    "Use my exact location": "استخدم موقعي الدقيق"
+    "Use my exact location": "استخدم موقعي الدقيق",
+    "Click to copy": "اضغط للنسخ",
+    "Mark as posted": "تأكيد النشر",
+    "Video link (optional)": "رابط الفيديو (اختياري)",
+    "Post link (optional)": "رابط المنشور (اختياري)",
+    "Open post": "فتح المنشور",
+    "Undo": "تراجع",
+    "Move to published": "نقل إلى تم النشر",
+    "Back to publishing": "إرجاع إلى النشر",
+    "Paste the full link, starting with https://": "الصق الرابط كاملًا بدءًا من https://",
+    "Upload to YouTube": "الرفع على يوتيوب",
+    "Open Facebook": "فتح فيسبوك"
 }

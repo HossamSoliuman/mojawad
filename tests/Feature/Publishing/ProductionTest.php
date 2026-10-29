@@ -260,49 +260,81 @@ it('deletes the rendered video when moving back to preparation', function () {
     Storage::disk('public')->assertMissing($videoPath);
 });
 
-it('publishes to the podcast feed inline and moves the recitation to published', function () {
+it('marks a platform as posted with its link and keeps the recitation in publishing', function () {
     $creator = User::factory()->create()->assignRole('creator');
     $tilawa = readyTilawa($creator, 'ready', 'publishing');
 
     $this->actingAs($creator);
 
     Livewire::test(ProductionQueue::class)
-        ->call('openPublish', $tilawa->id)
-        ->set('platforms', ['podcast'])
-        ->call('doPublish');
-
-    $publication = Publication::where('tilawa_id', $tilawa->id)->where('platform', 'podcast')->first();
-    expect($publication)->not->toBeNull()
-        ->and($publication->status)->toBe('completed')
-        ->and($tilawa->fresh()->status)->toBe('active')
-        ->and($tilawa->fresh()->production_stage)->toBe('published');
-});
-
-it('stores the composed per-platform meta on the publication', function () {
-    Bus::fake();
-    $creator = User::factory()->create()->assignRole('creator');
-    $tilawa = readyTilawa($creator, 'ready', 'publishing');
-
-    $this->actingAs($creator);
-
-    Livewire::test(ProductionQueue::class)
-        ->call('openPublish', $tilawa->id)
-        ->set('platforms', ['youtube'])
-        ->set('hookText', 'Opening hook for sharing')
-        ->set('ytTitle', 'عنوان مخصص لليوتيوب')
-        ->set('ytDescription', 'وصف مخصص')
-        ->call('doPublish');
+        ->set("postLinks.{$tilawa->id}.youtube", 'https://youtu.be/abc123')
+        ->call('markPosted', $tilawa->id, 'youtube')
+        ->assertHasNoErrors();
 
     $publication = Publication::where('tilawa_id', $tilawa->id)->where('platform', 'youtube')->first();
     expect($publication)->not->toBeNull()
-        ->and($publication->meta['hook'])->toBe('Opening hook for sharing')
-        ->and($publication->meta['title'])->toBe('عنوان مخصص لليوتيوب')
-        ->and($publication->meta['description'])->toBe('وصف مخصص');
-
-    Bus::assertDispatched(PublishToYoutube::class);
+        ->and($publication->status)->toBe('completed')
+        ->and($publication->external_url)->toBe('https://youtu.be/abc123')
+        ->and($publication->published_at)->not->toBeNull()
+        ->and($tilawa->fresh()->production_stage)->toBe('publishing');
 });
 
-it('shows a ready-to-share publishing kit with copy and download actions', function () {
+it('moves the recitation to published once youtube and facebook are both posted', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+    $tilawa = readyTilawa($creator, 'ready', 'publishing');
+
+    $this->actingAs($creator);
+
+    Livewire::test(ProductionQueue::class)
+        ->call('markPosted', $tilawa->id, 'youtube')
+        ->call('markPosted', $tilawa->id, 'facebook');
+
+    expect(Publication::where('tilawa_id', $tilawa->id)->where('status', 'completed')->count())->toBe(2)
+        ->and(Publication::where('tilawa_id', $tilawa->id)->first()->external_url)->toBeNull()
+        ->and($tilawa->fresh()->production_stage)->toBe('published');
+});
+
+it('rejects an invalid post link', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+    $tilawa = readyTilawa($creator, 'ready', 'publishing');
+
+    $this->actingAs($creator);
+
+    Livewire::test(ProductionQueue::class)
+        ->set("postLinks.{$tilawa->id}.facebook", 'not a link')
+        ->call('markPosted', $tilawa->id, 'facebook')
+        ->assertHasErrors("postLinks.{$tilawa->id}.facebook");
+
+    expect(Publication::where('tilawa_id', $tilawa->id)->exists())->toBeFalse();
+});
+
+it('only marks youtube and facebook as posted', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+    $tilawa = readyTilawa($creator, 'ready', 'publishing');
+
+    $this->actingAs($creator);
+
+    Livewire::test(ProductionQueue::class)
+        ->call('markPosted', $tilawa->id, 'podcast')
+        ->assertNotFound();
+
+    expect(Publication::where('tilawa_id', $tilawa->id)->exists())->toBeFalse();
+});
+
+it('undoes a posted platform while the recitation is still in publishing', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+    $tilawa = readyTilawa($creator, 'ready', 'publishing');
+
+    $this->actingAs($creator);
+
+    Livewire::test(ProductionQueue::class)
+        ->call('markPosted', $tilawa->id, 'youtube')
+        ->call('unmarkPosted', $tilawa->id, 'youtube');
+
+    expect(Publication::where('tilawa_id', $tilawa->id)->exists())->toBeFalse();
+});
+
+it('shows copy-ready youtube and facebook texts without the referral link or podcast', function () {
     $creator = User::factory()->create()->assignRole('creator');
     $tilawa = readyTilawa($creator, 'ready', 'publishing');
     $tilawa->update([
@@ -314,40 +346,44 @@ it('shows a ready-to-share publishing kit with copy and download actions', funct
 
     $this->actingAs($creator);
 
-    Livewire::test(ProductionQueue::class)
+    $component = Livewire::test(ProductionQueue::class)
         ->set('tab', 'publishing')
-        ->assertSee(__('Ready-to-share copy'))
-        ->assertSee(__('Hook'))
         ->assertSee(__('Video title'))
         ->assertSee(__('Video description'))
-        ->assertSee(__('Post title'))
         ->assertSee(__('Post text'))
-        ->assertSee(__('Copy all'))
+        ->assertSee(__('Mark as posted'))
+        ->assertSee(__('Upload to YouTube'))
         ->assertSee(__('Copy file path'))
-        ->assertSee(__('Copy the full file path for pasting into a file picker'))
         ->assertSee(Js::from($videoFilePath)->toHtml(), false)
-        ->assertSee('path-'.$tilawa->id, false)
         ->assertSee(__('Download video'))
-        ->assertSee(route('admin.publishing.production.download', $tilawa), false);
+        ->assertSee(route('admin.publishing.production.download', $tilawa), false)
+        ->assertDontSee('utm_source')
+        ->assertDontSee(__('Listen to more recitations on Mojawad:'))
+        ->assertDontSee(__('Podcast (Spotify / Anghami)'))
+        ->assertDontSee(__('Post title'))
+        ->assertDontSee(__('Copy all'));
+
+    $copy = $component->instance()->publishingCopy[$tilawa->id];
+
+    expect($copy['youtube_title'])->toContain('A ready recitation')
+        ->and($copy['youtube_description'])->toContain('A ready recitation')
+        ->and($copy['facebook_text'])->toContain('#القرآن_الكريم')
+        ->and($copy['facebook_text'])->not->toContain('mojawad.org');
 });
 
-it('can push an already published recitation to another platform', function () {
-    Bus::fake();
+it('moves a published recitation back to publishing to post it elsewhere', function () {
     $creator = User::factory()->create()->assignRole('creator');
     $tilawa = readyTilawa($creator, 'ready', 'published');
 
     $this->actingAs($creator);
 
     Livewire::test(ProductionQueue::class)
-        ->call('openPublish', $tilawa->id)
-        ->assertSet('publishFor', $tilawa->id)
-        ->set('platforms', ['youtube'])
-        ->call('doPublish');
+        ->call('moveBackToPublishing', $tilawa->id);
 
-    expect(Publication::where('tilawa_id', $tilawa->id)->where('platform', 'youtube')->exists())->toBeTrue();
+    expect($tilawa->fresh()->production_stage)->toBe('publishing');
 });
 
-it('does not publish without a rendered customized card', function () {
+it('does not mark as posted without a rendered customized card', function () {
     $creator = User::factory()->create()->assignRole('creator');
     $tilawa = readyTilawa($creator, 'ready', 'publishing');
     $tilawa->update(['brand_card' => null]);
@@ -355,9 +391,7 @@ it('does not publish without a rendered customized card', function () {
     $this->actingAs($creator);
 
     Livewire::test(ProductionQueue::class)
-        ->set('publishFor', $tilawa->id)
-        ->set('platforms', ['podcast'])
-        ->call('doPublish');
+        ->call('markPosted', $tilawa->id, 'youtube');
 
     expect(Publication::where('tilawa_id', $tilawa->id)->count())->toBe(0);
 });

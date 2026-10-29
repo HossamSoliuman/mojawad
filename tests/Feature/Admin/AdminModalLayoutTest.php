@@ -15,7 +15,6 @@ it('uses wider responsive modal widths throughout the admin area', function () {
         ->toContain('body.adm .fbr-publish-modal { width: min(640px, 94vw);')
         ->and($productionQueue)
         ->toContain('max-width:1280px;width:96vw')
-        ->toContain('max-width:760px;width:96vw')
         ->toContain('max-width:560px')
         ->and($factoryQueue)
         ->toContain('max-width:540px')

@@ -178,139 +178,138 @@
         @endif
 
     @elseif($tab === 'publishing')
-        {{-- ══════════ PUBLISHING: compose per-platform meta, upload to platforms ══════════ --}}
+        {{-- ══════════ PUBLISHING: copy the texts, upload by hand, mark each platform posted ══════════ --}}
         @if($this->publishingList->isEmpty())
             <div style="text-align:center;padding:3rem 1rem;color:var(--text2)">
                 <i class="fas fa-tower-broadcast" style="font-size:2.2rem;display:block;margin-bottom:.7rem;opacity:.4"></i>
                 <div style="font-size:.95rem">{{ __('No videos here yet. Move a ready recitation from Preparation.') }}</div>
             </div>
         @else
-            <div class="tbl-wrap">
-                <table class="tbl">
-                    <thead><tr>
-                        <th>{{ __('Recitation') }}</th>
-                        <th>{{ __('Platforms & tracking') }}</th>
-                        <th>{{ __('Actions') }}</th>
-                    </tr></thead>
-                    <tbody>
-                        @foreach($this->publishingList as $tilawa)
-                        @php($copy = $this->publishingCopy[$tilawa->id])
-                        <tr wire:key="pub-{{ $tilawa->id }}">
-                            <td>
-                                <div style="display:flex;align-items:center;gap:.72rem">
-                                    @php($thumb = $tilawa->brand_card_image_url ?? $tilawa->brand_cover_url)
-                                    @if($thumb)
-                                    <img src="{{ $thumb }}" style="width:78px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0;background:#000" alt="">
-                                    @else
-                                    <span style="width:78px;height:44px;border-radius:8px;background:var(--bg3,#1e1e35);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text3)"><i class="fas fa-film"></i></span>
-                                    @endif
-                                    <div style="min-width:0">
-                                        <div style="font-weight:600;font-size:.86rem">{{ $tilawa->title_ar }}</div>
-                                        <div style="font-size:.72rem;color:var(--text3)">{{ $tilawa->qari?->name }} · {{ $tilawa->formatted_duration }}</div>
-                                    </div>
+            <div class="manual-publish-list">
+                @foreach($this->publishingList as $tilawa)
+                @php($copy = $this->publishingCopy[$tilawa->id])
+                @php($postedOn = $tilawa->publications->where('status', 'completed')->keyBy('platform'))
+                <article wire:key="pub-{{ $tilawa->id }}" class="manual-publish-item">
+                    <header class="manual-publish-head">
+                        <div style="display:flex;align-items:center;gap:.72rem;min-width:0">
+                            @php($thumb = $tilawa->brand_card_image_url ?? $tilawa->brand_cover_url)
+                            @if($thumb)
+                            <img src="{{ $thumb }}" style="width:78px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0;background:#000" alt="">
+                            @else
+                            <span style="width:78px;height:44px;border-radius:8px;background:var(--bg3,#1e1e35);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text3)"><i class="fas fa-film"></i></span>
+                            @endif
+                            <div style="min-width:0">
+                                <div style="font-weight:600;font-size:.86rem">{{ $tilawa->title_ar }}</div>
+                                <div style="font-size:.72rem;color:var(--text3)">{{ $tilawa->qari?->name }} · {{ $tilawa->formatted_duration }}</div>
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:.2rem;align-items:center;flex-wrap:wrap">
+                            <button type="button" class="btn btn-ghost btn-xs"
+                                    @click="show(@js($tilawa->brand_video_url), @js($tilawa->brand_card_image_url ?? $tilawa->brand_cover_url), @js($tilawa->title_ar))">
+                                <i class="fas fa-eye"></i> {{ __('Preview') }}
+                            </button>
+                            @if($tilawa->brand_video_path)
+                            <a href="{{ route('admin.publishing.production.download', $tilawa) }}" class="btn btn-ghost btn-xs">
+                                <i class="fas fa-download"></i> {{ __('Download video') }}
+                            </a>
+                            @php($brandVideoFilePath = str_replace('/', DIRECTORY_SEPARATOR, \Illuminate\Support\Facades\Storage::disk(config('publishing.disk'))->path($tilawa->brand_video_path)))
+                            <button type="button" class="btn btn-ghost btn-xs"
+                                    aria-label="{{ __('Copy file path') }}"
+                                    @click="copyText(@js($brandVideoFilePath), 'path-{{ $tilawa->id }}')"
+                                    title="{{ __('Copy the full file path for pasting into a file picker') }}">
+                                <i class="fas" :class="copied === 'path-{{ $tilawa->id }}' ? 'fa-check' : 'fa-copy'"></i>
+                                <span x-text="copied === 'path-{{ $tilawa->id }}' ? @js(__('Path copied')) : @js(__('Copy file path'))"></span>
+                            </button>
+                            <button type="button" wire:click.renderless="revealVideoInExplorer({{ $tilawa->id }})"
+                                    wire:loading.attr="disabled" wire:target="revealVideoInExplorer({{ $tilawa->id }})"
+                                    class="btn btn-ghost btn-xs" title="{{ __('Show in folder') }}">
+                                <i class="fas fa-folder-open"></i> {{ __('Show in folder') }}
+                            </button>
+                            @endif
+                            @if($postedOn->isNotEmpty())
+                            <button type="button" wire:click="moveToPublished({{ $tilawa->id }})" class="btn btn-primary btn-xs">
+                                <i class="fas fa-circle-check"></i> {{ __('Move to published') }}
+                            </button>
+                            @endif
+                            <button type="button" wire:click="moveToPreparation({{ $tilawa->id }})" class="btn-icon" title="{{ __('Back to preparation') }}">
+                                <i class="fas fa-arrow-{{ app()->getLocale() === 'en' ? 'left' : 'right' }}"></i>
+                            </button>
+                            <button type="button" wire:click="confirmRemove({{ $tilawa->id }})"
+                                    class="btn-icon" style="color:var(--red)" title="{{ __('Remove from production') }}"><i class="fas fa-xmark"></i></button>
+                        </div>
+                    </header>
+
+                    <div class="sharing-platform-grid">
+                        @foreach([
+                            'youtube' => [
+                                'icon' => 'fab fa-youtube', 'color' => '#dc2626', 'label' => __('YouTube'),
+                                'open' => __('Upload to YouTube'), 'link' => __('Video link (optional)'),
+                                'fields' => [__('Video title') => $copy['youtube_title'], __('Video description') => $copy['youtube_description']],
+                            ],
+                            'facebook' => [
+                                'icon' => 'fab fa-facebook', 'color' => '#1877f2', 'label' => __('Facebook'),
+                                'open' => __('Open Facebook'), 'link' => __('Post link (optional)'),
+                                'fields' => [__('Post text') => $copy['facebook_text']],
+                            ],
+                        ] as $platform => $content)
+                        @php($publication = $postedOn->get($platform))
+                        <section wire:key="share-platform-{{ $tilawa->id }}-{{ $platform }}" class="sharing-platform-card {{ $publication ? 'is-posted' : '' }}">
+                            <div class="sharing-platform-title" style="--platform-color:{{ $content['color'] }}">
+                                <span><i class="{{ $content['icon'] }}"></i> {{ $content['label'] }}</span>
+                                @if($publication)
+                                <span class="badge badge-green"><i class="fas fa-circle-check"></i> {{ __('Posted') }}</span>
+                                @else
+                                <a href="{{ $this->uploadLinks[$platform] }}" target="_blank" rel="noopener" class="sharing-open-link">
+                                    {{ $content['open'] }} <i class="fas fa-arrow-up-right-from-square"></i>
+                                </a>
+                                @endif
+                            </div>
+
+                            @foreach($content['fields'] as $fieldLabel => $fieldText)
+                            @php($copyKey = $platform.'-'.$loop->index.'-'.$tilawa->id)
+                            <div class="sharing-field" wire:key="share-field-{{ $copyKey }}">
+                                <div class="sharing-field-heading">
+                                    <span>{{ $fieldLabel }}</span>
+                                    <button type="button" class="sharing-copy-btn" :class="copied === '{{ $copyKey }}' && 'is-copied'"
+                                            @click="copyText(@js($fieldText), '{{ $copyKey }}')">
+                                        <i class="fas" :class="copied === '{{ $copyKey }}' ? 'fa-check' : 'fa-copy'"></i>
+                                        <span x-text="copied === '{{ $copyKey }}' ? @js(__('Copied')) : @js(__('Copy'))"></span>
+                                    </button>
                                 </div>
-                            </td>
-                            <td>@include('livewire.admin.partials.publication-tracking', ['tilawa' => $tilawa])</td>
-                            <td>
-                                <div style="display:flex;gap:.2rem;align-items:center;flex-wrap:wrap">
-                                    <button type="button" class="btn btn-ghost btn-xs"
-                                            @click="show(@js($tilawa->brand_video_url), @js($tilawa->brand_card_image_url ?? $tilawa->brand_cover_url), @js($tilawa->title_ar))">
-                                        <i class="fas fa-eye"></i> {{ __('Preview') }}
-                                    </button>
-                                    <button type="button" wire:click="openPublish({{ $tilawa->id }})" class="btn btn-primary btn-xs">
-                                        <i class="fas fa-tower-broadcast"></i> {{ __('Compose & publish') }}
-                                    </button>
-                                    @if($tilawa->brand_video_path)
-                                    <a href="{{ route('admin.publishing.production.download', $tilawa) }}" class="btn btn-ghost btn-xs">
-                                        <i class="fas fa-download"></i> {{ __('Download video') }}
+                                <div class="sharing-copy-text" dir="auto" title="{{ __('Click to copy') }}"
+                                     @click="if (! window.getSelection().toString()) copyText(@js($fieldText), '{{ $copyKey }}')">{{ $fieldText }}</div>
+                            </div>
+                            @endforeach
+
+                            <div class="sharing-post-footer">
+                                @if($publication)
+                                    @if($publication->external_url)
+                                    <a href="{{ $publication->external_url }}" target="_blank" rel="noopener" class="sharing-open-link">
+                                        {{ __('Open post') }} <i class="fas fa-arrow-up-right-from-square"></i>
                                     </a>
-                                    @php($brandVideoFilePath = str_replace('/', DIRECTORY_SEPARATOR, \Illuminate\Support\Facades\Storage::disk(config('publishing.disk'))->path($tilawa->brand_video_path)))
-                                    <button type="button" class="btn btn-ghost btn-xs"
-                                            aria-label="{{ __('Copy file path') }}"
-                                            @click="copyText(@js($brandVideoFilePath), 'path-{{ $tilawa->id }}')"
-                                            title="{{ __('Copy the full file path for pasting into a file picker') }}">
-                                        <i class="fas" :class="copied === 'path-{{ $tilawa->id }}' ? 'fa-check' : 'fa-copy'"></i>
-                                        <span x-text="copied === 'path-{{ $tilawa->id }}' ? @js(__('Path copied')) : @js(__('Copy file path'))"></span>
-                                    </button>
-                                    <button type="button" wire:click.renderless="revealVideoInExplorer({{ $tilawa->id }})"
-                                            wire:loading.attr="disabled" wire:target="revealVideoInExplorer({{ $tilawa->id }})"
-                                            class="btn btn-ghost btn-xs" title="{{ __('Show in folder') }}">
-                                        <i class="fas fa-folder-open"></i> {{ __('Show in folder') }}
-                                    </button>
                                     @endif
-                                    <button type="button" wire:click="moveToPreparation({{ $tilawa->id }})" class="btn-icon" title="{{ __('Back to preparation') }}">
-                                        <i class="fas fa-arrow-{{ app()->getLocale() === 'en' ? 'left' : 'right' }}"></i>
+                                    <span style="font-size:.72rem;color:var(--text3)">{{ $publication->published_at?->diffForHumans() }}</span>
+                                    <button type="button" wire:click="unmarkPosted({{ $tilawa->id }}, '{{ $platform }}')" class="btn btn-ghost btn-xs" style="margin-inline-start:auto">
+                                        <i class="fas fa-rotate-left"></i> {{ __('Undo') }}
                                     </button>
-                                    <button type="button" wire:click="confirmRemove({{ $tilawa->id }})"
-                                            class="btn-icon" style="color:var(--red)" title="{{ __('Remove from production') }}"><i class="fas fa-xmark"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr wire:key="pub-copy-{{ $tilawa->id }}" class="publishing-copy-row">
-                            <td colspan="3">
-                                <section class="sharing-kit" aria-label="{{ __('Ready-to-share copy') }}">
-                                    <div class="sharing-kit-header">
-                                        <div>
-                                            <span class="sharing-kit-eyebrow"><i class="fas fa-bolt"></i> {{ __('Ready-to-share copy') }}</span>
-                                            <p>{{ __('Copy each field separately, or copy the complete publishing pack at once.') }}</p>
-                                        </div>
-                                        <button type="button" class="btn btn-primary btn-xs"
-                                                aria-label="{{ __('Copy all') }}"
-                                                @click="copyText(@js($copy['all']), 'all-{{ $tilawa->id }}')">
-                                            <i class="fas" :class="copied === 'all-{{ $tilawa->id }}' ? 'fa-check' : 'fa-copy'"></i>
-                                            <span x-text="copied === 'all-{{ $tilawa->id }}' ? @js(__('Copied')) : @js(__('Copy all'))"></span>
-                                        </button>
-                                    </div>
-
-                                    <div class="sharing-hook">
-                                        <div class="sharing-field-heading">
-                                            <span><i class="fas fa-fire"></i> {{ __('Hook') }}</span>
-                                            <button type="button" @click="copyText(@js($copy['hook']), 'hook-{{ $tilawa->id }}')">
-                                                <i class="fas" :class="copied === 'hook-{{ $tilawa->id }}' ? 'fa-check' : 'fa-copy'"></i>
-                                                <span x-text="copied === 'hook-{{ $tilawa->id }}' ? @js(__('Copied')) : @js(__('Copy'))"></span>
-                                            </button>
-                                        </div>
-                                        <div class="sharing-copy-text">{{ $copy['hook'] }}</div>
-                                    </div>
-
-                                    <div class="sharing-platform-grid">
-                                        @foreach([
-                                            'youtube' => ['fab fa-youtube', '#dc2626', __('YouTube'), $copy['youtube_title'], $copy['youtube_description']],
-                                            'facebook' => ['fab fa-facebook', '#1877f2', __('Facebook'), $copy['facebook_title'], $copy['facebook_description']],
-                                        ] as $platform => $content)
-                                        <article wire:key="share-platform-{{ $tilawa->id }}-{{ $platform }}" class="sharing-platform-card">
-                                            <div class="sharing-platform-title" style="--platform-color:{{ $content[1] }}">
-                                                <i class="{{ $content[0] }}"></i> {{ $content[2] }}
-                                            </div>
-                                            <div class="sharing-field">
-                                                <div class="sharing-field-heading">
-                                                    <span>{{ $platform === 'youtube' ? __('Video title') : __('Post title') }}</span>
-                                                    <button type="button" @click="copyText(@js($content[3]), '{{ $platform }}-title-{{ $tilawa->id }}')">
-                                                        <i class="fas" :class="copied === '{{ $platform }}-title-{{ $tilawa->id }}' ? 'fa-check' : 'fa-copy'"></i>
-                                                        <span x-text="copied === '{{ $platform }}-title-{{ $tilawa->id }}' ? @js(__('Copied')) : @js(__('Copy'))"></span>
-                                                    </button>
-                                                </div>
-                                                <div class="sharing-copy-text">{{ $content[3] }}</div>
-                                            </div>
-                                            <div class="sharing-field">
-                                                <div class="sharing-field-heading">
-                                                    <span>{{ $platform === 'youtube' ? __('Video description') : __('Post text') }}</span>
-                                                    <button type="button" @click="copyText(@js($content[4]), '{{ $platform }}-description-{{ $tilawa->id }}')">
-                                                        <i class="fas" :class="copied === '{{ $platform }}-description-{{ $tilawa->id }}' ? 'fa-check' : 'fa-copy'"></i>
-                                                        <span x-text="copied === '{{ $platform }}-description-{{ $tilawa->id }}' ? @js(__('Copied')) : @js(__('Copy'))"></span>
-                                                    </button>
-                                                </div>
-                                                <div class="sharing-copy-text sharing-copy-description">{{ $content[4] }}</div>
-                                            </div>
-                                        </article>
-                                        @endforeach
-                                    </div>
-                                </section>
-                            </td>
-                        </tr>
+                                @else
+                                    <input type="url" dir="ltr" wire:model="postLinks.{{ $tilawa->id }}.{{ $platform }}"
+                                           class="form-control" placeholder="{{ $content['link'] }}" aria-label="{{ $content['link'] }}">
+                                    <button type="button" wire:click="markPosted({{ $tilawa->id }}, '{{ $platform }}')"
+                                            wire:loading.attr="disabled" wire:target="markPosted({{ $tilawa->id }}, '{{ $platform }}')"
+                                            class="btn btn-primary btn-xs">
+                                        <i class="fas fa-check"></i> {{ __('Mark as posted') }}
+                                    </button>
+                                    @error("postLinks.{$tilawa->id}.{$platform}")
+                                    <small class="sharing-post-error">{{ $message }}</small>
+                                    @enderror
+                                @endif
+                            </div>
+                        </section>
                         @endforeach
-                    </tbody>
-                </table>
+                    </div>
+                </article>
+                @endforeach
             </div>
         @endif
 
@@ -358,8 +357,8 @@
                                         <i class="fas fa-eye"></i> {{ __('Preview') }}
                                     </button>
                                     @endif
-                                    <button type="button" wire:click="openPublish({{ $tilawa->id }})" class="btn btn-ghost btn-xs">
-                                        <i class="fas fa-tower-broadcast"></i> {{ __('Publish elsewhere') }}
+                                    <button type="button" wire:click="moveBackToPublishing({{ $tilawa->id }})" class="btn btn-ghost btn-xs">
+                                        <i class="fas fa-tower-broadcast"></i> {{ __('Back to publishing') }}
                                     </button>
                                     <button type="button" wire:click="confirmRemove({{ $tilawa->id }})"
                                             class="btn-icon" style="color:var(--red)" title="{{ __('Remove from production') }}"><i class="fas fa-xmark"></i></button>
@@ -426,65 +425,6 @@
                 </button>
                 <button type="button" wire:click="saveCard" class="btn btn-ghost btn-sm"><i class="fas fa-floppy-disk"></i> {{ __('Save only') }}</button>
                 <button type="button" wire:click="closeEditor" class="btn btn-ghost btn-sm">{{ __('Cancel') }}</button>
-            </div>
-        </div>
-    </div>
-    @endif
-
-    {{-- Publish composer: per-platform title + description, then upload --}}
-    @if($publishFor !== null)
-    <div class="modal-backdrop" wire:click.self="cancelPublish" x-data @keydown.escape.window="$wire.cancelPublish()">
-        <div class="modal" style="max-width:760px;width:96vw;max-height:92vh;overflow:auto">
-            <div class="modal-title" style="margin-bottom:.4rem"><i class="fas fa-tower-broadcast"></i> {{ __('Compose & publish') }}</div>
-            <p style="color:var(--text3);font-size:.8rem;margin:0 0 1rem">{{ __('Pick the platforms and write the title & description that will go live on each one.') }}</p>
-
-            <div style="display:flex;flex-direction:column;gap:.9rem">
-                <div class="sharing-hook" style="margin:0">
-                    <label for="publishing-hook" style="display:block;font-size:.8rem;font-weight:700;margin-bottom:.35rem">
-                        <i class="fas fa-fire"></i> {{ __('Hook') }}
-                    </label>
-                    <textarea id="publishing-hook" wire:model="hookText" rows="2" class="form-control" style="width:100%;resize:vertical"
-                              placeholder="{{ __('Opening hook text') }}"></textarea>
-                    <div style="font-size:.72rem;color:var(--text3);margin-top:.3rem">{{ __('Use this as the opening line when you share the video manually.') }}</div>
-                </div>
-
-                {{-- Podcast --}}
-                <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;cursor:pointer">
-                    <input type="checkbox" value="podcast" wire:model.live="platforms"> {{ __('Podcast (Spotify / Anghami)') }}
-                </label>
-
-                {{-- YouTube --}}
-                <div style="border:1px solid var(--border);border-radius:10px;padding:.7rem">
-                    <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;cursor:pointer;font-weight:600">
-                        <input type="checkbox" value="youtube" wire:model.live="platforms"> {{ __('YouTube') }}
-                        @unless($youtubeEnabled)<span style="font-size:.72rem;color:var(--text3);font-weight:400">({{ __('Not configured') }})</span>@endunless
-                    </label>
-                    @if(in_array('youtube', $platforms, true))
-                    <div style="display:flex;flex-direction:column;gap:.5rem;margin-top:.6rem">
-                        <input type="text" wire:model="ytTitle" class="form-control" style="width:100%" placeholder="{{ __('Title') }}">
-                        <textarea wire:model="ytDescription" rows="3" class="form-control" style="width:100%;resize:vertical" placeholder="{{ __('Description') }}"></textarea>
-                    </div>
-                    @endif
-                </div>
-
-                {{-- Facebook --}}
-                <div style="border:1px solid var(--border);border-radius:10px;padding:.7rem">
-                    <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;cursor:pointer;font-weight:600">
-                        <input type="checkbox" value="facebook" wire:model.live="platforms"> {{ __('Facebook') }}
-                        @unless($facebookEnabled)<span style="font-size:.72rem;color:var(--text3);font-weight:400">({{ __('Not configured') }})</span>@endunless
-                    </label>
-                    @if(in_array('facebook', $platforms, true))
-                    <div style="display:flex;flex-direction:column;gap:.5rem;margin-top:.6rem">
-                        <input type="text" wire:model="fbTitle" class="form-control" style="width:100%" placeholder="{{ __('Title') }}">
-                        <textarea wire:model="fbDescription" rows="3" class="form-control" style="width:100%;resize:vertical" placeholder="{{ __('Description') }}"></textarea>
-                    </div>
-                    @endif
-                </div>
-            </div>
-
-            <div style="display:flex;gap:.6rem;margin-top:1.2rem">
-                <button type="button" wire:click="cancelPublish" class="btn btn-ghost" style="flex:1;justify-content:center">{{ __('Cancel') }}</button>
-                <button type="button" wire:click="doPublish" wire:loading.attr="disabled" class="btn btn-primary" style="flex:1;justify-content:center"><i class="fas fa-check"></i> {{ __('Publish') }}</button>
             </div>
         </div>
     </div>

@@ -2,15 +2,11 @@
 
 namespace App\Livewire\Admin;
 
-use App\Jobs\PublishToFacebook;
-use App\Jobs\PublishToYoutube;
 use App\Models\Publication;
 use App\Models\Qari;
 use App\Models\Tilawa;
-use App\Services\FacebookPublisher;
 use App\Services\PublishingPipeline;
 use App\Services\VideoCardService;
-use App\Services\YoutubePublisher;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -43,34 +39,14 @@ class ProductionQueue extends Component
 
     public bool $cardAnimateText = true;
 
-    // ── Publishing tab ───────────────────────────────────────────────
-    public ?int $publishFor = null;
+    // ── Publishing tab: videos are uploaded by hand, then marked as posted ──
+    public const MANUAL_PLATFORMS = ['youtube', 'facebook'];
 
-    /** @var list<string> */
-    public array $platforms = ['podcast'];
-
-    public string $ytTitle = '';
-
-    public string $ytDescription = '';
-
-    public string $fbTitle = '';
-
-    public string $fbDescription = '';
-
-    public string $hookText = '';
-
-    public bool $youtubeEnabled = false;
-
-    public bool $facebookEnabled = false;
+    /** @var array<int, array<string, string>> */
+    public array $postLinks = [];
 
     // ── Remove-from-production confirmation ──────────────────────────
     public ?int $confirmingRemoveId = null;
-
-    public function mount(): void
-    {
-        $this->youtubeEnabled = YoutubePublisher::enabled();
-        $this->facebookEnabled = FacebookPublisher::enabled();
-    }
 
     // ── Selection: browse qaris, then pick their recitations ─────────
 
@@ -180,10 +156,7 @@ class ProductionQueue extends Component
     #[Computed]
     public function hasActive(): bool
     {
-        return $this->preparationList->contains(fn (Tilawa $t) => $t->brand_status === 'processing')
-            || $this->publishingList->contains(fn (Tilawa $t) => $t->publications->contains(
-                fn (Publication $p) => in_array($p->status, ['pending', 'processing'], true)
-            ));
+        return $this->preparationList->contains(fn (Tilawa $t) => $t->brand_status === 'processing');
     }
 
     // ── Card editor (Preparation) ────────────────────────────────────
@@ -351,50 +324,60 @@ class ProductionQueue extends Component
         }
     }
 
-    // ── Publishing: compose per-platform meta, then upload ───────────
+    // ── Publishing: upload by hand, then record where it went live ───
 
-    public function openPublish(int $tilawaId): void
+    /**
+     * Record that the video was uploaded to a platform by hand, with the
+     * optional link to the live post. Once both platforms are posted the
+     * recitation moves on to the Published stage.
+     */
+    public function markPosted(int $tilawaId, string $platform): void
     {
+        abort_unless(in_array($platform, self::MANUAL_PLATFORMS, true), 404);
+
         $tilawa = $this->ownedTilawa($tilawaId);
 
         if (! $this->canPublish($tilawa)) {
             return;
         }
 
-        $pubs = $tilawa->publications->keyBy('platform');
-        $youtubeMeta = $pubs->get('youtube')?->meta ?? [];
-        $facebookMeta = $pubs->get('facebook')?->meta ?? [];
+        $this->validate(
+            ["postLinks.{$tilawaId}.{$platform}" => ['nullable', 'url', 'max:2048']],
+            ["postLinks.{$tilawaId}.{$platform}.url" => __('Paste the full link, starting with https://')],
+        );
 
-        $this->publishFor = $tilawaId;
-        $this->platforms = ['podcast'];
-        $this->hookText = $youtubeMeta['hook'] ?? $facebookMeta['hook'] ?? $this->defaultHook($tilawa);
-        $this->ytTitle = $youtubeMeta['title'] ?? $this->defaultTitle($tilawa);
-        $this->ytDescription = $youtubeMeta['description'] ?? $this->defaultDescription($tilawa, 'youtube');
-        $this->fbTitle = $facebookMeta['title'] ?? $this->defaultTitle($tilawa);
-        $this->fbDescription = $facebookMeta['description'] ?? $this->defaultDescription($tilawa, 'facebook');
+        Publication::updateOrCreate(
+            ['tilawa_id' => $tilawa->id, 'platform' => $platform],
+            [
+                'status' => 'completed',
+                'external_url' => trim($this->postLinks[$tilawaId][$platform] ?? '') ?: null,
+                'published_at' => now(),
+                'error' => null,
+                'created_by' => Auth::id(),
+            ],
+        );
+
+        unset($this->postLinks[$tilawaId][$platform]);
+
+        $postedPlatforms = $tilawa->publications()
+            ->whereIn('platform', self::MANUAL_PLATFORMS)
+            ->where('status', 'completed')
+            ->count();
+
+        if ($tilawa->production_stage === 'publishing' && $postedPlatforms === count(self::MANUAL_PLATFORMS)) {
+            $tilawa->update(['production_stage' => 'published']);
+        }
     }
 
-    public function cancelPublish(): void
+    public function unmarkPosted(int $tilawaId, string $platform): void
     {
-        $this->publishFor = null;
-    }
+        abort_unless(in_array($platform, self::MANUAL_PLATFORMS, true), 404);
 
-    public function doPublish(PublishingPipeline $pipeline): void
-    {
-        if ($this->publishFor === null) {
-            return;
+        $tilawa = $this->ownedTilawa($tilawaId);
+
+        if ($tilawa->production_stage === 'publishing') {
+            $tilawa->publications()->where('platform', $platform)->delete();
         }
-
-        $tilawa = $this->ownedTilawa($this->publishFor);
-
-        if ($this->canPublish($tilawa) && $this->platforms !== []) {
-            $pipeline->publish($tilawa, $this->platforms, Auth::id(), [
-                'youtube' => ['hook' => trim($this->hookText), 'title' => trim($this->ytTitle), 'description' => trim($this->ytDescription)],
-                'facebook' => ['hook' => trim($this->hookText), 'title' => trim($this->fbTitle), 'description' => trim($this->fbDescription)],
-            ]);
-        }
-
-        $this->publishFor = null;
     }
 
     /**
@@ -422,18 +405,13 @@ class ProductionQueue extends Component
         }
     }
 
-    public function retryPublication(int $publicationId): void
+    public function moveBackToPublishing(int $tilawaId): void
     {
-        $publication = Publication::whereHas('tilawa', fn ($q) => $this->scopeOwned($q))->findOrFail($publicationId);
+        $tilawa = $this->ownedTilawa($tilawaId);
 
-        $publication->update(['status' => 'pending', 'error' => null]);
-
-        match ($publication->platform) {
-            'youtube' => PublishToYoutube::dispatch($publication->id),
-            'facebook' => PublishToFacebook::dispatch($publication->id),
-            'podcast' => app(PublishingPipeline::class)->publish($publication->tilawa, ['podcast'], Auth::id()),
-            default => null,
-        };
+        if ($tilawa->production_stage === 'published' && $this->canPublish($tilawa)) {
+            $tilawa->update(['production_stage' => 'publishing']);
+        }
     }
 
     // ── Remove from the pipeline (keeps the recitation on the site) ──
@@ -481,39 +459,43 @@ class ProductionQueue extends Component
     }
 
     /**
-     * @return array<int, array{hook: string, youtube_title: string, youtube_description: string, facebook_title: string, facebook_description: string, all: string}>
+     * The ready-to-paste texts for each recitation in the Publishing tab:
+     * a YouTube title and description, and one Facebook post text.
+     *
+     * @return array<int, array{youtube_title: string, youtube_description: string, facebook_text: string}>
      */
     #[Computed]
     public function publishingCopy(): array
     {
         return $this->publishingList
             ->mapWithKeys(function (Tilawa $tilawa): array {
-                $publications = $tilawa->publications->keyBy('platform');
-                $youtubeMeta = $publications->get('youtube')?->meta ?? [];
-                $facebookMeta = $publications->get('facebook')?->meta ?? [];
-
-                $hook = $youtubeMeta['hook'] ?? $facebookMeta['hook'] ?? $this->defaultHook($tilawa);
-                $youtubeTitle = $youtubeMeta['title'] ?? $this->defaultTitle($tilawa);
-                $youtubeDescription = $youtubeMeta['description'] ?? $this->defaultDescription($tilawa, 'youtube');
-                $facebookTitle = $facebookMeta['title'] ?? $this->defaultTitle($tilawa);
-                $facebookDescription = $facebookMeta['description'] ?? $this->defaultDescription($tilawa, 'facebook');
+                $shareText = $this->shareText($tilawa);
 
                 return [$tilawa->id => [
-                    'hook' => $hook,
-                    'youtube_title' => $youtubeTitle,
-                    'youtube_description' => $youtubeDescription,
-                    'facebook_title' => $facebookTitle,
-                    'facebook_description' => $facebookDescription,
-                    'all' => implode("\n\n", [
-                        __('Hook').":\n".$hook,
-                        __('YouTube title').":\n".$youtubeTitle,
-                        __('YouTube description').":\n".$youtubeDescription,
-                        __('Facebook post title').":\n".$facebookTitle,
-                        __('Facebook post text').":\n".$facebookDescription,
-                    ]),
+                    'youtube_title' => $this->defaultTitle($tilawa),
+                    'youtube_description' => $shareText,
+                    'facebook_text' => $shareText,
                 ]];
             })
             ->all();
+    }
+
+    /**
+     * Where each platform's manual upload starts.
+     *
+     * @return array<string, string>
+     */
+    #[Computed]
+    public function uploadLinks(): array
+    {
+        $facebookHandle = app(VideoCardService::class)->social()['facebook'] ?? null;
+
+        return [
+            'youtube' => 'https://www.youtube.com/upload',
+            'facebook' => $facebookHandle
+                ? 'https://'.preg_replace('#^https?://#', '', $facebookHandle)
+                : 'https://www.facebook.com',
+        ];
     }
 
     // ── Query helpers ────────────────────────────────────────────────
@@ -543,11 +525,6 @@ class ProductionQueue extends Component
         return $this->applyOwnership(Tilawa::query())->findOrFail($tilawaId);
     }
 
-    private function scopeOwned(Builder $query): void
-    {
-        $this->applyOwnership($query);
-    }
-
     private function defaultHook(Tilawa $tilawa): string
     {
         return __('A moving recitation from :title, in the voice of :qari. Listen with your heart. ✨', [
@@ -561,15 +538,11 @@ class ProductionQueue extends Component
         return trim($tilawa->title_ar.($tilawa->qari?->name ? ' | '.$tilawa->qari->name : ''));
     }
 
-    private function defaultDescription(Tilawa $tilawa, string $platform): string
+    private function shareText(Tilawa $tilawa): string
     {
-        $link = 'https://mojawad.org/tilawa/'.$tilawa->slug
-            .'?utm_source='.$platform.'&utm_medium=video&utm_campaign=publishing';
-
         return implode("\n\n", array_filter([
             $this->defaultHook($tilawa),
             trim($tilawa->title_ar."\n".($tilawa->qari?->name ?? '')),
-            __('Listen to more recitations on Mojawad:')."\n".$link,
             '#القرآن_الكريم #تلاوة #مجود',
         ]));
     }
