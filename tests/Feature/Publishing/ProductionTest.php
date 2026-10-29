@@ -13,6 +13,7 @@ use App\Models\TilawatSource;
 use App\Models\User;
 use App\Services\AudioMasteringService;
 use App\Services\YoutubePublisher;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Process;
@@ -377,6 +378,28 @@ it('keeps a half-posted recitation on top and continues the mix from the latest 
     expect($list->first()->id)->toBe($halfPosted->id)
         ->and($list->pluck('qari_id')->all())->toBe([$second->id, $first->id, $second->id, $first->id])
         ->and($list->pluck('id')->all())->toContain(...$waiting->pluck('id')->all());
+});
+
+it('lists the publishing queue by posting date with a schedule brief', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-10-28 10:00', config('publishing.schedule.timezone')));
+
+    $creator = User::factory()->create()->assignRole('creator');
+    $kahf = readyTilawa($creator, 'ready', 'publishing');
+    $kahf->update(['surah_number' => 18, 'title_ar' => 'تلاوة سورة الكهف']);
+    $regular = readyTilawa($creator, 'ready', 'publishing');
+
+    $this->actingAs($creator);
+
+    $component = Livewire::test(ProductionQueue::class)->set('tab', 'publishing');
+    $plan = $component->instance()->postingPlan;
+
+    expect($component->instance()->publishingList->pluck('id')->all())->toBe([$regular->id, $kahf->id])
+        ->and($plan->last()['at']->isFriday())->toBeTrue()
+        ->and($plan->last()['kahf'])->toBeTrue();
+
+    $component->assertSee(__('Posting schedule'))
+        ->assertSee(__('Al-Kahf Friday'))
+        ->assertSee(__('Al-Kahf waiting: :count', ['count' => 1]));
 });
 
 it('shows copy-ready youtube and facebook texts without the referral link or podcast', function () {

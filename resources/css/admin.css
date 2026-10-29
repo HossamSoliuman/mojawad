@@ -1722,6 +1722,166 @@ body.adm .published-link-form .form-control {
   }
 }
 
+/* ============================================================
+   POSTING SCHEDULE
+   ============================================================ */
+body.adm .posting-brief {
+  margin-bottom: 1rem;
+  padding: .9rem;
+  border: 1px solid #dbe5f1;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, .045);
+}
+
+body.adm .posting-brief-title {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  margin: 0 0 .75rem;
+  color: #0f172a;
+  font-size: .92rem;
+  font-weight: 800;
+}
+
+body.adm .posting-brief-title i { color: var(--gold); }
+
+body.adm .posting-brief-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .6rem;
+  margin-bottom: .75rem;
+}
+
+body.adm .posting-brief-stat {
+  display: flex;
+  flex-direction: column;
+  gap: .18rem;
+  min-width: 0;
+  padding: .6rem .7rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+body.adm .posting-brief-stat.is-kahf { border-color: #fcd34d; background: #fffbeb; }
+body.adm .posting-brief-stat.is-warning { border-color: #fca5a5; background: #fef2f2; }
+
+body.adm .posting-brief-label {
+  color: var(--text2);
+  font-size: .7rem;
+  font-weight: 700;
+}
+
+body.adm .posting-brief-stat.is-kahf .posting-brief-label { color: #b45309; }
+body.adm .posting-brief-stat.is-warning .posting-brief-label { color: #b91c1c; }
+
+body.adm .posting-brief-stat strong {
+  color: #0f172a;
+  font-size: .88rem;
+}
+
+body.adm .posting-brief-meta {
+  overflow: hidden;
+  color: var(--text2);
+  font-size: .74rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.adm .posting-brief-week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: .4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+body.adm .posting-day {
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+  min-width: 0;
+  padding: .5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+body.adm .posting-day.is-friday { border-color: #fcd34d; background: #fffbeb; }
+body.adm .posting-day.is-empty { border-style: dashed; }
+
+body.adm .posting-day-name {
+  color: #0f172a;
+  font-size: .74rem;
+  font-weight: 800;
+}
+
+body.adm .posting-day-date {
+  color: var(--text3);
+  font-size: .68rem;
+}
+
+body.adm .posting-day-post {
+  display: block;
+  overflow: hidden;
+  padding: .2rem .4rem;
+  border-radius: 6px;
+  color: var(--gold-dark);
+  background: var(--gold-faint);
+  font-size: .7rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.adm .posting-day.is-friday .posting-day-post { background: #fff; }
+body.adm .posting-day-post.is-kahf,
+body.adm .posting-day.is-friday .posting-day-post.is-kahf { color: #b45309; background: #fef3c7; }
+
+body.adm .posting-day-none {
+  color: var(--text3);
+  font-size: .7rem;
+}
+
+body.adm .posting-brief-note {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  margin: .75rem 0 0;
+  color: #b45309;
+  font-size: .76rem;
+}
+
+body.adm .posting-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 78px;
+  padding: .3rem .45rem;
+  border: 1px solid #bfdbfe;
+  border-radius: 9px;
+  color: var(--gold-dark);
+  background: #eff6ff;
+  line-height: 1.3;
+  text-align: center;
+}
+
+body.adm .posting-slot.is-kahf { border-color: #fcd34d; color: #b45309; background: #fffbeb; }
+body.adm .posting-slot.is-live { border-color: #86efac; color: #15803d; background: #f0fdf4; }
+
+body.adm .posting-slot-day { font-size: .72rem; font-weight: 800; }
+body.adm .posting-slot-date { font-size: .66rem; opacity: .8; }
+body.adm .posting-slot-time { font-size: .66rem; font-weight: 700; }
+
+@media(max-width: 900px) {
+  body.adm .posting-brief-stats { grid-template-columns: 1fr; }
+  body.adm .posting-brief-week { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
+}
+
 
 /* ============================================================
    FACEBOOK REPOSITORY

@@ -1029,5 +1029,18 @@
     "Paste the full link, starting with https://": "الصق الرابط كاملًا بدءًا من https://",
     "Upload to YouTube": "الرفع على يوتيوب",
     "Open Facebook": "فتح فيسبوك",
-    "Paste the link": "الصق الرابط"
+    "Paste the link": "الصق الرابط",
+    "Posting schedule": "جدول النشر",
+    "Next post": "المنشور التالي",
+    "In progress": "قيد النشر",
+    "Al-Kahf Friday": "جمعة الكهف",
+    "Al-Kahf waiting: :count": "تلاوات الكهف المنتظرة: :count",
+    "No Al-Kahf recitation waiting": "لا توجد تلاوة لسورة الكهف في الانتظار",
+    "Friday :date gets a regular post": "جمعة :date ستأخذ منشورًا عاديًا",
+    "Booked until": "مجدول حتى",
+    "Posts booked: :count": "منشورات مجدولة: :count",
+    "No post": "لا منشور",
+    "The queue runs out after :date. Prepare more recitations to keep posting daily.": "تنفد القائمة بعد :date. جهّز تلاوات أخرى ليستمر النشر يوميًا.",
+    "Today": "اليوم",
+    "Tomorrow": "غدًا"
 }

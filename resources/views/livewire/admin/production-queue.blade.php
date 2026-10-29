@@ -185,13 +185,72 @@
                 <div style="font-size:.95rem">{{ __('No videos here yet. Move a ready recitation from Preparation.') }}</div>
             </div>
         @else
+            @php($scheduler = app(\App\Services\PostingScheduler::class))
+            @php($brief = $this->scheduleBrief)
+            <section class="posting-brief">
+                <h3 class="posting-brief-title"><i class="fas fa-calendar-days"></i> {{ __('Posting schedule') }}</h3>
+
+                <div class="posting-brief-stats">
+                    <div class="posting-brief-stat">
+                        <span class="posting-brief-label">{{ __('Next post') }}</span>
+                        <strong>{{ $scheduler->dayLabel($brief['next']['at']) }} · {{ $brief['next']['in_progress'] ? __('In progress') : $brief['next']['at']->translatedFormat('g:i A') }}</strong>
+                        <span class="posting-brief-meta" title="{{ $brief['next']['tilawa']->title_ar }}">{{ $brief['next']['tilawa']->qari?->name }} · {{ $brief['next']['tilawa']->title_ar }}</span>
+                    </div>
+                    <div class="posting-brief-stat {{ $brief['kahf'] ? 'is-kahf' : 'is-warning' }}">
+                        <span class="posting-brief-label"><i class="fas fa-book-quran"></i> {{ __('Al-Kahf Friday') }}</span>
+                        @if($brief['kahf'])
+                        <strong>{{ $brief['kahf']['at']->translatedFormat('j F') }} · {{ $brief['kahf']['at']->translatedFormat('g:i A') }}</strong>
+                        <span class="posting-brief-meta">{{ $brief['kahf']['tilawa']->qari?->name }} · {{ __('Al-Kahf waiting: :count', ['count' => $brief['kahf_waiting']]) }}</span>
+                        @else
+                        <strong>{{ __('No Al-Kahf recitation waiting') }}</strong>
+                        <span class="posting-brief-meta">{{ __('Friday :date gets a regular post', ['date' => $brief['next_friday']->translatedFormat('j F')]) }}</span>
+                        @endif
+                    </div>
+                    <div class="posting-brief-stat">
+                        <span class="posting-brief-label">{{ __('Booked until') }}</span>
+                        <strong>{{ $brief['last']['at']->translatedFormat('l j F') }}</strong>
+                        <span class="posting-brief-meta">{{ __('Posts booked: :count', ['count' => $this->postingPlan->count()]) }}</span>
+                    </div>
+                </div>
+
+                <ol class="posting-brief-week">
+                    @foreach($brief['days'] as $day)
+                    <li class="posting-day {{ $day['date']->isFriday() ? 'is-friday' : '' }} {{ $day['posts'] === [] ? 'is-empty' : '' }}">
+                        <span class="posting-day-name">{{ $scheduler->dayLabel($day['date']) }}</span>
+                        <span class="posting-day-date">{{ $day['date']->translatedFormat('j F') }}</span>
+                        @forelse($day['posts'] as $post)
+                        <span class="posting-day-post {{ $post['kahf'] ? 'is-kahf' : '' }}" title="{{ $post['tilawa']->title_ar }}">
+                            @if($post['kahf'])<i class="fas fa-book-quran"></i>@endif
+                            {{ $post['tilawa']->qari?->name }}
+                        </span>
+                        @empty
+                        <span class="posting-day-none">{{ __('No post') }}</span>
+                        @endforelse
+                    </li>
+                    @endforeach
+                </ol>
+
+                @if($brief['last']['at']->lt($brief['today']->addDays(6)))
+                <p class="posting-brief-note">
+                    <i class="fas fa-triangle-exclamation"></i>
+                    {{ __('The queue runs out after :date. Prepare more recitations to keep posting daily.', ['date' => $brief['last']['at']->translatedFormat('l j F')]) }}
+                </p>
+                @endif
+            </section>
+
             <div class="manual-publish-list">
                 @foreach($this->publishingList as $tilawa)
                 @php($copy = $this->publishingCopy[$tilawa->id])
                 @php($postedOn = $tilawa->publications->where('status', 'completed')->keyBy('platform'))
+                @php($slot = $this->postingSlots[$tilawa->id])
                 <article wire:key="pub-{{ $tilawa->id }}" class="manual-publish-item">
                     <header class="manual-publish-head">
                         <div style="display:flex;align-items:center;gap:.72rem;min-width:0">
+                            <div class="posting-slot {{ $slot['kahf'] ? 'is-kahf' : '' }} {{ $slot['in_progress'] ? 'is-live' : '' }}">
+                                <span class="posting-slot-day">@if($slot['kahf'])<i class="fas fa-book-quran"></i> @endif{{ $scheduler->dayLabel($slot['at']) }}</span>
+                                <span class="posting-slot-date">{{ $slot['at']->translatedFormat('j F') }}</span>
+                                <span class="posting-slot-time">{{ $slot['in_progress'] ? __('In progress') : $slot['at']->translatedFormat('g:i A') }}</span>
+                            </div>
                             @php($thumb = $tilawa->brand_card_image_url ?? $tilawa->brand_cover_url)
                             @if($thumb)
                             <img src="{{ $thumb }}" style="width:78px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0;background:#000" alt="">

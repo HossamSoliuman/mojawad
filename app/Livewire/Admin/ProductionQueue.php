@@ -5,9 +5,11 @@ namespace App\Livewire\Admin;
 use App\Models\Publication;
 use App\Models\Qari;
 use App\Models\Tilawa;
+use App\Services\PostingScheduler;
 use App\Services\PublishingMixer;
 use App\Services\PublishingPipeline;
 use App\Services\VideoCardService;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -113,14 +115,13 @@ class ProductionQueue extends Component
     }
 
     /**
-     * The publishing queue, mixed so consecutive posts vary in qari and surah.
-     * Recitations already posted on one platform stay on top until the other
-     * catches up, and the mix carries on from the latest posts.
+     * Every recitation in the publishing queue booked into its posting slot,
+     * soonest first. Worked out live, so it re-plans whenever the queue changes.
      *
-     * @return Collection<int, Tilawa>
+     * @return Collection<int, array{tilawa: Tilawa, at: CarbonImmutable, kahf: bool, in_progress: bool}>
      */
     #[Computed]
-    public function publishingList()
+    public function postingPlan(): Collection
     {
         [$inProgress, $waiting] = $this->stageQuery('publishing')
             ->oldest()
@@ -132,9 +133,51 @@ class ProductionQueue extends Component
             ->sortBy(fn (Tilawa $tilawa) => $this->postedPublications($tilawa)->min(fn (Publication $p) => $p->published_at?->getTimestamp()))
             ->values();
 
-        $mixed = app(PublishingMixer::class)->mix($waiting->values(), $this->recentlyPosted()->concat($inProgress));
+        return app(PostingScheduler::class)->plan($waiting->values(), $inProgress, $this->recentlyPosted(), $this->postedTodayCount());
+    }
 
-        return $inProgress->concat($mixed)->take(50)->values();
+    /**
+     * The publishing queue in posting order.
+     *
+     * @return Collection<int, Tilawa>
+     */
+    #[Computed]
+    public function publishingList()
+    {
+        return $this->postingPlan->take(50)->pluck('tilawa');
+    }
+
+    /**
+     * Each queued recitation's booked slot, keyed by recitation id.
+     *
+     * @return Collection<int, array{tilawa: Tilawa, at: CarbonImmutable, kahf: bool, in_progress: bool}>
+     */
+    #[Computed]
+    public function postingSlots(): Collection
+    {
+        return $this->postingPlan->keyBy(fn (array $entry) => $entry['tilawa']->id);
+    }
+
+    /**
+     * The week ahead for the schedule brief, with the next Al-Kahf Friday.
+     *
+     * @return array{days: list<array{date: CarbonImmutable, posts: list<array{tilawa: Tilawa, at: CarbonImmutable, kahf: bool, in_progress: bool}>}>, next: ?array{tilawa: Tilawa, at: CarbonImmutable, kahf: bool, in_progress: bool}, last: ?array{tilawa: Tilawa, at: CarbonImmutable, kahf: bool, in_progress: bool}, kahf: ?array{tilawa: Tilawa, at: CarbonImmutable, kahf: bool, in_progress: bool}, kahf_waiting: int, next_friday: CarbonImmutable, today: CarbonImmutable}
+     */
+    #[Computed]
+    public function scheduleBrief(): array
+    {
+        $scheduler = app(PostingScheduler::class);
+        $today = $scheduler->today();
+
+        return [
+            'days' => $scheduler->days($this->postingPlan),
+            'next' => $this->postingPlan->first(),
+            'last' => $this->postingPlan->last(),
+            'kahf' => $this->postingPlan->first(fn (array $entry) => $entry['kahf'] && ! $entry['in_progress']),
+            'kahf_waiting' => $this->postingPlan->where('kahf', true)->count(),
+            'next_friday' => $today->isFriday() ? $today : $today->next(CarbonImmutable::FRIDAY),
+            'today' => $today,
+        ];
     }
 
     /**
@@ -559,6 +602,24 @@ class ProductionQueue extends Component
         return $tilawa->publications
             ->whereIn('platform', self::MANUAL_PLATFORMS)
             ->where('status', 'completed');
+    }
+
+    /**
+     * Recitations whose posting started today and that already left the
+     * queue, so today's slots they used are not booked twice.
+     */
+    private function postedTodayCount(): int
+    {
+        $startOfToday = app(PostingScheduler::class)->today()->utc();
+        $postedSince = fn (string $operator) => fn (Builder $q) => $q->whereIn('platform', self::MANUAL_PLATFORMS)
+            ->where('status', 'completed')
+            ->where('published_at', $operator, $startOfToday);
+
+        return $this->applyOwnership(Tilawa::query())
+            ->where('production_stage', 'published')
+            ->whereHas('publications', $postedSince('>='))
+            ->whereDoesntHave('publications', $postedSince('<'))
+            ->count();
     }
 
     /**
