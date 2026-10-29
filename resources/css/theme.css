@@ -4306,6 +4306,7 @@ textarea:focus-visible,
 .collection-card-title {
   font-family: var(--font-display, inherit);
   font-weight: 600;
+  color: #fff;
   font-size: .98rem;
   margin-bottom: .15rem;
 }
