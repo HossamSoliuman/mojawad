@@ -383,6 +383,65 @@ it('moves a published recitation back to publishing to post it elsewhere', funct
     expect($tilawa->fresh()->production_stage)->toBe('publishing');
 });
 
+it('shows where a published recitation went live on youtube and facebook', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+    $tilawa = readyTilawa($creator, 'ready', 'published');
+    Publication::factory()->youtube()->completed()->create([
+        'tilawa_id' => $tilawa->id,
+        'external_url' => 'https://youtu.be/live123',
+    ]);
+
+    $this->actingAs($creator);
+
+    Livewire::test(ProductionQueue::class)
+        ->set('tab', 'published')
+        ->assertSee('https://youtu.be/live123', false)
+        ->assertSee(__('Open post'))
+        ->assertSee(__('Not published yet'))
+        ->assertSee(__('Back to publishing'))
+        ->assertDontSee(__('Podcast (Spotify / Anghami)'));
+});
+
+it('adds the live link to a platform posted without one', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+    $tilawa = readyTilawa($creator, 'ready', 'published');
+    $postedAt = now()->subDay()->startOfSecond();
+    $publication = Publication::factory()->youtube()->completed()->create([
+        'tilawa_id' => $tilawa->id,
+        'external_url' => null,
+        'published_at' => $postedAt,
+    ]);
+
+    $this->actingAs($creator);
+
+    Livewire::test(ProductionQueue::class)
+        ->set('tab', 'published')
+        ->assertSee(__('Paste the link'))
+        ->set("postLinks.{$tilawa->id}.youtube", 'https://youtu.be/late456')
+        ->call('savePostLink', $tilawa->id, 'youtube')
+        ->assertHasNoErrors();
+
+    expect($publication->fresh()->external_url)->toBe('https://youtu.be/late456')
+        ->and($publication->fresh()->published_at->equalTo($postedAt))->toBeTrue();
+});
+
+it('requires a valid link when adding it later', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+    $tilawa = readyTilawa($creator, 'ready', 'published');
+    $publication = Publication::factory()->youtube()->completed()->create([
+        'tilawa_id' => $tilawa->id,
+        'external_url' => null,
+    ]);
+
+    $this->actingAs($creator);
+
+    Livewire::test(ProductionQueue::class)
+        ->call('savePostLink', $tilawa->id, 'youtube')
+        ->assertHasErrors("postLinks.{$tilawa->id}.youtube");
+
+    expect($publication->fresh()->external_url)->toBeNull();
+});
+
 it('moves recitations published only through the podcast back to publishing', function () {
     $owner = User::factory()->create();
     $podcastOnly = readyTilawa($owner, 'ready', 'published');

@@ -314,7 +314,7 @@
         @endif
 
     @else
-        {{-- ══════════ PUBLISHED: the finished, live recitations ══════════ --}}
+        {{-- ══════════ PUBLISHED: where each recitation went live on YouTube and Facebook ══════════ --}}
         @if($this->publishedList->isEmpty())
             <div style="text-align:center;padding:3rem 1rem;color:var(--text2)">
                 <i class="fas fa-circle-check" style="font-size:2.2rem;display:block;margin-bottom:.7rem;opacity:.4"></i>
@@ -325,11 +325,13 @@
                 <table class="tbl">
                     <thead><tr>
                         <th>{{ __('Recitation') }}</th>
-                        <th>{{ __('Where it went live') }}</th>
+                        <th><i class="fab fa-youtube" style="color:#dc2626"></i> {{ __('YouTube') }}</th>
+                        <th><i class="fab fa-facebook" style="color:#1877f2"></i> {{ __('Facebook') }}</th>
                         <th>{{ __('Actions') }}</th>
                     </tr></thead>
                     <tbody>
                         @foreach($this->publishedList as $tilawa)
+                        @php($postedOn = $tilawa->publications->where('status', 'completed')->keyBy('platform'))
                         <tr wire:key="done-{{ $tilawa->id }}">
                             <td>
                                 <div style="display:flex;align-items:center;gap:.72rem">
@@ -348,7 +350,41 @@
                                     </div>
                                 </div>
                             </td>
-                            <td>@include('livewire.admin.partials.publication-tracking', ['tilawa' => $tilawa])</td>
+                            @foreach(\App\Livewire\Admin\ProductionQueue::MANUAL_PLATFORMS as $platform)
+                            @php($publication = $postedOn->get($platform))
+                            <td wire:key="done-{{ $tilawa->id }}-{{ $platform }}">
+                                @if($publication)
+                                <div class="published-platform">
+                                    @if($publication->external_url)
+                                    <a href="{{ $publication->external_url }}" target="_blank" rel="noopener" class="badge badge-green" style="text-decoration:none">
+                                        <i class="fas fa-circle-check"></i> {{ __('Open post') }} <i class="fas fa-arrow-up-right-from-square" style="font-size:.6rem"></i>
+                                    </a>
+                                    @else
+                                    <span class="badge badge-green"><i class="fas fa-circle-check"></i> {{ __('Posted') }}</span>
+                                    @endif
+                                    @if($publication->published_at)
+                                    <span style="font-size:.7rem;color:var(--text3)">{{ $publication->published_at->diffForHumans() }}</span>
+                                    @endif
+                                    @unless($publication->external_url)
+                                    <div class="published-link-form">
+                                        <input type="url" dir="ltr" wire:model="postLinks.{{ $tilawa->id }}.{{ $platform }}"
+                                               class="form-control" placeholder="{{ __('Paste the link') }}" aria-label="{{ __('Paste the link') }}">
+                                        <button type="button" wire:click="savePostLink({{ $tilawa->id }}, '{{ $platform }}')"
+                                                wire:loading.attr="disabled" wire:target="savePostLink({{ $tilawa->id }}, '{{ $platform }}')"
+                                                class="btn btn-ghost btn-xs">
+                                            <i class="fas fa-link"></i> {{ __('Save') }}
+                                        </button>
+                                    </div>
+                                    @error("postLinks.{$tilawa->id}.{$platform}")
+                                    <small class="sharing-post-error">{{ $message }}</small>
+                                    @enderror
+                                    @endunless
+                                </div>
+                                @else
+                                <span class="badge badge-muted">{{ __('Not published yet') }}</span>
+                                @endif
+                            </td>
+                            @endforeach
                             <td>
                                 <div style="display:flex;gap:.2rem;align-items:center;flex-wrap:wrap">
                                     @if($tilawa->brand_video_url)

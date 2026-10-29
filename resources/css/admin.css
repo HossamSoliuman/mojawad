@@ -1697,6 +1697,25 @@ body.adm .sharing-post-error {
   font-size: .72rem;
 }
 
+/* Published tab: per-platform status with a late link field */
+body.adm .published-platform {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: .3rem;
+}
+
+body.adm .published-link-form {
+  display: flex;
+  gap: .3rem;
+}
+
+body.adm .published-link-form .form-control {
+  width: 170px;
+  padding: .3rem .55rem;
+  font-size: .74rem;
+}
+
 @media(max-width: 900px) {
   body.adm .sharing-platform-grid {
     grid-template-columns: 1fr;

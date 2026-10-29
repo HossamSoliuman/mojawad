@@ -126,7 +126,7 @@ class ProductionQueue extends Component
     #[Computed]
     public function publishedList()
     {
-        return $this->stageQuery('published')->latest()->limit(50)->get();
+        return $this->stageQuery('published')->latest('updated_at')->limit(50)->get();
     }
 
     #[Computed]
@@ -341,10 +341,7 @@ class ProductionQueue extends Component
             return;
         }
 
-        $this->validate(
-            ["postLinks.{$tilawaId}.{$platform}" => ['nullable', 'url', 'max:2048']],
-            ["postLinks.{$tilawaId}.{$platform}.url" => __('Paste the full link, starting with https://')],
-        );
+        $this->validatePostLink($tilawaId, $platform, required: false);
 
         Publication::updateOrCreate(
             ['tilawa_id' => $tilawa->id, 'platform' => $platform],
@@ -378,6 +375,36 @@ class ProductionQueue extends Component
         if ($tilawa->production_stage === 'publishing') {
             $tilawa->publications()->where('platform', $platform)->delete();
         }
+    }
+
+    /**
+     * Add the live link to a platform that was confirmed as posted without one.
+     */
+    public function savePostLink(int $tilawaId, string $platform): void
+    {
+        abort_unless(in_array($platform, self::MANUAL_PLATFORMS, true), 404);
+
+        $tilawa = $this->ownedTilawa($tilawaId);
+
+        $this->validatePostLink($tilawaId, $platform, required: true);
+
+        $tilawa->publications()
+            ->where('platform', $platform)
+            ->where('status', 'completed')
+            ->update(['external_url' => trim($this->postLinks[$tilawaId][$platform])]);
+
+        unset($this->postLinks[$tilawaId][$platform]);
+    }
+
+    private function validatePostLink(int $tilawaId, string $platform, bool $required): void
+    {
+        $field = "postLinks.{$tilawaId}.{$platform}";
+        $message = __('Paste the full link, starting with https://');
+
+        $this->validate(
+            [$field => [$required ? 'required' : 'nullable', 'url', 'max:2048']],
+            ["{$field}.required" => $message, "{$field}.url" => $message],
+        );
     }
 
     /**
