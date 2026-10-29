@@ -334,6 +334,51 @@ it('undoes a posted platform while the recitation is still in publishing', funct
     expect(Publication::where('tilawa_id', $tilawa->id)->exists())->toBeFalse();
 });
 
+it('mixes the publishing queue by qari instead of preparation order', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+    $first = Qari::factory()->create();
+    $second = Qari::factory()->create();
+
+    $this->actingAs($creator);
+
+    foreach ([$first, $first, $first, $second, $second] as $qari) {
+        readyTilawa($creator, 'ready', 'publishing')->update(['qari_id' => $qari->id]);
+    }
+
+    $qaris = Livewire::test(ProductionQueue::class)->instance()->publishingList->pluck('qari_id')->all();
+
+    expect($qaris)->toBe([$first->id, $second->id, $first->id, $second->id, $first->id]);
+});
+
+it('keeps a half-posted recitation on top and continues the mix from the latest post', function () {
+    $creator = User::factory()->create()->assignRole('creator');
+    $first = Qari::factory()->create();
+    $second = Qari::factory()->create();
+
+    $this->actingAs($creator);
+
+    $lastPosted = readyTilawa($creator, 'ready', 'published');
+    $lastPosted->update(['qari_id' => $first->id]);
+    Publication::create(['tilawa_id' => $lastPosted->id, 'platform' => 'youtube', 'status' => 'completed', 'published_at' => now()->subDay()]);
+
+    $waiting = collect([$first, $first, $second])->map(function (Qari $qari) use ($creator) {
+        $tilawa = readyTilawa($creator, 'ready', 'publishing');
+        $tilawa->update(['qari_id' => $qari->id]);
+
+        return $tilawa;
+    });
+
+    $halfPosted = readyTilawa($creator, 'ready', 'publishing');
+    $halfPosted->update(['qari_id' => $second->id]);
+    Publication::create(['tilawa_id' => $halfPosted->id, 'platform' => 'youtube', 'status' => 'completed', 'published_at' => now()]);
+
+    $list = Livewire::test(ProductionQueue::class)->instance()->publishingList;
+
+    expect($list->first()->id)->toBe($halfPosted->id)
+        ->and($list->pluck('qari_id')->all())->toBe([$second->id, $first->id, $second->id, $first->id])
+        ->and($list->pluck('id')->all())->toContain(...$waiting->pluck('id')->all());
+});
+
 it('shows copy-ready youtube and facebook texts without the referral link or podcast', function () {
     $creator = User::factory()->create()->assignRole('creator');
     $tilawa = readyTilawa($creator, 'ready', 'publishing');

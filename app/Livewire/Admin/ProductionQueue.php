@@ -5,6 +5,7 @@ namespace App\Livewire\Admin;
 use App\Models\Publication;
 use App\Models\Qari;
 use App\Models\Tilawa;
+use App\Services\PublishingMixer;
 use App\Services\PublishingPipeline;
 use App\Services\VideoCardService;
 use Illuminate\Database\Eloquent\Builder;
@@ -112,12 +113,28 @@ class ProductionQueue extends Component
     }
 
     /**
+     * The publishing queue, mixed so consecutive posts vary in qari and surah.
+     * Recitations already posted on one platform stay on top until the other
+     * catches up, and the mix carries on from the latest posts.
+     *
      * @return Collection<int, Tilawa>
      */
     #[Computed]
     public function publishingList()
     {
-        return $this->stageQuery('publishing')->latest()->limit(50)->get();
+        [$inProgress, $waiting] = $this->stageQuery('publishing')
+            ->oldest()
+            ->oldest('id')
+            ->get()
+            ->partition(fn (Tilawa $tilawa) => $this->postedPublications($tilawa)->isNotEmpty());
+
+        $inProgress = $inProgress
+            ->sortBy(fn (Tilawa $tilawa) => $this->postedPublications($tilawa)->min(fn (Publication $p) => $p->published_at?->getTimestamp()))
+            ->values();
+
+        $mixed = app(PublishingMixer::class)->mix($waiting->values(), $this->recentlyPosted()->concat($inProgress));
+
+        return $inProgress->concat($mixed)->take(50)->values();
     }
 
     /**
@@ -532,6 +549,37 @@ class ProductionQueue extends Component
         return $this->applyOwnership(Tilawa::query())
             ->where('production_stage', $stage)
             ->with(['qari', 'publications']);
+    }
+
+    /**
+     * @return Collection<int, Publication>
+     */
+    private function postedPublications(Tilawa $tilawa): Collection
+    {
+        return $tilawa->publications
+            ->whereIn('platform', self::MANUAL_PLATFORMS)
+            ->where('status', 'completed');
+    }
+
+    /**
+     * The latest recitations that went live, oldest first.
+     *
+     * @return Collection<int, Tilawa>
+     */
+    private function recentlyPosted(): Collection
+    {
+        $posted = fn (Builder $q) => $q->whereIn('platform', self::MANUAL_PLATFORMS)->where('status', 'completed');
+
+        return $this->applyOwnership(Tilawa::query())
+            ->where('production_stage', 'published')
+            ->whereHas('publications', $posted)
+            ->withMax(['publications as last_posted_at' => $posted], 'published_at')
+            ->orderByDesc('last_posted_at')
+            ->orderByDesc('id')
+            ->limit(PublishingMixer::RECENT_POSTS)
+            ->get()
+            ->reverse()
+            ->values();
     }
 
     private function scopeSelectable(Builder $query): Builder
