@@ -36,7 +36,8 @@ it('renders the next prayer countdown in the hero', function () {
         ->assertOk()
         ->assertSee('class="prayer-next"', false)
         ->assertSee('x-data="prayerCountdown(', false)
-        ->assertSee("Alpine.data('prayerCountdown'", false);
+        ->assertSee("Alpine.data('prayerCountdown'", false)
+        ->assertSee('this.remaining < 20 * 60000', false);
 });
 
 it('passes today and tomorrow prayers in Cairo time to the hero', function () {

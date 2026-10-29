@@ -1839,7 +1839,7 @@
             // ── Next prayer (home hero) ───────────────────────────────────────
             // The server sends today's and tomorrow's prayers as epoch ms. Shows
             // the next prayer's clock time, switching to a live countdown in
-            // its final hour.
+            // its final 20 minutes.
             Alpine.data('prayerCountdown', (prayers) => ({
                 prayers: prayers || [],
                 next: null,
@@ -1858,7 +1858,7 @@
                     this.remaining = this.next ? this.next.at - now : 0;
                 },
                 get soon() {
-                    return !!this.next && this.remaining < 3600000;
+                    return !!this.next && this.remaining < 20 * 60000;
                 },
                 get countdown() {
                     const total = Math.ceil(this.remaining / 1000);
