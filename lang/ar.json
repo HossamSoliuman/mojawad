@@ -1006,5 +1006,14 @@
     "Visible on the site": "ظاهرة في الموقع",
     "Delete this collection? The recitations themselves are not removed.": "هل تريد حذف هذه المجموعة؟ لن تُحذف التلاوات نفسها.",
     "Hide": "إخفاء",
-    "Show": "إظهار"
+    "Show": "إظهار",
+    "Next prayer": "الصلاة القادمة",
+    "in": "بعد",
+    "Fajr": "الفجر",
+    "Dhuhr": "الظهر",
+    "Asr": "العصر",
+    "Maghrib": "المغرب",
+    "Isha": "العشاء",
+    "AM": "ص",
+    "PM": "م"
 }

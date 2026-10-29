@@ -2,6 +2,8 @@
 
 use App\Models\Qari;
 use App\Models\Tilawa;
+use App\Services\PrayerTimes;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 
@@ -27,6 +29,28 @@ it('wires the radio card to the live radio engine', function () {
         ->assertSee('window._quranRadioEngine = () =>', false)
         ->assertSee('this.engine.setCardInView(entry.isIntersecting)', false)
         ->assertDontSee('8s5u5tpdtwzuv?_=', false);
+});
+
+it('renders the next prayer countdown in the hero', function () {
+    $this->get(route('home'))
+        ->assertOk()
+        ->assertSee('class="prayer-next"', false)
+        ->assertSee('x-data="prayerCountdown(', false)
+        ->assertSee("Alpine.data('prayerCountdown'", false);
+});
+
+it('passes today and tomorrow prayers in Cairo time to the hero', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-01-15 10:00', PrayerTimes::TIMEZONE));
+    app()->setLocale('ar');
+
+    $prayers = $this->get(route('home'))->assertOk()->viewData('prayer_times');
+
+    expect($prayers)->toHaveCount(10)
+        ->and(array_column($prayers, 'key'))->toBe(['fajr', 'dhuhr', 'asr', 'maghrib', 'isha', 'fajr', 'dhuhr', 'asr', 'maghrib', 'isha'])
+        ->and($prayers[2]['name'])->toBe('العصر')
+        ->and($prayers[2]['time'])->toBe('2:58 م')
+        ->and($prayers[5]['at'])->toBeGreaterThan(now()->addDay()->startOfDay()->getTimestampMs())
+        ->and(array_column($prayers, 'at'))->toBe(collect($prayers)->pluck('at')->sort()->values()->all());
 });
 
 it('lists the top qaris in their admin sort order', function () {

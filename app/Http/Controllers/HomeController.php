@@ -6,13 +6,14 @@ use App\Models\Collection;
 use App\Models\Qari;
 use App\Models\Tilawa;
 use App\Models\WatchHistory;
+use App\Services\PrayerTimes;
 use App\Services\ShortSelector;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
 class HomeController extends Controller
 {
-    public function __construct(private ShortSelector $selector) {}
+    public function __construct(private ShortSelector $selector, private PrayerTimes $prayerTimes) {}
 
     public function __invoke(Request $request)
     {
@@ -35,6 +36,7 @@ class HomeController extends Controller
         return view('pages.home', [
             ...$data,
             'hero_short' => $short?->heroPayload(),
+            'prayer_times' => $this->prayerTimes->upcoming(),
             'followed_new' => $this->newFromFollowed(),
         ]);
     }

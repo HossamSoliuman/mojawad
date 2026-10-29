@@ -1836,6 +1836,37 @@
                 },
             }));
 
+            // ── Next prayer (home hero) ───────────────────────────────────────
+            // The server sends today's and tomorrow's prayers as epoch ms. Shows
+            // the next prayer's clock time, switching to a live countdown in
+            // its final hour.
+            Alpine.data('prayerCountdown', (prayers) => ({
+                prayers: prayers || [],
+                next: null,
+                remaining: 0,
+                timer: null,
+                init() {
+                    this.tick();
+                    this.timer = setInterval(() => this.tick(), 1000);
+                },
+                destroy() {
+                    clearInterval(this.timer);
+                },
+                tick() {
+                    const now = Date.now();
+                    this.next = this.prayers.find((p) => p.at > now) || null;
+                    this.remaining = this.next ? this.next.at - now : 0;
+                },
+                get soon() {
+                    return !!this.next && this.remaining < 3600000;
+                },
+                get countdown() {
+                    const total = Math.ceil(this.remaining / 1000);
+                    const pad = (n) => String(n).padStart(2, '0');
+                    return pad(Math.floor(total / 60)) + ':' + pad(total % 60);
+                },
+            }));
+
             // ── "Continue listening" rail (home) ──────────────────────────────
             // Reads window._watchHistory (localStorage for guests, server for
             // signed-in) and shows in-progress tracks, Spotify-style.

@@ -39,6 +39,14 @@
 @endif
 
 <section class="hero" x-data="quranRadio()" @quran-radio-state.window="sync($event.detail)">
+  <div class="prayer-next" x-data="prayerCountdown(@js($prayer_times))" x-show="next" x-cloak style="display:none"
+    :class="soon && 'soon'" role="timer" title="{{ __('Next prayer') }}">
+    <i class="fas fa-mosque prayer-next-icon"></i>
+    <span class="prayer-next-name" x-text="next && next.name"></span>
+    <span class="prayer-next-time" x-show="!soon" x-text="next && next.time"></span>
+    <span class="prayer-next-countdown" x-show="soon">{{ __('in') }} <span class="prayer-next-clock" x-text="countdown"></span></span>
+  </div>
+
   <div class="hero-grid">
     <div class="hero-live z1">
       <div class="radio-card" :class="playing && 'playing'">
