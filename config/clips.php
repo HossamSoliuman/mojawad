@@ -54,17 +54,64 @@ return [
     | Templates
     |--------------------------------------------------------------------------
     |
-    | The clip background is always the tilawa's (blurred) cover image. The
-    | waveform background was removed; this single template is kept so the
-    | stored value and validation stay explicit.
+    | "cover-blur" uses the tilawa's cover image behind the editor's overlay.
+    | "mosque" is the auto-short look: a slowly zooming mosque photo with the
+    | recited ayat burned in as subtitles.
     |
     */
 
     'templates' => [
         'cover-blur',
+        'mosque',
     ],
 
     'default_template' => 'cover-blur',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Backgrounds & Fonts
+    |--------------------------------------------------------------------------
+    |
+    | Photo backgrounds per template, pre-cropped to 9:16 with a little room
+    | for the slow zoom. The bundled photos are CC0 (Wikimedia Commons). The
+    | fonts directory is handed to libass for the burned-in Arabic text.
+    |
+    */
+
+    'backgrounds' => [
+        'mosque' => resource_path('clips/backgrounds/mosque'),
+    ],
+
+    'fonts_dir' => resource_path('fonts'),
+
+    'zoom' => 1.08,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Auto Shorts
+    |--------------------------------------------------------------------------
+    |
+    | Auto shorts transcribe a window of the recitation with faster-whisper,
+    | align it to the Quran corpus and cut a clip on recitation pauses. The
+    | whisper model is downloaded on first use.
+    |
+    */
+
+    'transcription' => [
+        'python' => env('WHISPER_PYTHON', 'python'),
+        'script' => resource_path('scripts/transcribe_words.py'),
+        'model' => env('WHISPER_MODEL', 'large-v3-turbo'),
+        'timeout' => (int) env('WHISPER_TIMEOUT', 1800),
+    ],
+
+    'auto' => [
+        'per_qari' => 10,
+        'scan_window' => 120,
+        'min_duration' => 25,
+        'target_duration' => 55,
+        'min_match_score' => 0.6,
+        'max_cue_words' => 9,
+    ],
 
     /*
     |--------------------------------------------------------------------------
