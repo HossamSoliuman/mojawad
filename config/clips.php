@@ -91,25 +91,26 @@ return [
     | Auto Shorts
     |--------------------------------------------------------------------------
     |
-    | Auto shorts transcribe a window of the recitation with faster-whisper,
-    | align it to the Quran corpus and cut a clip on recitation pauses. The
-    | whisper model is downloaded on first use.
+    | Auto shorts send a window of the recitation to Gemini (the key from
+    | config/publishing.php) for timed phrases, snap them to detected pauses,
+    | align them to the Quran corpus and cut the clip on those pauses. Busy
+    | models are retried, then the next model in the list is used.
     |
     */
 
     'transcription' => [
-        'python' => env('WHISPER_PYTHON', 'python'),
-        'script' => resource_path('scripts/transcribe_words.py'),
-        'model' => env('WHISPER_MODEL', 'large-v3-turbo'),
-        'timeout' => (int) env('WHISPER_TIMEOUT', 1800),
+        'models' => explode(',', (string) env('CLIP_ASR_MODELS', 'gemini-3.6-flash,gemini-3.5-flash,gemini-flash-latest,gemini-flash-lite-latest')),
+        'attempts' => 3,
+        'timeout' => (int) env('CLIP_ASR_TIMEOUT', 300),
+        'silence_db' => -32,
     ],
 
     'auto' => [
         'per_qari' => 10,
-        'scan_window' => 120,
+        'scan_window' => 150,
         'min_duration' => 25,
         'target_duration' => 55,
-        'min_match_score' => 0.6,
+        'min_match_score' => 0.72,
         'max_cue_words' => 8,
     ],
 
