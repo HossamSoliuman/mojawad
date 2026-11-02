@@ -22,6 +22,8 @@ class VideoClip extends Model
         'clip_duration',
         'overlay_path',
         'caption_ar',
+        'subtitles',
+        'background_path',
         'output_path',
         'poster_path',
         'status',
@@ -33,8 +35,9 @@ class VideoClip extends Model
     protected function casts(): array
     {
         return [
-            'clip_start' => 'integer',
+            'clip_start' => 'float',
             'clip_duration' => 'integer',
+            'subtitles' => 'array',
             'duration' => 'integer',
         ];
     }
