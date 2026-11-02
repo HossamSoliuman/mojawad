@@ -19,7 +19,7 @@ class AutoShortPlanner
      * How long a cue stays on screen after its words end while the reciter
      * pauses (capped by the next cue).
      */
-    private const HOLD = 6.0;
+    private const HOLD = 10.0;
 
     /**
      * Silences longer than this inside a clip leave the screen without

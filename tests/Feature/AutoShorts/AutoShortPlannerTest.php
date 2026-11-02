@@ -50,7 +50,7 @@ it('holds each cue through the pause until the next one', function () {
 
     expect($plan['start'])->toBe(0.6)
         ->and($plan['cues'][0]['end'])->toBe(11.35)
-        ->and($plan['cues'][1]['end'])->toBe(25.4)
+        ->and($plan['cues'][1]['end'])->toBe(29.35)
         ->and(end($plan['cues'])['end'])->toBe((float) $plan['duration']);
 });
 
