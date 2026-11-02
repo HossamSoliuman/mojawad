@@ -46,7 +46,7 @@ class QuranPhraseAligner
      *
      * @param  list<int>  $surahs
      * @param  list<array{w: string, s: float, e: float}>  $words
-     * @return list<array{start: float, end: float, score: float, opens: bool, closes: bool, cues: list<array{start: float, end: float, text: string}>}>
+     * @return list<array{start: float, end: float, score: float, surah: ?int, opens: bool, closes: bool, cues: list<array{start: float, end: float, text: string}>}>
      */
     public function align(array $surahs, array $words): array
     {
@@ -89,7 +89,7 @@ class QuranPhraseAligner
      * by its basmala (the corpus holds it only as Al-Fatiha's first ayah).
      *
      * @param  list<int>  $surahs
-     * @return list<array{text: string, key: string, ayah: int, first: bool, last: bool}>
+     * @return list<array{text: string, key: string, surah: int, ayah: int, first: bool, last: bool}>
      */
     private function corpusTokens(array $surahs): array
     {
@@ -97,11 +97,11 @@ class QuranPhraseAligner
 
         foreach ($surahs as $surah) {
             if ($surah !== 1 && $surah !== 9) {
-                $this->pushAyah($tokens, self::BASMALA, 0);
+                $this->pushAyah($tokens, self::BASMALA, $surah, 0);
             }
 
             foreach (QuranCorpus::ayat($surah) as $index => $text) {
-                $this->pushAyah($tokens, $text, $index + 1);
+                $this->pushAyah($tokens, $text, $surah, $index + 1);
             }
         }
 
@@ -109,9 +109,9 @@ class QuranPhraseAligner
     }
 
     /**
-     * @param  list<array{text: string, key: string, ayah: int, first: bool, last: bool}>  $tokens
+     * @param  list<array{text: string, key: string, surah: int, ayah: int, first: bool, last: bool}>  $tokens
      */
-    private function pushAyah(array &$tokens, string $text, int $ayah): void
+    private function pushAyah(array &$tokens, string $text, int $surah, int $ayah): void
     {
         $words = preg_split('/\s+/u', trim($text), -1, PREG_SPLIT_NO_EMPTY) ?: [];
         $last = count($words) - 1;
@@ -120,6 +120,7 @@ class QuranPhraseAligner
             $tokens[] = [
                 'text' => $word,
                 'key' => ArabicSkeleton::of($word),
+                'surah' => $surah,
                 'ayah' => $ayah,
                 'first' => $index === 0,
                 'last' => $index === $last,
@@ -169,7 +170,7 @@ class QuranPhraseAligner
      * splits and joins words differently from the mushaf. Equal-scoring spans
      * (a refrain recited many times) are kept as alternatives.
      *
-     * @param  list<array{text: string, key: string, ayah: int, first: bool, last: bool}>  $tokens
+     * @param  list<array{text: string, key: string, surah: int, ayah: int, first: bool, last: bool}>  $tokens
      * @return array{from: int, to: int, score: float, ties: list<array{0: int, 1: int}>}|null
      */
     private function bestSpan(array $tokens, string $key, int $wordCount, ?int $expected): ?array
@@ -195,7 +196,7 @@ class QuranPhraseAligner
     }
 
     /**
-     * @param  list<array{text: string, key: string, ayah: int, first: bool, last: bool}>  $tokens
+     * @param  list<array{text: string, key: string, surah: int, ayah: int, first: bool, last: bool}>  $tokens
      * @return array{from: int, to: int, score: float, ties: list<array{0: int, 1: int}>}|null
      */
     private function searchRange(array $tokens, string $key, int $wordCount, ?int $expected, int $from, int $to): ?array
@@ -331,8 +332,8 @@ class QuranPhraseAligner
 
     /**
      * @param  array<string, mixed>  $match
-     * @param  list<array{text: string, key: string, ayah: int, first: bool, last: bool}>  $tokens
-     * @return array{start: float, end: float, score: float, opens: bool, closes: bool, cues: list<array{start: float, end: float, text: string}>}
+     * @param  list<array{text: string, key: string, surah: int, ayah: int, first: bool, last: bool}>  $tokens
+     * @return array{start: float, end: float, score: float, surah: ?int, opens: bool, closes: bool, cues: list<array{start: float, end: float, text: string}>}
      */
     private function segment(array $match, array $tokens): array
     {
@@ -345,6 +346,7 @@ class QuranPhraseAligner
                 'start' => $start,
                 'end' => $end,
                 'score' => round($match['score'], 3),
+                'surah' => null,
                 'opens' => true,
                 'closes' => true,
                 'cues' => [['start' => $start, 'end' => $end, 'text' => $match['formula']]],
@@ -358,6 +360,7 @@ class QuranPhraseAligner
             'start' => $start,
             'end' => $end,
             'score' => round(min(1.0, $span['score']), 3),
+            'surah' => $words[0]['surah'],
             'opens' => $words[0]['first'],
             'closes' => end($words)['last'],
             'cues' => $this->cues($words, $start, $end),
@@ -368,7 +371,7 @@ class QuranPhraseAligner
      * Split a matched span into on-screen cues of at most maxCueWords words,
      * sharing the phrase's time by the length of each chunk.
      *
-     * @param  list<array{text: string, key: string, ayah: int, first: bool, last: bool}>  $words
+     * @param  list<array{text: string, key: string, surah: int, ayah: int, first: bool, last: bool}>  $words
      * @return list<array{start: float, end: float, text: string}>
      */
     private function cues(array $words, float $start, float $end): array
@@ -400,7 +403,7 @@ class QuranPhraseAligner
      * Mushaf words joined for display, each completed ayah closed by its
      * numbered end-of-ayah sign.
      *
-     * @param  list<array{text: string, key: string, ayah: int, first: bool, last: bool}>  $words
+     * @param  list<array{text: string, key: string, surah: int, ayah: int, first: bool, last: bool}>  $words
      */
     private function display(array $words): string
     {

@@ -4,8 +4,10 @@ namespace App\Jobs;
 
 use App\Models\Tilawa;
 use App\Models\VideoClip;
+use App\Services\ShortSubtitleWriter;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -54,13 +56,17 @@ class RenderVideoClip implements ShouldQueue
         $outputPath = $disk->path($outputRelative);
         $posterPath = $disk->path($posterRelative);
 
-        $this->runFfmpeg($this->buildRenderCommand($clip, $tilawa, $audioPath, $outputPath, $duration));
+        if ($clip->template === 'mosque') {
+            $this->renderMosque($clip, $tilawa, $audioPath, $outputPath, $duration);
+        } else {
+            $this->runFfmpeg($this->buildRenderCommand($clip, $tilawa, $audioPath, $outputPath, $duration));
+        }
 
         if (! is_file($outputPath)) {
             throw new RuntimeException('ffmpeg produced no output file.');
         }
 
-        $this->runFfmpeg($this->buildPosterCommand($outputPath, $posterPath));
+        $this->runFfmpeg($this->buildPosterCommand($outputPath, $posterPath, $clip->template === 'mosque' ? min(3, $duration / 3) : 1));
 
         $clip->update([
             'status' => 'completed',
@@ -74,9 +80,15 @@ class RenderVideoClip implements ShouldQueue
     /**
      * @param  list<string>  $command
      */
-    private function runFfmpeg(array $command): void
+    private function runFfmpeg(array $command, ?string $workingDirectory = null): void
     {
-        $result = Process::timeout((int) config('clips.render_timeout'))->run($command);
+        $process = Process::timeout((int) config('clips.render_timeout'));
+
+        if ($workingDirectory !== null) {
+            $process = $process->path($workingDirectory);
+        }
+
+        $result = $process->run($command);
 
         if (! $result->successful()) {
             throw new RuntimeException('ffmpeg failed: '.trim($result->errorOutput() ?: $result->output()));
@@ -157,14 +169,124 @@ class RenderVideoClip implements ShouldQueue
     }
 
     /**
+     * The auto-short look: a mosque photo slowly zooming in, darkened for
+     * legibility, with the qari, surah and recited ayat burned in by libass
+     * from an ASS script. ffmpeg runs inside a scratch directory holding the
+     * script and the fonts so the filter needs no escaped absolute paths.
+     */
+    private function renderMosque(VideoClip $clip, Tilawa $tilawa, string $audioPath, string $outputPath, int $duration): void
+    {
+        $workDir = storage_path('app/clip-work/'.Str::uuid()->toString());
+        File::ensureDirectoryExists($workDir.'/fonts');
+
+        try {
+            foreach (File::files(config('clips.fonts_dir')) as $font) {
+                if (in_array(strtolower($font->getExtension()), ['ttf', 'otf'], true)) {
+                    File::copy($font->getPathname(), $workDir.'/fonts/'.$font->getFilename());
+                }
+            }
+
+            $surahNumber = (int) ($clip->subtitles['surah'] ?? $tilawa->surah_number);
+
+            File::put($workDir.'/subs.ass', app(ShortSubtitleWriter::class)->ass(
+                $clip->subtitles['cues'] ?? [],
+                $tilawa->qari?->name_ar ? __('Sheikh :name', ['name' => $tilawa->qari->name_ar], 'ar') : '',
+                $surahNumber ? __('Surah :name', ['name' => config('surahs.'.$surahNumber)], 'ar') : '',
+                $duration,
+            ));
+
+            $this->runFfmpeg($this->buildMosqueCommand($clip, $tilawa, $audioPath, $outputPath, $duration), $workDir);
+        } finally {
+            File::deleteDirectory($workDir);
+        }
+    }
+
+    /**
      * @return list<string>
      */
-    private function buildPosterCommand(string $outputPath, string $posterPath): array
+    private function buildMosqueCommand(VideoClip $clip, Tilawa $tilawa, string $audioPath, string $outputPath, int $duration): array
+    {
+        $width = (int) config('clips.width');
+        $height = (int) config('clips.height');
+        $fps = (int) config('clips.fps');
+        $zoom = (float) config('clips.zoom') - 1;
+        $background = $this->resolveBackgroundPath($clip) ?? $this->resolveCoverPath($tilawa);
+
+        $args = [
+            config('youtube.ffmpeg_path'),
+            '-y',
+            '-ss', (string) $clip->clip_start,
+            '-t', (string) $duration,
+            '-i', $audioPath,
+        ];
+
+        $shade = 'eq=brightness=-0.03:saturation=0.95,drawbox=x=0:y=0:w=iw:h=ih:color=black@0.42:t=fill,vignette=PI/4.5';
+
+        if ($background !== null) {
+            $coverWidth = (int) (ceil($width * (1 + $zoom) / 2) * 2);
+            $coverHeight = (int) (ceil($height * (1 + $zoom) / 2) * 2);
+
+            array_push($args, '-i', $background);
+            $base = "[1:v]scale={$coverWidth}:{$coverHeight}:force_original_aspect_ratio=increase,crop={$coverWidth}:{$coverHeight},{$shade},"
+                ."loop=loop=-1:size=1:start=0,fps={$fps},"
+                ."scale=w='trunc({$width}*(1+{$zoom}*t/{$duration})/2)*2':h='trunc({$height}*(1+{$zoom}*t/{$duration})/2)*2':eval=frame,crop={$width}:{$height}";
+        } else {
+            $base = "color=c=0x0b0f14:s={$width}x{$height}:r={$fps}:d={$duration}";
+        }
+
+        $filter = $base
+            .',ass=subs.ass:fontsdir=fonts:shaping=complex'
+            .',format=yuv420p[v]';
+
+        $fadeOut = max(0, $duration - 1.5);
+
+        return array_merge($args, [
+            '-filter_complex', $filter,
+            '-map', '[v]',
+            '-map', '0:a',
+            '-af', "loudnorm,afade=t=in:d=0.3,afade=t=out:st={$fadeOut}:d=1.5",
+            '-c:v', 'libx264',
+            '-preset', 'veryfast',
+            '-crf', '21',
+            '-pix_fmt', 'yuv420p',
+            '-r', (string) $fps,
+            '-c:a', 'aac',
+            '-b:a', '192k',
+            '-t', (string) $duration,
+            '-movflags', '+faststart',
+            '-shortest',
+            $outputPath,
+        ]);
+    }
+
+    /**
+     * The clip's chosen background photo, or the first photo of the
+     * template's set when none (or a missing one) was stored.
+     */
+    private function resolveBackgroundPath(VideoClip $clip): ?string
+    {
+        $directory = config('clips.backgrounds.'.$clip->template);
+
+        if (! is_string($directory) || ! is_dir($directory)) {
+            return null;
+        }
+
+        if ($clip->background_path && is_file($directory.'/'.basename($clip->background_path))) {
+            return $directory.'/'.basename($clip->background_path);
+        }
+
+        return collect(File::files($directory))->map(fn ($file) => $file->getPathname())->sort()->first();
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function buildPosterCommand(string $outputPath, string $posterPath, float $at = 1): array
     {
         return [
             config('youtube.ffmpeg_path'),
             '-y',
-            '-ss', '1',
+            '-ss', (string) $at,
             '-i', $outputPath,
             '-frames:v', '1',
             '-q:v', '3',

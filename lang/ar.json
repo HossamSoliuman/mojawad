@@ -1041,5 +1041,6 @@
     "No post": "لا منشور",
     "The queue runs out after :date. Prepare more recitations to keep posting daily.": "تنفد القائمة بعد :date. جهّز تلاوات أخرى ليستمر النشر يوميًا.",
     "Today": "اليوم",
-    "Tomorrow": "غدًا"
+    "Tomorrow": "غدًا",
+    "Sheikh :name": "الشيخ :name"
 }

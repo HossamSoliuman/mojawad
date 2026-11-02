@@ -110,7 +110,7 @@ return [
         'min_duration' => 25,
         'target_duration' => 55,
         'min_match_score' => 0.6,
-        'max_cue_words' => 9,
+        'max_cue_words' => 8,
     ],
 
     /*
