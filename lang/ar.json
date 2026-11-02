@@ -1042,5 +1042,13 @@
     "The queue runs out after :date. Prepare more recitations to keep posting daily.": "تنفد القائمة بعد :date. جهّز تلاوات أخرى ليستمر النشر يوميًا.",
     "Today": "اليوم",
     "Tomorrow": "غدًا",
-    "Sheikh :name": "الشيخ :name"
+    "Sheikh :name": "الشيخ :name",
+    "Auto shorts": "مقاطع قصيرة تلقائية",
+    "Choose a qari": "اختر القارئ",
+    "Choose a qari.": "اختر القارئ.",
+    "Generate shorts": "إنشاء المقاطع",
+    "Queue at most 20 shorts at a time.": "يمكن إضافة 20 مقطعًا كحد أقصى في المرة الواحدة.",
+    "This qari has no recitations left for new shorts.": "لا توجد تلاوات متبقية لهذا القارئ لإنشاء مقاطع جديدة.",
+    ":count short queued.|:count shorts queued.": "{1} تمت إضافة مقطع واحد إلى قائمة الإنشاء.|[2,*] تمت إضافة :count مقاطع إلى قائمة الإنشاء.",
+    "Finding a passage…": "جارٍ اختيار المقطع…"
 }

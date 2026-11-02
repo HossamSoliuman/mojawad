@@ -141,6 +141,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
         Route::get('/clips', [ClipController::class, 'index'])->name('clips.index');
         Route::get('/clips/search', [ClipController::class, 'search'])->name('clips.search');
         Route::post('/clips', [ClipController::class, 'store'])->name('clips.store');
+        Route::post('/clips/auto', [ClipController::class, 'auto'])->name('clips.auto');
         Route::get('/clips/{clip}/download', [ClipController::class, 'download'])->name('clips.download')->middleware('can:view,clip');
         Route::post('/clips/{clip}/retry', [ClipController::class, 'retry'])->name('clips.retry')->middleware('can:update,clip');
         Route::patch('/clips/{clip}/tiktok', [ClipController::class, 'tiktok'])->name('clips.tiktok')->middleware('can:update,clip');

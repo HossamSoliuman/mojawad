@@ -3,11 +3,15 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\AutoShortStoreRequest;
 use App\Http\Requests\ClipStoreRequest;
 use App\Http\Requests\ClipTiktokRequest;
+use App\Jobs\PrepareAutoShort;
 use App\Jobs\RenderVideoClip;
+use App\Models\Qari;
 use App\Models\Tilawa;
 use App\Models\VideoClip;
+use App\Services\AutoShortQueue;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,6 +29,10 @@ class ClipController extends Controller
             'templates' => config('clips.templates'),
             'presets' => config('clips.presets'),
             'maxDuration' => config('clips.max_duration'),
+            'autoQaris' => Qari::whereHas('tilawat', fn ($query) => $query->where('status', 'active'))
+                ->ordered()
+                ->get(['id', 'name_ar', 'name_en']),
+            'autoCount' => (int) config('clips.auto.per_qari'),
         ]);
     }
 
@@ -87,9 +95,30 @@ class ClipController extends Controller
             ->with('success', __('Clip queued for rendering.'));
     }
 
+    /**
+     * Queue mosque shorts with Quran subtitles for a qari; each is planned
+     * from the recitation audio and rendered in the background.
+     */
+    public function auto(AutoShortStoreRequest $request, AutoShortQueue $queue): RedirectResponse
+    {
+        $clips = $queue->queueForQari(Qari::findOrFail($request->integer('qari_id')), $request->integer('count'), $request->user());
+
+        if ($clips->isEmpty()) {
+            return redirect()->route('admin.clips.index')->with('error', __('This qari has no recitations left for new shorts.'));
+        }
+
+        return redirect()->route('admin.clips.index')->with('success', trans_choice(':count short queued.|:count shorts queued.', $clips->count(), ['count' => $clips->count()]));
+    }
+
     public function retry(VideoClip $clip): RedirectResponse
     {
         $clip->update(['status' => 'pending', 'error' => null]);
+
+        if ($clip->template === 'mosque' && empty($clip->subtitles)) {
+            PrepareAutoShort::dispatch($clip->id);
+
+            return redirect()->route('admin.clips.index')->with('success', __('Render re-queued.'));
+        }
 
         RenderVideoClip::dispatch($clip->id);
 

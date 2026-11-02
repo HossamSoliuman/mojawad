@@ -287,6 +287,29 @@
 
 </div>
 
+<div class="clip-ed" style="margin-bottom:2rem">
+  <div class="ce-card">
+    <h3><i class="fas fa-mosque" style="color:var(--gold,#2563eb)"></i> {{ __('Auto shorts') }}</h3>
+    <form method="POST" action="{{ route('admin.clips.auto') }}" style="display:flex;flex-wrap:wrap;gap:.7rem;align-items:flex-end;margin-top:.9rem">
+      @csrf
+      <label style="display:flex;flex-direction:column;gap:.3rem;font-size:.8rem;font-weight:600;flex:1;min-width:220px">
+        {{ __('Qari') }}
+        <select name="qari_id" class="form-control" required>
+          <option value="">{{ __('Choose a qari') }}</option>
+          @foreach($autoQaris as $autoQari)
+          <option value="{{ $autoQari->id }}" @selected(old('qari_id') == $autoQari->id)>{{ $autoQari->name }}</option>
+          @endforeach
+        </select>
+      </label>
+      <label style="display:flex;flex-direction:column;gap:.3rem;font-size:.8rem;font-weight:600;width:120px">
+        {{ __('Shorts') }}
+        <input type="number" name="count" class="form-control" min="1" max="20" value="{{ old('count', $autoCount) }}" required>
+      </label>
+      <button type="submit" class="btn btn-primary"><i class="fas fa-wand-magic-sparkles"></i> {{ __('Generate shorts') }}</button>
+    </form>
+  </div>
+</div>
+
 <livewire:admin.clip-queue />
 
 @push('scripts')

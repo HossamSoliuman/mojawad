@@ -47,6 +47,9 @@
                                 'failed'     => ['badge-red',   __('Failed'),     'fa-circle-exclamation'],
                             ])
                             @php([$cls, $label, $icon] = $map[$clip->status] ?? ['badge-muted', $clip->status, 'fa-question'])
+                            @if($clip->status === 'processing' && $clip->template === 'mosque' && empty($clip->subtitles))
+                            @php([$cls, $label, $icon] = ['badge-amber', __('Finding a passage…'), 'fa-spinner fa-spin'])
+                            @endif
                             <span class="badge {{ $cls }}"><i class="fas {{ $icon }}"></i> {{ $label }}</span>
                             @if($clip->status === 'failed' && $clip->error)
                             <div style="font-size:.74rem;color:#e86060;margin-top:.35rem;max-width:240px" title="{{ $clip->error }}">
