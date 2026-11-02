@@ -82,3 +82,20 @@ it('finds pauses relative to the reciter\'s voice level and joins brief bursts',
 
     expect((new RecitationTranscriber)->quietStretches($envelope))->toBe([[2.0, 4.2]]);
 });
+
+it('skips a model whose quota is used up for the following requests', function () {
+    config(['clips.transcription.models' => ['spent-model', 'good-model']]);
+
+    Http::fake([
+        '*/models/spent-model:generateContent' => Http::response(['error' => ['code' => 429]], 429),
+        '*/models/good-model:generateContent' => Http::response(['candidates' => [['content' => ['parts' => [['text' => json_encode([
+            ['start' => '00:00.6', 'end' => '00:08.2', 'text' => 'قل هو الله أحد'],
+        ])]]]]]]),
+    ]);
+
+    $transcriber = new RecitationTranscriber;
+    $transcriber->transcribe('/audio.mp3', 0, 60);
+    $transcriber->transcribe('/audio.mp3', 60, 60);
+
+    Http::assertSentCount(3);
+});

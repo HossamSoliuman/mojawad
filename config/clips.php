@@ -94,14 +94,15 @@ return [
     | Auto shorts send a window of the recitation to Gemini (the key from
     | config/publishing.php) for timed phrases, snap them to detected pauses,
     | align them to the Quran corpus and cut the clip on those pauses. Busy
-    | models are retried, then the next model in the list is used.
+    | models are retried; a model out of its (per-model, daily) free quota is
+    | skipped and the next one in the list is used.
     |
     */
 
     'transcription' => [
-        'models' => explode(',', (string) env('CLIP_ASR_MODELS', 'gemini-3.6-flash,gemini-3.5-flash,gemini-flash-latest,gemini-flash-lite-latest')),
+        'models' => explode(',', (string) env('CLIP_ASR_MODELS', 'gemini-3.6-flash,gemini-3.5-flash,gemini-3-flash-preview,gemini-3.1-flash-lite,gemini-3.5-flash-lite,gemini-3.1-flash-lite-preview,gemini-flash-latest')),
         'attempts' => 3,
-        'timeout' => (int) env('CLIP_ASR_TIMEOUT', 300),
+        'timeout' => (int) env('CLIP_ASR_TIMEOUT', 150),
         'pause_drop' => 10,
     ],
 

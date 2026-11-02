@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Sleep;
@@ -16,6 +17,11 @@ class RecitationTranscriber
         .'For each entry give its start and end time from the beginning of the clip as "MM:SS.s" and the Arabic words recited, verbatim as heard; '
         .'do not complete, correct or continue the text from memory. Skip audience reactions and silence. '
         .'Return ONLY a JSON array of objects {"start": "MM:SS.s", "end": "MM:SS.s", "text": string}.';
+
+    /**
+     * Cache key prefix marking a model whose daily quota is used up.
+     */
+    private const EXHAUSTED_KEY = 'clips:asr-exhausted:';
 
     /**
      * How far (seconds) a phrase edge may move to land on a detected pause.
@@ -78,8 +84,10 @@ class RecitationTranscriber
     }
 
     /**
-     * Ask Gemini for the timed phrases, retrying busy models and falling
-     * back through the configured list.
+     * Ask Gemini for the timed phrases, falling back through the configured
+     * models. A busy model (5xx) is retried; a model out of quota (429) is
+     * skipped for a while, and one that does not answer in time is left for
+     * the next.
      *
      * @return list<array{start: float, end: float, text: string}>
      */
@@ -89,11 +97,19 @@ class RecitationTranscriber
         $lastError = 'no model configured';
 
         foreach ((array) config('clips.transcription.models') as $model) {
+            $model = trim($model);
+
+            if (Cache::has(self::EXHAUSTED_KEY.$model)) {
+                $lastError = "{$model}: quota used up";
+
+                continue;
+            }
+
             for ($attempt = 1; $attempt <= (int) config('clips.transcription.attempts'); $attempt++) {
                 try {
                     $response = Http::timeout((int) config('clips.transcription.timeout'))
                         ->withHeaders(['x-goog-api-key' => (string) $gemini['api_key']])
-                        ->post(rtrim((string) $gemini['base_url'], '/').'/models/'.trim($model).':generateContent', [
+                        ->post(rtrim((string) $gemini['base_url'], '/').'/models/'.$model.':generateContent', [
                             'contents' => [['parts' => [
                                 ['text' => self::PROMPT],
                                 ['inline_data' => ['mime_type' => 'audio/mp3', 'data' => base64_encode($audio)]],
@@ -101,9 +117,9 @@ class RecitationTranscriber
                             'generationConfig' => ['temperature' => 0, 'responseMimeType' => 'application/json'],
                         ]);
                 } catch (ConnectionException $exception) {
-                    $lastError = $exception->getMessage();
+                    $lastError = "{$model}: ".$exception->getMessage();
 
-                    continue;
+                    break;
                 }
 
                 if ($response->successful()) {
@@ -120,7 +136,13 @@ class RecitationTranscriber
 
                 $lastError = "{$model}: HTTP {$response->status()}";
 
-                if (! in_array($response->status(), [429, 500, 503], true)) {
+                if ($response->status() === 429) {
+                    Cache::put(self::EXHAUSTED_KEY.$model, true, now()->addHours(2));
+
+                    break;
+                }
+
+                if (! in_array($response->status(), [500, 503], true)) {
                     break;
                 }
 
