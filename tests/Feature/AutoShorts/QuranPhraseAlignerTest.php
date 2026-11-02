@@ -5,26 +5,25 @@ use App\Support\ArabicSkeleton;
 use App\Support\QuranCorpus;
 
 /**
- * Timed transcript words from plain phrases: each phrase starts at the given
- * second and its words are 0.4s apart, so phrases split at the gaps between.
+ * Timed transcript phrases: each starts at the given second and lasts 0.4s
+ * per word.
  *
  * @param  array<int|string, string>  $phrases  start second => plain text
- * @return list<array{w: string, s: float, e: float}>
+ * @return list<array{start: float, end: float, text: string}>
  */
-function timedWords(array $phrases): array
+function timedPhrases(array $phrases): array
 {
-    $words = [];
+    $timed = [];
 
     foreach ($phrases as $start => $text) {
-        $time = (float) $start;
-
-        foreach (preg_split('/\s+/u', $text) as $word) {
-            $words[] = ['w' => $word, 's' => $time, 'e' => $time + 0.35];
-            $time += 0.4;
-        }
+        $timed[] = [
+            'start' => (float) $start,
+            'end' => $start + 0.4 * count(preg_split('/\s+/u', $text)) - 0.05,
+            'text' => $text,
+        ];
     }
 
-    return $words;
+    return $timed;
 }
 
 it('reduces mushaf and plain spellings to the same skeleton', function () {
@@ -34,7 +33,7 @@ it('reduces mushaf and plain spellings to the same skeleton', function () {
 });
 
 it('maps a transcript onto the uthmani text with ayah numbers', function () {
-    $segments = (new QuranPhraseAligner)->align([1], timedWords([
+    $segments = (new QuranPhraseAligner)->align([1], timedPhrases([
         0 => 'الحمد لله رب العالمين',
         5 => 'الرحمن الرحيم',
     ]));
@@ -49,7 +48,7 @@ it('maps a transcript onto the uthmani text with ayah numbers', function () {
 });
 
 it('shows a repeated passage again and marks a phrase that stops mid ayah', function () {
-    $segments = (new QuranPhraseAligner)->align([1], timedWords([
+    $segments = (new QuranPhraseAligner)->align([1], timedPhrases([
         0 => 'صراط الذين أنعمت عليهم',
         4 => 'صراط الذين أنعمت عليهم',
         8 => 'غير المغضوب عليهم ولا الضالين',
@@ -65,7 +64,7 @@ it('shows a repeated passage again and marks a phrase that stops mid ayah', func
 });
 
 it('numbers a refrain by the ayah that follows it', function () {
-    $segments = (new QuranPhraseAligner)->align([55], timedWords([
+    $segments = (new QuranPhraseAligner)->align([55], timedPhrases([
         0 => 'فبأي آلاء ربكما تكذبان',
         4 => 'خلق الإنسان من صلصال كالفخار',
     ]));
@@ -74,28 +73,60 @@ it('numbers a refrain by the ayah that follows it', function () {
         ->and($segments[1]['cues'][0]['text'])->toEndWith('۝١٤');
 });
 
-it('recognises the isti\'adha and drops phrases that are not recitation', function () {
-    $segments = (new QuranPhraseAligner)->align([112], timedWords([
+it('recognises the isti\'adha and flags speech that is not in the surah', function () {
+    $segments = (new QuranPhraseAligner)->align([112], timedPhrases([
         0 => 'أعوذ بالله من الشيطان الرجيم',
         4 => 'يا سلام عليك يا شيخ',
         8 => 'قل هو الله أحد',
     ]));
 
-    expect($segments)->toHaveCount(2)
+    expect($segments)->toHaveCount(3)
         ->and($segments[0]['cues'][0]['text'])->toBe(QuranPhraseAligner::ISTIADHA)
         ->and($segments[0]['opens'])->toBeTrue()
-        ->and($segments[1]['cues'][0]['text'])->toBe(QuranCorpus::ayat(112)[0].' ۝١');
+        ->and($segments[1]['matched'])->toBeFalse()
+        ->and($segments[1]['barrier'])->toBeTrue()
+        ->and($segments[1]['cues'])->toBeEmpty()
+        ->and($segments[2]['cues'][0]['text'])->toBe(QuranCorpus::ayat(112)[0].' ۝١');
 });
 
 it('splits a long phrase into several cues across its time', function () {
-    $segments = (new QuranPhraseAligner(maxCueWords: 5))->align([2], timedWords([
+    $segments = (new QuranPhraseAligner(maxCueWords: 5))->align([2], timedPhrases([
         0 => 'ذلك الكتاب لا ريب فيه هدى للمتقين الذين يؤمنون بالغيب',
     ]));
 
     $cues = $segments[0]['cues'];
 
-    expect($cues)->toHaveCount(2)
+    expect($cues)->toHaveCount(3)
         ->and($cues[0]['start'])->toBe(0.0)
         ->and($cues[1]['start'])->toBe($cues[0]['end'])
+        ->and($cues[1]['text'])->toEndWith('۝٢')
+        ->and($cues[2]['start'])->toBe($cues[1]['end'])
         ->and(end($cues)['end'])->toBe($segments[0]['end']);
+});
+
+it('lets a short unmatched interjection through without a barrier', function () {
+    $segments = (new QuranPhraseAligner)->align([112], timedPhrases([
+        0 => 'قل هو الله أحد',
+        4 => 'الله أكبر',
+    ]));
+
+    expect($segments[1]['matched'])->toBeFalse()
+        ->and($segments[1]['barrier'])->toBeFalse();
+});
+
+it('breaks cues at ayah ends and moves the breaks onto the reciter\'s pauses', function () {
+    $segments = (new QuranPhraseAligner)->align([112], [[
+        'start' => 0.0,
+        'end' => 12.0,
+        'text' => 'قل هو الله أحد الله الصمد',
+        'pauses' => [7.4],
+    ]]);
+
+    $cues = $segments[0]['cues'];
+
+    expect($cues)->toHaveCount(2)
+        ->and($cues[0]['text'])->toEndWith('۝١')
+        ->and($cues[0]['end'])->toBe(7.4)
+        ->and($cues[1]['start'])->toBe(7.4)
+        ->and($cues[1]['text'])->toEndWith('۝٢');
 });

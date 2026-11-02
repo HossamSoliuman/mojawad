@@ -14,12 +14,11 @@ class QuranPhraseAligner
     public const SADAQA = 'صَدَقَ ٱللَّهُ ٱلۡعَظِيمُ';
 
     /**
-     * A silence at least this long (seconds) between two transcribed words
-     * closes a phrase — reciters breathe at a waqf.
+     * An unmatched phrase with at least this many letters is real speech that
+     * is not in these surahs (another surah, a misheard line), so a short must
+     * not run across it. Shorter ones (a takbir, a cheer) may sit inside one.
      */
-    private const PAUSE = 0.5;
-
-    private const MAX_PHRASE_WORDS = 14;
+    private const BARRIER_LETTERS = 10;
 
     /**
      * How far (in corpus words) around the expected position a phrase is
@@ -38,17 +37,17 @@ class QuranPhraseAligner
     ) {}
 
     /**
-     * Map timed transcript words of a recitation onto the exact Uthmani text
-     * of its surahs. The transcript only anchors timing; every displayed word
-     * comes from the corpus. Repeated passages (common in mujawwad) match
-     * the same text again, and phrases that match nothing (crowd, noise) are
-     * dropped.
+     * Map timed transcript phrases of a recitation onto the exact Uthmani
+     * text of its surahs. The transcript only anchors timing; every displayed
+     * word comes from the corpus. Repeated passages (common in mujawwad) match
+     * the same text again. Phrases that match nothing come back unmatched,
+     * without cues, and long ones are flagged as barriers.
      *
      * @param  list<int>  $surahs
-     * @param  list<array{w: string, s: float, e: float}>  $words
-     * @return list<array{start: float, end: float, score: float, surah: ?int, opens: bool, closes: bool, cues: list<array{start: float, end: float, text: string}>}>
+     * @param  list<array{start: float, end: float, text: string, pauses?: list<float>}>  $phrases
+     * @return list<array{start: float, end: float, score: float, matched: bool, barrier: bool, surah: ?int, opens: bool, closes: bool, cues: list<array{start: float, end: float, text: string}>}>
      */
-    public function align(array $surahs, array $words): array
+    public function align(array $surahs, array $phrases): array
     {
         $tokens = $this->corpusTokens($surahs);
         $formulas = [self::ISTIADHA, self::SADAQA];
@@ -60,9 +59,18 @@ class QuranPhraseAligner
         $matches = [];
         $expected = null;
 
-        foreach ($this->phrases($words) as $phrase) {
-            $key = implode('', array_column($phrase, 'key'));
-            $span = $tokens === [] ? null : $this->bestSpan($tokens, $key, count($phrase), $expected);
+        foreach ($phrases as $phrase) {
+            $words = array_values(array_filter(
+                array_map(ArabicSkeleton::of(...), preg_split('/\s+/u', trim($phrase['text'])) ?: []),
+                fn (string $key) => $key !== '',
+            ));
+            $key = implode('', $words);
+
+            if ($key === '') {
+                continue;
+            }
+
+            $span = $tokens === [] ? null : $this->bestSpan($tokens, $key, count($words), $expected);
             $formula = $this->bestFormula($formulas, $key);
 
             if ($formula !== null && ($span === null || $formula['score'] >= $span['score'])) {
@@ -72,6 +80,8 @@ class QuranPhraseAligner
             }
 
             if ($span === null || $span['score'] < $this->minScore) {
+                $matches[] = ['phrase' => $phrase, 'unmatched' => strlen($key) >= self::BARRIER_LETTERS, 'score' => $span['score'] ?? 0.0];
+
                 continue;
             }
 
@@ -126,42 +136,6 @@ class QuranPhraseAligner
                 'last' => $index === $last,
             ];
         }
-    }
-
-    /**
-     * Group transcript words into phrases at recitation pauses.
-     *
-     * @param  list<array{w: string, s: float, e: float}>  $words
-     * @return list<list<array{w: string, s: float, e: float, key: string}>>
-     */
-    private function phrases(array $words): array
-    {
-        $phrases = [];
-        $current = [];
-
-        foreach ($words as $word) {
-            $key = ArabicSkeleton::of($word['w']);
-
-            if ($key === '') {
-                continue;
-            }
-
-            $word['key'] = $key;
-            $previous = end($current);
-
-            if ($previous !== false && ($word['s'] - $previous['e'] >= self::PAUSE || count($current) >= self::MAX_PHRASE_WORDS)) {
-                $phrases[] = $current;
-                $current = [];
-            }
-
-            $current[] = $word;
-        }
-
-        if ($current !== []) {
-            $phrases[] = $current;
-        }
-
-        return $phrases;
     }
 
     /**
@@ -333,19 +307,34 @@ class QuranPhraseAligner
     /**
      * @param  array<string, mixed>  $match
      * @param  list<array{text: string, key: string, surah: int, ayah: int, first: bool, last: bool}>  $tokens
-     * @return array{start: float, end: float, score: float, surah: ?int, opens: bool, closes: bool, cues: list<array{start: float, end: float, text: string}>}
+     * @return array{start: float, end: float, score: float, matched: bool, barrier: bool, surah: ?int, opens: bool, closes: bool, cues: list<array{start: float, end: float, text: string}>}
      */
     private function segment(array $match, array $tokens): array
     {
-        $phrase = $match['phrase'];
-        $start = round((float) $phrase[0]['s'], 2);
-        $end = round((float) end($phrase)['e'], 2);
+        $start = round((float) $match['phrase']['start'], 2);
+        $end = round((float) $match['phrase']['end'], 2);
+
+        if (isset($match['unmatched'])) {
+            return [
+                'start' => $start,
+                'end' => $end,
+                'score' => round($match['score'], 3),
+                'matched' => false,
+                'barrier' => $match['unmatched'],
+                'surah' => null,
+                'opens' => false,
+                'closes' => false,
+                'cues' => [],
+            ];
+        }
 
         if (isset($match['formula'])) {
             return [
                 'start' => $start,
                 'end' => $end,
                 'score' => round($match['score'], 3),
+                'matched' => true,
+                'barrier' => false,
                 'surah' => null,
                 'opens' => true,
                 'closes' => true,
@@ -360,43 +349,127 @@ class QuranPhraseAligner
             'start' => $start,
             'end' => $end,
             'score' => round(min(1.0, $span['score']), 3),
+            'matched' => true,
+            'barrier' => false,
             'surah' => $words[0]['surah'],
             'opens' => $words[0]['first'],
             'closes' => end($words)['last'],
-            'cues' => $this->cues($words, $start, $end),
+            'cues' => $this->cues($words, $start, $end, $match['phrase']['pauses'] ?? []),
         ];
     }
 
     /**
-     * Split a matched span into on-screen cues of at most maxCueWords words,
-     * sharing the phrase's time by the length of each chunk.
+     * Split a matched span into on-screen cues: at every ayah end, then into
+     * chunks of at most maxCueWords words, breaking at a waqf sign when one is
+     * near. Time is shared by the letters in each chunk and every boundary is
+     * moved onto a pause the reciter took nearby.
      *
      * @param  list<array{text: string, key: string, surah: int, ayah: int, first: bool, last: bool}>  $words
+     * @param  list<float>  $pauses
      * @return list<array{start: float, end: float, text: string}>
      */
-    private function cues(array $words, float $start, float $end): array
+    private function cues(array $words, float $start, float $end, array $pauses = []): array
     {
-        $chunkCount = (int) ceil(count($words) / $this->maxCueWords);
-        $chunks = $chunkCount > 1
-            ? array_chunk($words, (int) ceil(count($words) / $chunkCount))
-            : [$words];
+        $chunks = [];
+        $unit = [];
+
+        foreach ($words as $index => $word) {
+            $unit[] = $word;
+
+            if ($word['last'] || $index === count($words) - 1) {
+                array_push($chunks, ...$this->chunk($unit));
+                $unit = [];
+            }
+        }
 
         $weights = array_map(fn (array $chunk) => max(1, array_sum(array_map(fn ($w) => strlen($w['key']), $chunk))), $chunks);
         $total = array_sum($weights);
+        $boundaries = [$start];
         $cursor = $start;
+
+        foreach (array_slice($weights, 0, -1) as $weight) {
+            $cursor += ($end - $start) * $weight / $total;
+            $boundaries[] = $this->nearestPause($pauses, $cursor, end($boundaries) + 0.5, $end - 0.5) ?? $cursor;
+        }
+
+        $boundaries[] = $end;
         $cues = [];
 
         foreach ($chunks as $index => $chunk) {
-            $length = ($end - $start) * $weights[$index] / $total;
             $cues[] = [
-                'start' => round($cursor, 2),
-                'end' => round($cursor + $length, 2),
+                'start' => round($boundaries[$index], 2),
+                'end' => round($boundaries[$index + 1], 2),
                 'text' => $this->display($chunk),
             ];
-            $cursor += $length;
         }
 
         return $cues;
+    }
+
+    /**
+     * Break a run of words into chunks of at most maxCueWords, preferring to
+     * break after a word that carries a waqf (pause) sign.
+     *
+     * @param  list<array{text: string, key: string, surah: int, ayah: int, first: bool, last: bool}>  $words
+     * @return list<list<array{text: string, key: string, surah: int, ayah: int, first: bool, last: bool}>>
+     */
+    private function chunk(array $words): array
+    {
+        $count = count($words);
+        $parts = (int) ceil($count / $this->maxCueWords);
+
+        if ($parts <= 1) {
+            return [$words];
+        }
+
+        $cuts = [0];
+
+        for ($part = 1; $part < $parts; $part++) {
+            $target = (int) round($part * $count / $parts);
+            $cut = $target;
+
+            foreach ([0, -1, 1, -2, 2] as $shift) {
+                $after = $target + $shift - 1;
+
+                if ($after >= end($cuts) && $after < $count - 1 && preg_match('/[\x{06D6}-\x{06DC}]/u', $words[$after]['text'])) {
+                    $cut = $after + 1;
+                    break;
+                }
+            }
+
+            $cuts[] = $cut;
+        }
+
+        $cuts[] = $count;
+        $chunks = [];
+
+        for ($k = 0; $k < count($cuts) - 1; $k++) {
+            if ($cuts[$k + 1] > $cuts[$k]) {
+                $chunks[] = array_slice($words, $cuts[$k], $cuts[$k + 1] - $cuts[$k]);
+            }
+        }
+
+        return $chunks;
+    }
+
+    /**
+     * @param  list<float>  $pauses
+     */
+    private function nearestPause(array $pauses, float $target, float $after, float $before): ?float
+    {
+        $best = null;
+
+        foreach ($pauses as $pause) {
+            if ($pause <= $after || $pause >= $before || abs($pause - $target) > 3.0) {
+                continue;
+            }
+
+            if ($best === null || abs($pause - $target) < abs($best - $target)) {
+                $best = $pause;
+            }
+        }
+
+        return $best;
     }
 
     /**
