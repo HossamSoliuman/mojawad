@@ -158,7 +158,12 @@ class RecitationTranscriber
      */
     private function parse(string $text): ?array
     {
-        $payload = json_decode(trim($text), true);
+        $text = trim((string) preg_replace('/^```(?:json)?|```$/m', '', trim($text)));
+        $payload = json_decode($text, true);
+
+        if (is_array($payload) && ! array_is_list($payload)) {
+            $payload = collect($payload)->first(fn ($value) => is_array($value) && array_is_list($value));
+        }
 
         if (! is_array($payload)) {
             return null;

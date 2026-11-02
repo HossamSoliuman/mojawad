@@ -99,3 +99,11 @@ it('skips a model whose quota is used up for the following requests', function (
 
     Http::assertSentCount(3);
 });
+
+it('reads a phrase list wrapped in an object or a code fence', function () {
+    $phrases = json_encode(['phrases' => [['start' => '00:00.6', 'end' => '00:08.2', 'text' => 'قل هو الله أحد']]]);
+
+    Http::fake(['*' => Http::response(['candidates' => [['content' => ['parts' => [['text' => "```json\n{$phrases}\n```"]]]]]])]);
+
+    expect((new RecitationTranscriber)->transcribe('/audio.mp3', 0, 60))->toHaveCount(1);
+});
