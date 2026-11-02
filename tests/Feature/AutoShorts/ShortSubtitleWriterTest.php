@@ -13,10 +13,10 @@ it('writes an ass script with the header, brand and timed ayat', function () {
     expect($ass)
         ->toContain('PlayResX: 1080')
         ->toContain('Style: Ayah,Amiri Quran')
-        ->toContain('Dialogue: 0,0:00:00.00,0:00:30.00,Qari,,0,0,0,,{\fad(400,0)}الشيخ محمد رفعت')
-        ->toContain('Dialogue: 0,0:00:00.00,0:00:30.00,Surah,,0,0,0,,{\fad(400,0)}سورة الإخلاص')
+        ->toContain('Dialogue: 0,0:00:00.00,0:00:30.00,Qari,,0,0,0,,{\fad(400,0)\blur3}الشيخ محمد رفعت')
+        ->toContain('Dialogue: 0,0:00:00.00,0:00:30.00,Surah,,0,0,0,,{\fad(400,0)\blur3}سورة الإخلاص')
         ->toContain(',Brand,,0,0,0,,mojawad.com')
-        ->toContain('Dialogue: 0,0:00:01.50,0:00:04.25,Ayah,,0,0,0,,{\fad(220,180)}قُلۡ هُوَ ٱللَّهُ أَحَدٌ ۝١');
+        ->toContain('Dialogue: 0,0:00:01.50,0:00:04.25,Ayah,,0,0,0,,{\fad(220,180)\blur4}قُلۡ هُوَ ٱللَّهُ أَحَدٌ ۝١');
 });
 
 it('strips characters that would break the ass script', function () {
@@ -27,5 +27,5 @@ it('strips characters that would break the ass script', function () {
         62,
     );
 
-    expect($ass)->toContain('0:00:00.00,0:01:01.20,Ayah,,0,0,0,,{\fad(220,180)}نص b1 آخر');
+    expect($ass)->toContain('0:00:00.00,0:01:01.20,Ayah,,0,0,0,,{\fad(220,180)\blur4}نص b1 آخر');
 });

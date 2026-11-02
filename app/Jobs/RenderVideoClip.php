@@ -220,7 +220,7 @@ class RenderVideoClip implements ShouldQueue
             '-i', $audioPath,
         ];
 
-        $shade = 'eq=brightness=-0.03:saturation=0.95,drawbox=x=0:y=0:w=iw:h=ih:color=black@0.42:t=fill,vignette=PI/4.5';
+        $shade = 'eq=brightness=-0.03:saturation=0.95,drawbox=x=0:y=0:w=iw:h=ih:color=black@0.48:t=fill,vignette=PI/4.5';
 
         if ($background !== null) {
             $coverWidth = (int) (ceil($width * (1 + $zoom) / 2) * 2);

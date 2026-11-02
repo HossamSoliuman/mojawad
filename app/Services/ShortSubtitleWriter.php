@@ -23,20 +23,20 @@ class ShortSubtitleWriter
             '',
             '[V4+ Styles]',
             'Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding',
-            'Style: Ayah,Amiri Quran,140,&H00FFFFFF,&H00FFFFFF,&H50000000,&H8C000000,0,0,0,0,100,100,0,0,1,3,4,5,90,90,0,1',
-            'Style: Qari,Aref Ruqaa,92,&H004FC9E8,&H004FC9E8,&H64000000,&H8C000000,1,0,0,0,100,100,0,0,1,2,3,8,70,70,200,1',
-            'Style: Surah,Tajawal Medium,58,&H00F0F0F0,&H00F0F0F0,&H64000000,&H8C000000,0,0,0,0,100,100,0,0,1,2,2,8,70,70,345,1',
+            'Style: Ayah,Amiri Quran,158,&H00FFFFFF,&H00FFFFFF,&H28000000,&H80000000,0,0,0,0,100,100,0,0,1,5,3,5,80,80,0,1',
+            'Style: Qari,Aref Ruqaa,92,&H004FC9E8,&H004FC9E8,&H40000000,&H80000000,1,0,0,0,100,100,0,0,1,4,2,8,70,70,200,1',
+            'Style: Surah,Tajawal Medium,58,&H00F0F0F0,&H00F0F0F0,&H40000000,&H80000000,0,0,0,0,100,100,0,0,1,3,2,8,70,70,345,1',
             'Style: Brand,Tajawal,40,&H30FFFFFF,&H30FFFFFF,&H64000000,&H8C000000,1,0,0,0,100,100,0,0,1,1,2,2,70,70,160,1',
             '',
             '[Events]',
             'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text',
-            $this->event('Qari', 0, $duration, '{\fad(400,0)}'.$this->clean($qari)),
-            $this->event('Surah', 0, $duration, '{\fad(400,0)}'.$this->clean($surah)),
+            $this->event('Qari', 0, $duration, '{\fad(400,0)\blur3}'.$this->clean($qari)),
+            $this->event('Surah', 0, $duration, '{\fad(400,0)\blur3}'.$this->clean($surah)),
             $this->event('Brand', 0, $duration, $this->clean($brand)),
         ];
 
         foreach ($cues as $cue) {
-            $lines[] = $this->event('Ayah', $cue['start'], $cue['end'], '{\fad(220,180)}'.$this->clean($cue['text']));
+            $lines[] = $this->event('Ayah', $cue['start'], $cue['end'], '{\fad(220,180)\blur4}'.$this->clean($cue['text']));
         }
 
         return implode("\n", $lines)."\n";
