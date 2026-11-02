@@ -102,7 +102,7 @@ return [
         'models' => explode(',', (string) env('CLIP_ASR_MODELS', 'gemini-3.6-flash,gemini-3.5-flash,gemini-flash-latest,gemini-flash-lite-latest')),
         'attempts' => 3,
         'timeout' => (int) env('CLIP_ASR_TIMEOUT', 300),
-        'silence_db' => -32,
+        'pause_drop' => 10,
     ],
 
     'auto' => [

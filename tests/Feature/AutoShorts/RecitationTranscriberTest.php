@@ -17,7 +17,15 @@ beforeEach(function () {
         $command = (array) $process->command;
 
         if (in_array('null', $command, true)) {
-            return Process::result(errorOutput: "[silencedetect] silence_start: 9.4\n[silencedetect] silence_end: 12.1 | silence_duration: 2.7\n");
+            $envelope = '';
+
+            for ($frame = 0; $frame < 200; $frame++) {
+                $time = $frame / 10;
+                $level = $time >= 9.4 && $time < 12.1 ? -38.5 : -12.0 + ($frame % 3);
+                $envelope .= "frame:{$frame} pts:{$frame} pts_time:{$time}\nlavfi.astats.Overall.RMS_level={$level}\n";
+            }
+
+            return Process::result(output: $envelope);
         }
 
         @file_put_contents((string) end($command), 'mp3-bytes');
@@ -55,4 +63,22 @@ it('fails when no model returns a phrase list', function () {
 
     expect(fn () => (new RecitationTranscriber)->transcribe('/audio.mp3', 0, 60))
         ->toThrow(RuntimeException::class, 'good-model: HTTP 400');
+});
+
+it('finds pauses relative to the reciter\'s voice level and joins brief bursts', function () {
+    $envelope = [];
+
+    foreach (range(0, 99) as $frame) {
+        $time = $frame / 10;
+        $level = match (true) {
+            $time >= 2.0 && $time < 3.5 => -30.0,
+            $time >= 3.5 && $time < 3.6 => -15.0,
+            $time >= 3.6 && $time < 4.2 => -29.0,
+            $time >= 7.0 && $time < 7.2 => -31.0,
+            default => -11.0,
+        };
+        $envelope[] = [$time, $level];
+    }
+
+    expect((new RecitationTranscriber)->quietStretches($envelope))->toBe([[2.0, 4.2]]);
 });

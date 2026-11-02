@@ -189,7 +189,10 @@ class RecitationTranscriber
     }
 
     /**
-     * Pauses in the clip as [start, end] pairs.
+     * Pauses in the clip as [start, end] pairs, read from a 0.1s loudness
+     * envelope. Old and live recordings never fall silent (hiss, audience),
+     * so a pause is any stretch well below the reciter's own voice level
+     * rather than below a fixed threshold.
      *
      * @return list<array{0: float, 1: float}>
      */
@@ -199,26 +202,75 @@ class RecitationTranscriber
             config('youtube.ffmpeg_path'),
             '-hide_banner',
             '-i', $clip,
-            '-af', 'silencedetect=noise='.config('clips.transcription.silence_db').'dB:d=0.4',
+            '-af', 'asetnsamples=n=1600,astats=metadata=1:reset=1,ametadata=print:key=lavfi.astats.Overall.RMS_level:file=-',
             '-f', 'null',
             '-',
         ]);
 
-        preg_match_all('/silence_(start|end): (-?[\d.]+)/', $result->errorOutput().$result->output(), $matches, PREG_SET_ORDER);
+        preg_match_all('/pts_time:([\d.]+)\s+lavfi\.astats\.Overall\.RMS_level=(-?[\d.]+|-inf)/', $result->output(), $matches, PREG_SET_ORDER);
 
-        $silences = [];
+        return $this->quietStretches(array_map(
+            fn (array $match) => [(float) $match[1], $match[2] === '-inf' ? -120.0 : (float) $match[2]],
+            $matches,
+        ));
+    }
+
+    /**
+     * Stretches of at least 0.4s whose loudness stays more than
+     * clips.transcription.pause_drop dB under the voice level (the 80th
+     * percentile of the envelope).
+     *
+     * @param  list<array{0: float, 1: float}>  $envelope  [time, RMS dB] every 0.1s
+     * @return list<array{0: float, 1: float}>
+     */
+    public function quietStretches(array $envelope): array
+    {
+        if (count($envelope) < 10) {
+            return [];
+        }
+
+        $levels = array_column($envelope, 1);
+        sort($levels);
+        $voice = $levels[(int) floor(count($levels) * 0.8)];
+        $threshold = $voice - (float) config('clips.transcription.pause_drop');
+
+        $stretches = [];
         $open = null;
 
-        foreach ($matches as [, $kind, $time]) {
-            if ($kind === 'start') {
-                $open = max(0.0, (float) $time);
-            } elseif ($open !== null) {
-                $silences[] = [$open, (float) $time];
-                $open = null;
+        foreach ($envelope as [$time, $level]) {
+            if ($level < $threshold) {
+                $open ??= $time;
+
+                continue;
+            }
+
+            if ($open !== null) {
+                $stretches[] = [$open, $time];
+            }
+
+            $open = null;
+        }
+
+        if ($open !== null) {
+            $stretches[] = [$open, end($envelope)[0] + 0.1];
+        }
+
+        $merged = [];
+
+        foreach ($stretches as $stretch) {
+            $last = array_key_last($merged);
+
+            if ($last !== null && $stretch[0] - $merged[$last][1] <= 0.3) {
+                $merged[$last][1] = $stretch[1];
+            } else {
+                $merged[] = $stretch;
             }
         }
 
-        return $silences;
+        return array_values(array_map(
+            fn (array $stretch) => [round($stretch[0], 2), round($stretch[1], 2)],
+            array_filter($merged, fn (array $stretch) => $stretch[1] - $stretch[0] >= 0.4),
+        ));
     }
 
     /**

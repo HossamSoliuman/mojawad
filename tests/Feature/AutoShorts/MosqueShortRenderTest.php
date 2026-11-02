@@ -20,6 +20,7 @@ it('renders a mosque short with the ayat burned in as subtitles', function () {
         $command = (array) $process->command;
 
         if ($process->path !== null && is_file($process->path.'/subs.ass')) {
+            $written['dir'] = $process->path;
             $written['ass'] = File::get($process->path.'/subs.ass');
             $written['fonts'] = array_map(fn ($file) => $file->getFilename(), File::files($process->path.'/fonts'));
         }
@@ -62,5 +63,5 @@ it('renders a mosque short with the ayat burned in as subtitles', function () {
             && str_contains($command, '-ss 12.4');
     });
 
-    expect(File::directories(storage_path('app/clip-work')))->toBeEmpty();
+    expect(File::isDirectory($written['dir']))->toBeFalse();
 });
